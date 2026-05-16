@@ -1,0 +1,467 @@
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Search, UserCheck, Clock, ChevronLeft, ChevronRight, Activity, Stethoscope, Syringe, Play, CheckCircle2, Plus, X, Eye, AlertCircle, Heart, MapPin, Phone, Shield, Calendar as CalIcon, Trash2 } from "lucide-react";
+import { useToast } from "../Toast";
+import {
+  getPatientQueue, updatePatientStatus, deletePatient,
+  getSystemSettings, updateSystemSettings,
+  getCalendarEvents, createCalendarEvent, deleteCalendarEvent,
+  createAuditLogEntry, getCurrentUser,
+  type Patient, type CalendarEvent
+} from "../../api/services";
+
+// small animated counter used in summary cards
+function AnimCounter({ target, suffix = "" }: { target: number; suffix?: string }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const dur = 1000;
+    const step = target / (dur / 16);
+    const id = setInterval(() => {
+      start += step;
+      if (start >= target) { setVal(target); clearInterval(id); }
+      else setVal(Math.floor(start));
+    }, 16);
+    return () => clearInterval(id);
+  }, [target]);
+  return <span>{val.toLocaleString()}{suffix}</span>;
+}
+
+export default function ClinicHandler() {
+  const [queue, setQueue] = useState<Patient[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateBookedSort, setDateBookedSort] = useState<"newest" | "oldest">("newest");
+  const [clinicOpen, setClinicOpen] = useState<boolean | null>(null); // null = loading
+  const [month, setMonth] = useState(new Date().getMonth());
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEvent, setNewEvent] = useState({ date: "", title: "", icon: "\u{1F3E5}", type: "event" as "event" | "closure" });
+  const [reviewPatient, setReviewPatient] = useState<Patient | null>(null);
+  const { showToast } = useToast();
+
+  const year = 2026;
+  const getDateBookedRaw = (p: Patient) => p.dateBooked || p.date_booked || p.created_at || "";
+  const getPreferredDate = (p: Patient) => p.queueDate || p.queue_date || "—";
+  const formatDateBooked = (p: Patient) => {
+    const raw = getDateBookedRaw(p);
+    if (!raw) return "—";
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return raw;
+    return d.toLocaleString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+  const formatApptId = (p: Patient) => {
+    if (p.appointmentId) return p.appointmentId;
+    if (p.appointment_id) return p.appointment_id;
+    if (p?.id) return `CLN-${String(p.id).padStart(6, "0")}`;
+    return `CLN-${Date.now().toString().slice(-6)}`;
+  };
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startDay = new Date(year, month, 1).getDay();
+
+  /* Load data from services.ts on mount */
+  useEffect(() => {
+    getPatientQueue().then(setQueue);
+    /* Load clinic status from system settings — DJANGO: GET /api/settings/ */
+    getSystemSettings().then(s => setClinicOpen(s.clinic_status === "open"));
+    const handler = () => getPatientQueue().then(setQueue);
+    window.addEventListener("clinicUpdate", handler);
+    return () => window.removeEventListener("clinicUpdate", handler);
+  }, []);
+
+  /* Calendar events sync */
+  useEffect(() => {
+    const loadEvents = () => getCalendarEvents().then(setEvents);
+    loadEvents();
+    const handler = () => { loadEvents(); };
+    window.addEventListener("calendarUpdate", handler);
+    window.addEventListener("storage", handler);
+    return () => { window.removeEventListener("calendarUpdate", handler); window.removeEventListener("storage", handler); };
+  }, []);
+
+  const filtered = queue.filter(p => {
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.reason.toLowerCase().includes(search.toLowerCase()) || formatApptId(p).toLowerCase().includes(search.toLowerCase());
+    const matchFilter = statusFilter === "all" || p.status === statusFilter;
+    return matchSearch && matchFilter;
+  }).sort((a, b) => {
+    const aTime = new Date(getDateBookedRaw(a)).getTime() || 0;
+    const bTime = new Date(getDateBookedRaw(b)).getTime() || 0;
+    return dateBookedSort === "newest" ? bTime - aTime : aTime - bTime;
+  });
+
+  const updateStatus = (id: number, status: string) => {
+    setQueue(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+    updatePatientStatus(id, status);
+    const user = getCurrentUser();
+    const patient = queue.find(p => p.id === id);
+    if (patient) {
+      createAuditLogEntry({
+        time: new Date().toLocaleString("en-PH"),
+        user: user?.name || "Clinic Handler",
+        action: status === "completed" ? `Completed patient ${patient.name}` : `Started serving ${patient.name}`,
+        type: status === "completed" ? "success" : "info",
+      });
+    }
+    showToast(status === "completed" ? "Patient completed!" : "Now serving patient");
+  };
+
+  const handleDeletePatient = async (p: Patient) => {
+    setQueue(prev => prev.filter(item => item.id !== p.id));
+    if (reviewPatient?.id === p.id) setReviewPatient(null);
+    try {
+      await deletePatient(p.id);
+      const user = getCurrentUser();
+      createAuditLogEntry({
+        time: new Date().toLocaleString("en-PH"),
+        user: user?.name || "Clinic Handler",
+        action: `Deleted appointment ${formatApptId(p)} for ${p.name}`,
+        type: "warning",
+      });
+      showToast(`Deleted ${formatApptId(p)}`);
+    } catch {
+      getPatientQueue().then(setQueue);
+      showToast("Failed to delete appointment.");
+    }
+  };
+
+  const handleAddEvent = () => {
+    if (newEvent.date && newEvent.title) {
+      createCalendarEvent({ date: newEvent.date, title: newEvent.title, color: newEvent.type === "closure" ? "bg-rose-500" : "bg-[#008080]", source: "clinic_handler", icon: newEvent.icon, type: newEvent.type }).then(() => {
+        getCalendarEvents().then(setEvents);
+        const user = getCurrentUser();
+        createAuditLogEntry({
+          time: new Date().toLocaleString("en-PH"),
+          user: user?.name || "Clinic Handler",
+          action: `Added clinic ${newEvent.type} "${newEvent.title}" on ${newEvent.date}`,
+          type: newEvent.type === "closure" ? "warning" : "info",
+        });
+      });
+      setNewEvent({ date: "", title: "", icon: "\u{1F3E5}", type: "event" });
+      setShowAddEvent(false);
+      showToast("Event added to health calendar!");
+    }
+  };
+
+  const handleRemoveEvent = (id: string) => {
+    const target = events.find(e => e.id === id);
+    deleteCalendarEvent(id).then(() => {
+      getCalendarEvents().then(setEvents);
+      const user = getCurrentUser();
+      createAuditLogEntry({
+        time: new Date().toLocaleString("en-PH"),
+        user: user?.name || "Clinic Handler",
+        action: `Removed clinic calendar event${target ? ` "${target.title}" on ${target.date}` : ` ${id}`}`,
+        type: "warning",
+      });
+    });
+  };
+
+  const statusConfig: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+    waiting: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400", label: "Waiting" },
+    "in-progress": { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400", label: "In Progress" },
+    completed: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400", label: "Done" },
+  };
+
+  const monthEvents = events.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-400">Total Patients</p>
+          <h3 className="text-2xl font-semibold mt-2"><AnimCounter target={queue.length} /></h3>
+        </div>
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-400">Waiting</p>
+          <h3 className="text-2xl font-semibold mt-2"><AnimCounter target={queue.filter(q => q.status === "waiting").length} /></h3>
+        </div>
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-400">In Progress</p>
+          <h3 className="text-2xl font-semibold mt-2"><AnimCounter target={queue.filter(q => q.status === "in-progress").length} /></h3>
+        </div>
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-400">Completed</p>
+          <h3 className="text-2xl font-semibold mt-2"><AnimCounter target={queue.filter(q => q.status === "completed").length} /></h3>
+        </div>
+      </div>
+      {/* Clinic Status */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <motion.button whileTap={{ scale: 0.97 }}
+            onClick={async () => {
+              if (clinicOpen === null) return;
+              const newStatus = !clinicOpen;
+              try {
+              /* Persist to services.ts — DJANGO: PATCH /api/settings/ */
+              await updateSystemSettings({ clinic_status: newStatus ? "open" : "closed" });
+              setClinicOpen(newStatus);
+              const user = getCurrentUser();
+              createAuditLogEntry({
+                time: new Date().toLocaleString("en-PH"),
+                user: user?.name || "Clinic Handler",
+                action: `Updated clinic status to ${newStatus ? "OPEN" : "CLOSED"}`,
+                type: newStatus ? "success" : "info",
+              });
+              window.dispatchEvent(new Event("clinicStatusUpdate"));
+              showToast(newStatus ? "Clinic is now OPEN" : "Clinic is now CLOSED", newStatus ? "success" : "error");
+              } catch {
+                showToast("Failed to update clinic status. Please check your account permission.", "error");
+              }
+            }}
+            className={`flex items-center gap-3 px-5 py-3 rounded-2xl transition-all ${clinicOpen === null ? "bg-gray-100 text-gray-300" : clinicOpen ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20" : "bg-gray-100 text-gray-400"}`}>
+            <Activity className={`w-5 h-5 ${clinicOpen ? "animate-pulse" : ""}`} />
+            <span className="text-sm">{clinicOpen === null ? "Loading..." : clinicOpen ? "Clinic Open" : "Clinic Closed"}</span>
+            <div className={`w-3 h-3 rounded-full ${clinicOpen ? "bg-white/50" : "bg-gray-300"}`} />
+          </motion.button>
+        </div>
+      </div>
+
+      {clinicOpen === false && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-rose-50 border border-rose-100 rounded-2xl p-5 text-center">
+          <p className="text-rose-600 text-sm">Clinic is currently closed. No patients are being accepted.</p>
+        </motion.div>
+      )}
+
+      {/* Appointments Area (scrollable) */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 bg-white">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              {["all", "waiting", "in-progress", "completed"].map(f => (
+                <button key={f} onClick={() => setStatusFilter(f)}
+                  className={`px-3 py-1.5 rounded-xl text-xs transition-all capitalize ${statusFilter === f ? "bg-[#008080] text-white shadow-md" : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"}`}>
+                  {f === "all" ? "All" : f === "in-progress" ? "In Progress" : f}
+                </button>
+              ))}
+              <select value={dateBookedSort} onChange={e => setDateBookedSort(e.target.value as "newest" | "oldest")}
+                className="px-3 py-1.5 rounded-xl text-xs bg-white text-gray-500 border border-gray-100 outline-none focus:ring-2 focus:ring-[#008080]/20">
+                <option value="newest">Date Booked: Newest</option>
+                <option value="oldest">Date Booked: Oldest</option>
+              </select>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+              <input placeholder="Search appointments..." className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#008080]/20 transition-all" value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 max-h-[460px] overflow-y-auto">
+          <div className="grid gap-3">
+            <AnimatePresence>
+              {filtered.map((p, i) => {
+            const sc = statusConfig[p.status] || statusConfig.waiting;
+            return (
+              <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer hover:shadow-md transition-shadow ${p.status === "in-progress" ? "ring-2 ring-blue-200 ring-offset-2" : ""}`}
+                onClick={() => setReviewPatient(p)}>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#008080] to-[#00a89d] flex items-center justify-center text-white text-sm shadow-md">
+                      {p.name.split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white flex items-center justify-center text-xs text-gray-500 shadow-sm border border-gray-100">{i + 1}</div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-[#1B263B]">{p.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">ID: {formatApptId(p)}</p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-xs text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" /> {p.time}</span>
+                      <span className="text-xs text-gray-400 flex items-center gap-1"><Stethoscope className="w-3 h-3" /> {p.reason}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1">
+                      <span className="text-xs text-gray-400">Preferred Date: {getPreferredDate(p)}</span>
+                      <span className="text-xs text-gray-400">Date Booked: {formatDateBooked(p)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                  <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ${sc.bg} ${sc.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} /> {sc.label}
+                  </span>
+                  <button onClick={() => setReviewPatient(p)} className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition-colors" title="Review"><Eye className="w-4 h-4" /></button>
+                  <button onClick={() => handleDeletePatient(p)} className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 hover:bg-rose-100 transition-colors" title="Delete appointment"><Trash2 className="w-4 h-4" /></button>
+                  {p.status !== "completed" && (
+                    <div className="flex gap-1.5">
+                      {p.status === "waiting" && (
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => updateStatus(p.id, "in-progress")}
+                          className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition-colors" title="Start serving">
+                          <Play className="w-4 h-4" />
+                        </motion.button>
+                      )}
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => updateStatus(p.id, "completed")}
+                        className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 hover:bg-emerald-100 transition-colors" title="Mark complete">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </motion.button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+              })}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* Health Calendar */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div className="flex justify-between items-center mb-4">
+          <button onClick={() => setMonth(m => Math.max(0, m - 1))} className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"><ChevronLeft className="w-4 h-4 text-gray-400" /></button>
+          <h3 className="text-[#008080] flex items-center gap-2"><Syringe className="w-5 h-5" /> Health Calendar - {monthNames[month]} {year}</h3>
+          <div className="flex gap-2">
+            <button onClick={() => setShowAddEvent(true)} className="px-3 py-1.5 rounded-xl bg-[#008080] text-white text-xs flex items-center gap-1 hover:shadow-md transition-all"><Plus className="w-3.5 h-3.5" /> Add Event</button>
+            <button onClick={() => setMonth(m => Math.min(11, m + 1))} className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"><ChevronRight className="w-4 h-4 text-gray-400" /></button>
+          </div>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+          {["S","M","T","W","T","F","S"].map((d,i) => <div key={i} className="text-gray-300 py-1">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: startDay }).map((_, i) => <div key={`e${i}`} />)}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const ev = monthEvents.find(e => e.date === dateStr);
+            return (
+              <div key={day} className={`text-center py-1.5 rounded-xl text-xs transition-all ${ev ? ev.type === "closure" ? "bg-rose-500 text-white shadow-sm" : "bg-gradient-to-br from-[#008080] to-[#00a89d] text-white shadow-sm" : "hover:bg-gray-50"}`} title={ev?.title}>
+                {day}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {monthEvents.sort((a, b) => a.date.localeCompare(b.date)).map(e => (
+            <div key={e.id} className={`flex items-center justify-between ${e.type === "closure" ? "bg-rose-50" : "bg-[#FAFBFC]"} rounded-xl p-3`}>
+              <div className="flex items-center gap-3">
+                <span className="text-lg">{e.icon || "📅"}</span>
+                <div>
+                  <p className={`text-xs ${e.type === "closure" ? "text-rose-600" : "text-[#1B263B]"}`}>{e.title}</p>
+                  <p className="text-xs text-gray-400">{monthNames[month]} {new Date(e.date).getDate()}, {year}</p>
+                </div>
+              </div>
+              <button onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors"><X className="w-3.5 h-3.5" /></button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Add Event Modal */}
+      <AnimatePresence>
+        {showAddEvent && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAddEvent(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="bg-gradient-to-r from-[#008080] to-[#00a89d] px-6 py-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-white text-sm" style={{ fontFamily: "Montserrat" }}>Add Health Calendar Event</h3>
+                  <button onClick={() => setShowAddEvent(false)} className="text-white/50 hover:text-white"><X className="w-4 h-4" /></button>
+                </div>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="text-xs text-gray-500 uppercase mb-1 block">Date of Schedule</label>
+                  <div className="relative">
+                    <CalIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input type="date" className="w-full bg-[#F5F7FA] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/20" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase mb-1 block">Event Title</label>
+                  <input className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none" placeholder="e.g. Dengue Vaccination Drive" value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase mb-1 block">Event Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => setNewEvent({ ...newEvent, type: "event" })} className={`py-2 rounded-xl text-xs border-2 transition-all ${newEvent.type === "event" ? "border-[#008080] bg-[#008080]/5 text-[#008080]" : "border-gray-200 text-gray-400"}`}>Health Event</button>
+                    <button onClick={() => setNewEvent({ ...newEvent, type: "closure" })} className={`py-2 rounded-xl text-xs border-2 transition-all ${newEvent.type === "closure" ? "border-rose-500 bg-rose-50 text-rose-600" : "border-gray-200 text-gray-400"}`}>Clinic Closure</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase mb-1 block">Icon</label>
+                  <div className="flex gap-2">
+                    {["💉", "🏥", "🩺", "🦷", "❌", "🎯"].map(icon => (
+                      <button key={icon} onClick={() => setNewEvent({ ...newEvent, icon })} className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center ${newEvent.icon === icon ? "ring-2 ring-[#008080] bg-[#008080]/10" : "bg-gray-50 hover:bg-gray-100"}`}>{icon}</button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={handleAddEvent} disabled={!newEvent.date || !newEvent.title} className="w-full bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-2.5 rounded-xl text-sm disabled:opacity-40 hover:shadow-md transition-all">Add Event</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Review Patient Modal */}
+      <AnimatePresence>
+        {reviewPatient && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setReviewPatient(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="bg-gradient-to-r from-[#008080] to-[#00a89d] px-6 py-5 shrink-0">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-sm">{reviewPatient.name.split(" ").map(n => n[0]).join("")}</div>
+                    <div>
+                      <h3 className="text-white" style={{ fontFamily: "Montserrat" }}>{reviewPatient.name}</h3>
+                      <p className="text-white/50 text-xs">Appointment: {reviewPatient.time} — {reviewPatient.reason}</p>
+                      <p className="text-white/50 text-xs">Appointment ID: {formatApptId(reviewPatient)}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setReviewPatient(null)} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button>
+                </div>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1 space-y-4">
+                <div className="space-y-2.5 text-sm">
+                  <p className="text-xs text-[#008080] uppercase tracking-wider">Patient Information</p>
+                  {[["Appointment ID", formatApptId(reviewPatient)], ["Preferred Date", getPreferredDate(reviewPatient)], ["Date Booked", formatDateBooked(reviewPatient)], ["Name", reviewPatient.name], ["Birthdate", reviewPatient.birthdate || "—"], ["Sex", reviewPatient.sex || "—"], ["Phone", reviewPatient.phone || "—"]].map(([l, v]) => (
+                    <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
+                  ))}
+                  <p className="text-xs text-[#008080] uppercase tracking-wider mt-3">Chief Complaint</p>
+                  <p className="text-xs text-gray-600 bg-[#FAFBFC] rounded-xl p-3">{reviewPatient.chiefComplaint || "—"}</p>
+                  <p className="text-xs text-[#008080] uppercase tracking-wider mt-3">Health History</p>
+                  {[["Known Allergies", reviewPatient.allergies || "None"], ["Current Medications", reviewPatient.medications || "None"], ["Pre-existing Conditions", reviewPatient.conditions || "None"]].map(([l, v]) => (
+                    <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
+                  ))}
+                </div>
+                {reviewPatient.allergies && reviewPatient.allergies !== "None" && (
+                  <div className="bg-rose-50 rounded-xl p-3 text-xs text-rose-600 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span><strong>Allergy Alert:</strong> Patient is allergic to <strong>{reviewPatient.allergies}</strong>. Ensure no conflicting medications are administered.</span>
+                  </div>
+                )}
+                <div className="bg-[#F5F7FA] rounded-xl p-3 text-xs text-gray-400 flex items-start gap-2">
+                  <Shield className="w-4 h-4 text-[#008080] shrink-0 mt-0.5" />
+                  <span>Patient health records are confidential. Handle with care per DOH data privacy guidelines.</span>
+                </div>
+              </div>
+              <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50" onClick={e => e.stopPropagation()}>
+                <button onClick={() => handleDeletePatient(reviewPatient)} className="bg-rose-50 text-rose-600 py-3 px-4 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /> Delete</button>
+                {reviewPatient.status !== "completed" && (
+                  <>
+                    {reviewPatient.status === "waiting" && (
+                      <button onClick={() => { updateStatus(reviewPatient.id, "in-progress"); setReviewPatient(null); }} className="flex-1 bg-blue-50 text-blue-600 py-3 rounded-xl hover:bg-blue-100 transition-colors text-sm flex items-center justify-center gap-2"><Play className="w-4 h-4" /> Start Serving</button>
+                    )}
+                    <button onClick={() => { updateStatus(reviewPatient.id, "completed"); setReviewPatient(null); }} className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4" /> Mark Complete</button>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

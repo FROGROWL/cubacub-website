@@ -1,0 +1,378 @@
+BARANGAY PORTAL DEPLOYMENT INSTRUCTIONS
+=======================================
+
+Project type:
+- Frontend: React + Vite, located in the frontend folder
+- Backend: Django REST API, located in the backend folder
+- Database: PostgreSQL
+- Public website: residents can access public pages and submit forms online
+- Real-time behavior: the frontend refreshes live public data through repeated API requests, so the backend and database must stay online
+
+
+1. PREPARE THE PROJECT
+----------------------
+
+Install the required tools on your computer:
+- Git
+- Node.js
+- pnpm
+- Python
+- PostgreSQL, or use a hosted PostgreSQL database from your hosting provider
+
+Before deploying, make sure the project works locally.
+
+Backend:
+1. Open a terminal in the backend folder:
+   cd backend
+
+2. Create and activate a virtual environment:
+   python -m venv venv
+   venv\Scripts\activate
+
+3. Install Python packages:
+   pip install -r requirements.txt
+
+4. Create a .env file inside the backend folder:
+   SECRET_KEY=replace-this-with-a-long-random-secret-key
+   DEBUG=False
+   ALLOWED_HOSTS=localhost,127.0.0.1
+   CORS_ALLOW_ALL_ORIGINS=True
+   CORS_ALLOWED_ORIGINS=http://localhost:5173
+   CSRF_TRUSTED_ORIGINS=http://localhost:5173
+   DB_NAME=your_database_name
+   DB_USER=your_database_user
+   DB_PASSWORD=your_database_password
+   DB_HOST=your_database_host
+   DB_PORT=5432
+
+5. Run migrations:
+   python manage.py migrate
+
+6. Create an admin account:
+   python manage.py createsuperuser
+
+7. Test the backend:
+   python manage.py runserver
+
+Frontend:
+1. Open another terminal in the frontend folder:
+   cd frontend
+
+2. Install packages:
+   pnpm install
+
+3. Create a .env file inside the frontend folder:
+   VITE_API_BASE_URL=http://localhost:8000
+
+4. Test the frontend:
+   pnpm run dev
+
+5. Open the local Vite URL shown in the terminal, usually:
+   http://localhost:5173
+
+
+2. PUBLIC WEBSITE AND REAL-TIME REQUIREMENTS
+--------------------------------------------
+
+Because this website is for public use, choose hosting that is stable enough for residents to access at any time.
+
+Recommended setup:
+- Use HTTPS for both frontend and backend.
+- Use an always-on backend service if possible.
+- Use a persistent PostgreSQL database, not a temporary or local database.
+- Avoid free backend plans that sleep after inactivity if residents need real-time updates.
+- Enable automatic deploys only from your final production branch.
+- Keep regular database backups.
+- Keep the backend URL unchanged after launching, because the frontend depends on VITE_API_BASE_URL.
+
+Important real-time note:
+- This project currently gets live updates by calling the Django API repeatedly from the frontend.
+- This means no separate WebSocket server is required for the current version.
+- If you later add Django Channels, WebSockets, or Server-Sent Events, deploy the backend with ASGI instead of only WSGI.
+- For the current version, the main requirement is that the API server and PostgreSQL database stay reachable.
+
+Public endpoints should stay available for residents, such as:
+- Public landing page data
+- Public weather or announcement data
+- Public document request form
+- Public incident/report form
+- Public document tracking
+- Public clinic booked slots
+- Public finance transparency data
+- Public lost and found data
+
+Private staff/admin endpoints must still require login.
+
+
+3. IMPORTANT PRODUCTION SETTINGS
+--------------------------------
+
+Before uploading the project online, update the backend settings for production.
+
+In backend/backend/settings.py:
+
+1. DEBUG must be False in production.
+   Your project already reads DEBUG from the backend .env file:
+   DEBUG=False
+
+2. SECRET_KEY must come from the backend .env file.
+   Do not use the development secret key for production.
+
+3. ALLOWED_HOSTS should contain your real backend domain.
+   Example:
+   ALLOWED_HOSTS=your-backend-domain.com,www.your-backend-domain.com
+
+4. CORS should allow only your frontend domain.
+   Do not keep CORS_ALLOW_ALL_ORIGINS=True in production.
+   Remove it or set it to False before using CORS_ALLOWED_ORIGINS.
+   Example:
+   CORS_ALLOW_ALL_ORIGINS=False
+   CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com
+   CSRF_TRUSTED_ORIGINS=https://your-frontend-domain.com
+
+5. Because the site is public, do not expose private staff APIs without authentication.
+   Public pages and public forms can use AllowAny, but staff dashboards should require login.
+
+6. Use PostgreSQL for the production database.
+   The current settings.py already expects these database environment variables:
+   DB_NAME
+   DB_USER
+   DB_PASSWORD
+   DB_HOST
+   DB_PORT
+
+7. Use HTTPS URLs in production.
+   VITE_API_BASE_URL should start with https://, not http://.
+
+
+4. DEPLOY THE BACKEND
+---------------------
+
+You can deploy the Django backend to Render, Railway, Fly.io, DigitalOcean, or another Python-capable host.
+
+Recommended backend settings for the hosting service:
+
+Root directory:
+backend
+
+Build command:
+pip install -r requirements.txt && python manage.py collectstatic --noinput
+
+Simple start command:
+python manage.py migrate && python manage.py runserver 0.0.0.0:$PORT
+
+For public production use, gunicorn is recommended instead of runserver.
+Add gunicorn to backend/requirements.txt, then use:
+
+gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
+
+If your host does not support running migrations inside the start command, run this manually from the host dashboard or shell:
+python manage.py migrate
+
+Add these environment variables in the hosting dashboard:
+SECRET_KEY=your-production-secret-key
+DEBUG=False
+ALLOWED_HOSTS=your-backend-domain.com
+CORS_ALLOW_ALL_ORIGINS=False
+CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com
+CSRF_TRUSTED_ORIGINS=https://your-frontend-domain.com
+DB_NAME=your-production-db-name
+DB_USER=your-production-db-user
+DB_PASSWORD=your-production-db-password
+DB_HOST=your-production-db-host
+DB_PORT=5432
+
+Recommended public-site hosting settings:
+- Enable auto-restart if the backend crashes.
+- Use a paid or always-on plan if real-time public updates are important.
+- Turn on deployment logs and error logs.
+- Turn on database backups.
+- Do not store uploaded files only on temporary server storage if the host deletes files on redeploy.
+
+After deployment, test these URLs:
+https://your-backend-domain.com/admin/
+https://your-backend-domain.com/api/
+https://your-backend-domain.com/auth/login/
+
+
+5. DEPLOY THE FRONTEND
+----------------------
+
+You can deploy the frontend to Vercel, Netlify, GitHub Pages, Cloudflare Pages, or another static hosting service.
+
+Recommended frontend settings:
+
+Root directory:
+frontend
+
+Install command:
+pnpm install
+
+Build command:
+pnpm run build
+
+Output directory:
+dist
+
+Add this environment variable in the frontend hosting dashboard:
+VITE_API_BASE_URL=https://your-backend-domain.com
+
+Important:
+- Do not include a trailing slash at the end of VITE_API_BASE_URL.
+- Correct: https://your-backend-domain.com
+- Incorrect: https://your-backend-domain.com/
+- Use the production backend URL, not localhost.
+- Redeploy the frontend after changing VITE_API_BASE_URL.
+
+For single-page routing:
+- If pages show 404 after refreshing the browser, configure your frontend host to rewrite all routes to index.html.
+- Vercel usually handles this with a rewrite rule.
+- Netlify can use a _redirects file with:
+  /* /index.html 200
+
+
+6. CONNECT FRONTEND AND BACKEND
+-------------------------------
+
+After both apps are deployed:
+
+1. Copy the backend URL from your backend hosting provider.
+   Example:
+   https://barangay-portal-api.onrender.com
+
+2. Add it to the frontend environment variables:
+   VITE_API_BASE_URL=https://barangay-portal-api.onrender.com
+
+3. Copy the frontend URL from your frontend hosting provider.
+   Example:
+   https://barangay-portal.vercel.app
+
+4. Add the frontend URL to the backend CORS settings:
+   CORS_ALLOW_ALL_ORIGINS=False
+   CORS_ALLOWED_ORIGINS=https://barangay-portal.vercel.app
+   CSRF_TRUSTED_ORIGINS=https://barangay-portal.vercel.app
+
+5. Add the backend domain to ALLOWED_HOSTS:
+   ALLOWED_HOSTS=barangay-portal-api.onrender.com
+
+6. Redeploy both apps after changing environment variables or settings.
+
+
+7. DATABASE SETUP
+-----------------
+
+If the production database is empty, run:
+python manage.py migrate
+
+Then create a staff/admin account:
+python manage.py createsuperuser
+
+If your project needs sample data, add it through:
+- Django admin: https://your-backend-domain.com/admin/
+- Your website dashboard, if the account has the correct role
+
+For public use:
+- Back up the database before major updates.
+- Do not reset or recreate the production database after residents have submitted real requests.
+- Use strong passwords for database and admin accounts.
+- Keep staff accounts limited to the correct roles.
+
+
+8. FINAL TESTING CHECKLIST
+--------------------------
+
+After deployment, test these features:
+
+- Website loads without a blank screen
+- Public landing page loads without login
+- Login works
+- Staff role redirects to the correct dashboard
+- Document requests load
+- Incidents/reports load
+- Clinic patient queue loads
+- Treasurer projects and finance page load
+- Calendar events load
+- Public forms submit successfully
+- Public document tracking works
+- Public clinic booked slots update correctly
+- Public finance transparency data loads
+- Public lost and found data refreshes after new reports are added
+- Live counters or public statistics update after waiting for the refresh interval
+- Logout works
+- Browser console has no API or CORS errors
+
+If you see a CORS error:
+- Make sure the frontend URL is listed in CORS_ALLOWED_ORIGINS.
+- Make sure the backend was redeployed after changing settings.
+
+If login does not work:
+- Make sure VITE_API_BASE_URL points to the deployed backend.
+- Make sure the backend /auth/login/ endpoint is reachable.
+- Make sure the backend database has the correct user account.
+
+If API requests fail:
+- Check that DEBUG=False does not hide missing environment variables.
+- Check the hosting logs for Django errors.
+- Confirm DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, and DB_PORT are correct.
+
+If real-time public updates are delayed:
+- Confirm the backend service is not sleeping.
+- Confirm the database is reachable from the backend.
+- Check the browser Network tab to see whether repeated API requests are succeeding.
+- Check whether the frontend is using the production VITE_API_BASE_URL.
+- If using a free backend host, move to an always-on plan for better public reliability.
+
+
+9. PUBLIC RELEASE CHECKLIST
+---------------------------
+
+Before sharing the website link with residents:
+
+- DEBUG=False on the backend
+- SECRET_KEY is private and not shared
+- ALLOWED_HOSTS contains only the backend domain
+- CORS_ALLOW_ALL_ORIGINS=False in production
+- CORS_ALLOWED_ORIGINS contains only the frontend domain
+- CSRF_TRUSTED_ORIGINS contains the frontend domain
+- VITE_API_BASE_URL points to the deployed backend
+- Database migrations are complete
+- A superuser or admin staff account exists
+- Public forms were tested with real submissions
+- Staff dashboards were tested with real accounts
+- Browser console has no errors
+- Backend logs have no repeated errors
+- Database backup is enabled
+- HTTPS works on frontend and backend
+- Backend is always-on or has acceptable wake-up time
+
+
+10. COMMON COMMANDS
+------------------
+
+Backend local commands:
+cd backend
+venv\Scripts\activate
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+
+Frontend local commands:
+cd frontend
+pnpm install
+pnpm run dev
+pnpm run build
+pnpm run preview
+
+
+11. SIMPLE DEPLOYMENT SUMMARY
+----------------------------
+
+1. Deploy PostgreSQL database.
+2. Deploy Django backend from the backend folder on an always-on service if possible.
+3. Add backend environment variables.
+4. Run Django migrations.
+5. Create a superuser.
+6. Deploy Vite frontend from the frontend folder.
+7. Set VITE_API_BASE_URL to the backend URL.
+8. Add frontend URL to backend CORS settings.
+9. Test login, dashboards, public pages, forms, and live refresh behavior.

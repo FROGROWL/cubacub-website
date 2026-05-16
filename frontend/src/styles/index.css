@@ -1,0 +1,15 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+/* Selection */
+::selection { background: rgba(0, 128, 128, 0.15); color: #1B263B; }
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }

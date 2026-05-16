@@ -1,0 +1,143 @@
+# Barangay Cubacub — Civic-Flow
+
+> **⚠️ PROPRIETARY SOFTWARE — All Rights Reserved**
+> Copyright (c) 2026 Martin James Anog. Unauthorized use, reproduction, or distribution is strictly prohibited. See [LICENSE](./LICENSE) for full terms.
+
+---
+
+## Overview
+
+**Civic-Flow** is a comprehensive civic engagement platform for Barangay Cubacub, Mandaue City, Cebu, Philippines. It provides a public-facing landing page, multi-step document request system, and six role-specific staff dashboards for barangay operations.
+
+**Author:** Martin James Anog
+**GitHub:** [@Develofer1](https://github.com/Develofer1)
+**Contact:** martin.anog187@gmail.com
+
+---
+
+## Features
+
+| Feature | Description |
+|---|---|
+| 🏠 Public Landing Page | Community news, services, announcements |
+| 📄 Document Request | 9 legal barangay documents, multi-step form |
+| 📊 Finance Transparency | Public project tracker with budgets & milestones |
+| 🏥 Clinic Handler | Patient queue, vaccination calendar |
+| 📋 Document Handler | Request management, case history, verification |
+| 🚨 Report Handler | Incident reports, case management, lost & found |
+| 💰 Treasurer Dashboard | Project budget tracking, financial overview |
+| 👑 Super Admin | Staff accounts, audit log, system settings |
+
+---
+
+## Tech Stack
+
+- **Frontend:** React 18, TypeScript, Tailwind CSS v4, Vite
+- **UI Components:** Radix UI, shadcn/ui, MUI
+- **Routing:** React Router v7
+- **Backend (planned):** Django REST Framework
+- **Database (planned):** PostgreSQL
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org) v18 or higher
+- [pnpm](https://pnpm.io) v8 or higher
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Develofer1/barangay-cubacub-civicflow.git
+cd barangay-cubacub-civicflow
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Start the development server
+pnpm run dev
+```
+
+Open your browser at **http://localhost:5173**
+
+### Demo Login Credentials
+
+| Role | Username | Password |
+|---|---|---|
+| Document Handler | `user1` | `pass1` |
+| Report Handler | `user2` | `pass2` |
+| Clinic Handler | `user3` | `pass3` |
+| Treasurer | `treasurer` | `treas1` |
+| Super Admin | `admin` | `admin` |
+
+> ⚠️ These are demo credentials only. Change them before deploying.
+
+---
+
+## Available Scripts
+
+```bash
+pnpm run dev        # Start development server (http://localhost:5173)
+pnpm run build      # Build for production (outputs to dist/)
+pnpm run preview    # Preview the production build locally
+```
+
+---
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── App.tsx                  # Root component
+│   ├── routes.ts                # React Router configuration
+│   ├── api/
+│   │   └── services.ts          # ALL data functions (single source of truth)
+│   └── components/
+│       ├── LandingPage.tsx
+│       ├── LoginPage.tsx
+│       ├── Dashboard.tsx
+│       ├── FinancePage.tsx
+│       └── dashboard/
+│           ├── DocumentHandler.tsx
+│           ├── ReportHandler.tsx
+│           ├── ClinicHandler.tsx
+│           ├── TreasurerHandler.tsx
+│           └── SuperAdmin.tsx
+├── styles/
+│   ├── theme.css               # Brand colors (Navy, Teal, Smoke White)
+│   ├── fonts.css               # Montserrat + Inter
+│   └── index.css               # Global styles
+├── SQL_SCHEMA.sql              # Full database schema for Django
+├── DJANGO_INTEGRATION_GUIDE.md # Complete Django setup guide
+└── BACKEND_QUICKSTART.md       # Quick-start for backend developers
+```
+
+---
+
+## Django Backend Integration
+
+All data currently uses `localStorage` as temporary storage.
+To connect a real Django backend, edit only **one file**: `src/app/api/services.ts`
+
+See [`src/BACKEND_QUICKSTART.md`](./src/BACKEND_QUICKSTART.md) for step-by-step instructions.
+
+---
+
+## Security
+
+To report a security vulnerability, see [`SECURITY.md`](./SECURITY.md).
+**Do not** open a public GitHub issue for security-related matters.
+
+---
+
+## License
+
+Copyright (c) 2026 **Martin James Anog**. All Rights Reserved.
+
+This software is proprietary. No permission is granted to copy, modify, distribute, or use this software outside of its intended purpose for Barangay Cubacub.
+
+See the full [LICENSE](./LICENSE) file for details.
