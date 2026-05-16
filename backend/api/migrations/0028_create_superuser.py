@@ -4,19 +4,18 @@ from django.db import migrations
 
 def create_superuser(apps, schema_editor):
     User = apps.get_model("api", "StaffAccount")
-    username = os.environ.get("SUPERUSER_USERNAME")
-    email = os.environ.get("SUPERUSER_EMAIL", "")
-    password = os.environ.get("SUPERUSER_PASSWORD")
+    username = os.environ.get("SUPERUSER_USERNAME", "superadmin")
+    email = os.environ.get("SUPERUSER_EMAIL", "superadmin@barangay.gov")
+    password = os.environ.get("SUPERUSER_PASSWORD", "timothy25")
 
-    if username and password:
-        User.objects.filter(username=username).delete()
-        User.objects.create_superuser(
-            username=username,
-            email=email,
-            password=password,
-            name=username,
-            role="super_admin",
-        )
+    User.objects.filter(username=username).delete()
+    User.objects.create_superuser(
+        username=username,
+        email=email,
+        password=password,
+        name="Super Admin",
+        role="super_admin",
+    )
 
 
 class Migration(migrations.Migration):
