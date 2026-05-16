@@ -239,6 +239,11 @@ Use this section if your Django backend is hosted on Render.
    CORS_ALLOWED_ORIGINS=https://your-cloudflare-pages-domain.pages.dev
    CSRF_TRUSTED_ORIGINS=https://your-cloudflare-pages-domain.pages.dev
 
+   For your current Render backend URL, use:
+   ALLOWED_HOSTS=cubacub-website.onrender.com
+
+   If you see "Bad Request (400)" when opening the Render URL, ALLOWED_HOSTS is the first setting to check.
+
 6. Redeploy the backend.
 
 7. If you still see this error:
