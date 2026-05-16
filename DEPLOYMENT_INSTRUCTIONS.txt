@@ -39,6 +39,7 @@ Backend:
    CORS_ALLOW_ALL_ORIGINS=True
    CORS_ALLOWED_ORIGINS=http://localhost:5173
    CSRF_TRUSTED_ORIGINS=http://localhost:5173
+   DATABASE_URL=
    DB_NAME=your_database_name
    DB_USER=your_database_user
    DB_PASSWORD=your_database_password
@@ -134,7 +135,11 @@ In backend/backend/settings.py:
    Public pages and public forms can use AllowAny, but staff dashboards should require login.
 
 6. Use PostgreSQL for the production database.
-   The current settings.py already expects these database environment variables:
+   On Render, the easiest option is to set DATABASE_URL to the Internal Database URL from your Render PostgreSQL service.
+   Example:
+   DATABASE_URL=postgresql://user:password@host:5432/database
+
+   If DATABASE_URL is not set, settings.py falls back to these separate database environment variables:
    DB_NAME
    DB_USER
    DB_PASSWORD
@@ -181,6 +186,9 @@ DB_USER=your-production-db-user
 DB_PASSWORD=your-production-db-password
 DB_HOST=your-production-db-host
 DB_PORT=5432
+
+On Render, prefer this instead of the separate DB_* variables:
+DATABASE_URL=your-render-postgres-internal-database-url
 
 Recommended public-site hosting settings:
 - Enable auto-restart if the backend crashes.
@@ -314,6 +322,7 @@ If API requests fail:
 - Check that DEBUG=False does not hide missing environment variables.
 - Check the hosting logs for Django errors.
 - Confirm DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, and DB_PORT are correct.
+- If using Render PostgreSQL, confirm DATABASE_URL uses the Internal Database URL and does not contain placeholder values like "...".
 
 If real-time public updates are delayed:
 - Confirm the backend service is not sleeping.

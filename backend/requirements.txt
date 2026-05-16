@@ -1,5 +1,6 @@
 asgiref
 Django
+dj-database-url
 django-cors-headers
 django-environ
 djangorestframework
