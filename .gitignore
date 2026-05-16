@@ -35,6 +35,3 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
-
-# Preserved nested repository metadata
-frontend/.git-backup/
