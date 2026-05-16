@@ -3,6 +3,7 @@ from datetime import timedelta
 import dj_database_url
 import environ
 import os
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -89,6 +90,10 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 database_url = env("DATABASE_URL", default="")
 
 if database_url:
+    if "..." in database_url:
+        raise ImproperlyConfigured(
+            "DATABASE_URL still contains a placeholder value. In Render, copy the Internal Database URL from your PostgreSQL service."
+        )
     DATABASES = {
         "default": dj_database_url.parse(
             database_url,
@@ -97,14 +102,22 @@ if database_url:
         )
     }
 else:
+    db_settings = {
+        "NAME": env("DB_NAME"),
+        "USER": env("DB_USER"),
+        "PASSWORD": env("DB_PASSWORD"),
+        "HOST": env("DB_HOST"),
+        "PORT": env("DB_PORT"),
+    }
+    placeholders = [key for key, value in db_settings.items() if "..." in str(value)]
+    if placeholders:
+        raise ImproperlyConfigured(
+            f"Database environment variables contain placeholder values: {', '.join(placeholders)}. Use Render DATABASE_URL or real DB_* values."
+        )
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": env("DB_NAME"),
-            "USER": env("DB_USER"),
-            "PASSWORD": env("DB_PASSWORD"),
-            "HOST": env("DB_HOST"),
-            "PORT": env("DB_PORT"),
+            **db_settings,
         }
     }
 
