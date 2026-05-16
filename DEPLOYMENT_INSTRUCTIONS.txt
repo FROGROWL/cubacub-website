@@ -272,9 +272,12 @@ Use this section if your Django backend is hosted on Render.
 6. DEPLOY THE FRONTEND
 ----------------------
 
-You can deploy the frontend to Vercel, Netlify, GitHub Pages, Cloudflare Pages, or another static hosting service.
+You can deploy the frontend to Cloudflare Pages, Vercel, Netlify, GitHub Pages, or another static hosting service.
 
 Recommended frontend settings:
+
+Framework preset:
+Vite
 
 Root directory:
 frontend
@@ -291,6 +294,51 @@ dist
 Add this environment variable in the frontend hosting dashboard:
 VITE_API_BASE_URL=https://your-backend-domain.com
 
+Cloudflare Pages settings:
+
+Project source:
+Connect your GitHub repository.
+
+Production branch:
+main
+
+Root directory:
+frontend
+
+Build command:
+pnpm run build
+
+Build output directory:
+dist
+
+Deploy command:
+Cloudflare Pages usually does not need a separate deploy command. Leave it blank if Cloudflare asks for one.
+
+Environment variable:
+VITE_API_BASE_URL=https://your-render-backend-url.onrender.com
+
+If Cloudflare shows this error:
+ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND
+No package.json was found in "/opt/buildhome/repo"
+
+It means Cloudflare is building from the repository root instead of the frontend folder.
+Fix it using one of these options:
+
+Option A, recommended:
+- Set Root directory to:
+  frontend
+- Set Build command to:
+  pnpm run build
+- Set Build output directory to:
+  dist
+
+Option B, if Cloudflare does not use the root directory setting:
+- Leave Root directory blank.
+- Set Build command to:
+  cd frontend && pnpm install && pnpm run build
+- Set Build output directory to:
+  frontend/dist
+
 Important:
 - Do not include a trailing slash at the end of VITE_API_BASE_URL.
 - Correct: https://your-backend-domain.com
@@ -300,6 +348,7 @@ Important:
 
 For single-page routing:
 - If pages show 404 after refreshing the browser, configure your frontend host to rewrite all routes to index.html.
+- Cloudflare Pages can use the frontend/public/_redirects file already included in this project.
 - Vercel usually handles this with a rewrite rule.
 - Netlify can use a _redirects file with:
   /* /index.html 200
