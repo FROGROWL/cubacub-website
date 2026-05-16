@@ -158,21 +158,17 @@ backend
 Build command:
 pip install -r requirements.txt && python manage.py collectstatic --noinput
 
-Simple start command:
-python manage.py migrate && python manage.py runserver 0.0.0.0:$PORT
-
-or
-
-python manage.py migrate && gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
-
-
-For public production use, gunicorn is recommended instead of runserver.
-Add gunicorn to backend/requirements.txt, then use:
+Start command:
 
 gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
 
-If your host does not support running migrations inside the start command, run this manually from the host dashboard or shell:
+Migration command:
 python manage.py migrate
+
+For public production use, gunicorn is recommended instead of runserver.
+Do not put migrations before gunicorn in Render's Start Command if Render shows "No open ports detected".
+The Start Command should open the web server port as soon as possible.
+Run migrations separately using Render's Shell, a one-off job, or Render's Pre-Deploy Command if your Render settings provide it.
 
 Add these environment variables in the hosting dashboard:
 SECRET_KEY=your-production-secret-key
@@ -260,7 +256,12 @@ Use this section if your Django backend is hosted on Render.
    pip install -r requirements.txt && python manage.py collectstatic --noinput
 
    Start command:
-   python manage.py migrate && gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
+   gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
+
+   Migration command:
+   python manage.py migrate
+
+   If Render shows "No open ports detected", it usually means the Start Command is doing work before starting Gunicorn, or the command is crashing before Gunicorn starts. Keep the Start Command as Gunicorn only.
 
 
 6. DEPLOY THE FRONTEND
@@ -332,7 +333,15 @@ After both apps are deployed:
 If the production database is empty, run:
 python manage.py migrate
 
+On Render, run this from the backend service shell:
+cd backend
+python manage.py migrate
+
 Then create a staff/admin account:
+python manage.py createsuperuser
+
+On Render, run this from the backend service shell:
+cd backend
 python manage.py createsuperuser
 
 If your project needs sample data, add it through:
