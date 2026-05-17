@@ -82,11 +82,27 @@ const roleConfig: Record<
   },
 };
 
-const auditDotColors: Record<string, string> = {
-  success: "bg-emerald-400",
-  error: "bg-rose-400",
-  warning: "bg-amber-400",
-  info: "bg-blue-400",
+type AuditActionCategory =
+  | "created"
+  | "updated"
+  | "deleted"
+  | "approved"
+  | "rejected"
+  | "status"
+  | "login"
+  | "system"
+  | "other";
+
+const auditActionConfig: Record<AuditActionCategory, { label: string; dot: string; badge: string }> = {
+  created: { label: "Created", dot: "bg-emerald-400", badge: "bg-emerald-50 text-emerald-600" },
+  updated: { label: "Updated", dot: "bg-blue-400", badge: "bg-blue-50 text-blue-600" },
+  deleted: { label: "Deleted", dot: "bg-rose-400", badge: "bg-rose-50 text-rose-600" },
+  approved: { label: "Approved", dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" },
+  rejected: { label: "Rejected", dot: "bg-rose-500", badge: "bg-rose-50 text-rose-700" },
+  status: { label: "Status Change", dot: "bg-amber-400", badge: "bg-amber-50 text-amber-600" },
+  login: { label: "Login", dot: "bg-violet-400", badge: "bg-violet-50 text-violet-600" },
+  system: { label: "System", dot: "bg-gray-400", badge: "bg-gray-100 text-gray-600" },
+  other: { label: "Other", dot: "bg-slate-400", badge: "bg-slate-100 text-slate-600" },
 };
 
 const normalizePhoneInput = (value: string) => value.replace(/\D/g, "").slice(0, 11);
@@ -126,8 +142,8 @@ export default function SuperAdmin() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [auditSearch, setAuditSearch] = useState("");
   const [auditRoleFilter, setAuditRoleFilter] = useState("all");
-  const [auditTypeFilter, setAuditTypeFilter] = useState("all");
-  const [auditSortBy, setAuditSortBy] = useState<"time" | "user" | "type">("time");
+  const [auditActionFilter, setAuditActionFilter] = useState<"all" | AuditActionCategory>("all");
+  const [auditSortBy, setAuditSortBy] = useState<"time" | "user" | "action">("time");
   const [auditSortDirection, setAuditSortDirection] = useState<"asc" | "desc">("desc");
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
@@ -213,19 +229,46 @@ export default function SuperAdmin() {
     return roleMatch?.[1] || "Unknown";
   };
 
+  const getAuditActionCategory = (entry: AuditLogEntry): AuditActionCategory => {
+    const action = entry.action.toLowerCase();
+    if (entry.user === "System") return "system";
+    if (/\b(deleted|removed)\b/.test(action)) return "deleted";
+    if (/\brejected\b/.test(action)) return "rejected";
+    if (/\bapproved\b/.test(action)) return "approved";
+    if (/\b(created|added|submitted|registered)\b/.test(action)) return "created";
+    if (/\b(updated|edited|changed|marked|saved)\b/.test(action)) return "updated";
+    if (/\b(status|moved|set)\b/.test(action)) return "status";
+    if (/\b(login|logged in|signed in)\b/.test(action)) return "login";
+    return "other";
+  };
+
+  const getAuditActionSummary = (entry: AuditLogEntry) => entry.action.split(";")[0].trim();
+  const getAuditActionDetails = (entry: AuditLogEntry) =>
+    entry.action.split(";").slice(1).map(detail => detail.trim()).filter(Boolean);
+
   const filteredAudit = auditLog.filter((a) => {
     const auditRole = getAuditRoleLabel(a);
     const roleLabel = roleConfig[auditRoleFilter]?.label;
+    const actionCategory = getAuditActionCategory(a);
     const matchRole = auditRoleFilter === "all" || auditRole === roleLabel;
-    const matchType = auditTypeFilter === "all" || a.type === auditTypeFilter;
+    const matchAction = auditActionFilter === "all" || actionCategory === auditActionFilter;
     const matchSearch =
       a.user.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      a.action.toLowerCase().includes(auditSearch.toLowerCase());
-    return matchRole && matchType && matchSearch;
+      a.action.toLowerCase().includes(auditSearch.toLowerCase()) ||
+      auditActionConfig[actionCategory].label.toLowerCase().includes(auditSearch.toLowerCase());
+    return matchRole && matchAction && matchSearch;
   });
   const sortedAudit = [...filteredAudit].sort((left, right) => {
-    const leftValue = auditSortBy === "time" ? new Date(left.time || 0).getTime() : String(left[auditSortBy] || "");
-    const rightValue = auditSortBy === "time" ? new Date(right.time || 0).getTime() : String(right[auditSortBy] || "");
+    const leftValue = auditSortBy === "time"
+      ? new Date(left.time || 0).getTime()
+      : auditSortBy === "action"
+        ? auditActionConfig[getAuditActionCategory(left)].label
+        : left.user;
+    const rightValue = auditSortBy === "time"
+      ? new Date(right.time || 0).getTime()
+      : auditSortBy === "action"
+        ? auditActionConfig[getAuditActionCategory(right)].label
+        : right.user;
     const result = typeof leftValue === "number" && typeof rightValue === "number"
       ? leftValue - rightValue
       : String(leftValue).localeCompare(String(rightValue), undefined, { sensitivity: "base" });
@@ -1126,15 +1169,19 @@ export default function SuperAdmin() {
               <option value="super_admin">Super Admin</option>
             </select>
             <select
-              value={auditTypeFilter}
-              onChange={(e) => setAuditTypeFilter(e.target.value)}
+              value={auditActionFilter}
+              onChange={(e) => setAuditActionFilter(e.target.value as "all" | AuditActionCategory)}
               className="text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 outline-none"
             >
-              <option value="all">All Types</option>
-              <option value="success">Success</option>
-              <option value="info">Info</option>
-              <option value="warning">Warning</option>
-              <option value="error">Error</option>
+              <option value="all">All Actions</option>
+              <option value="created">Created</option>
+              <option value="updated">Updated</option>
+              <option value="deleted">Deleted</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="status">Status Change</option>
+              <option value="login">Login</option>
+              <option value="other">Other</option>
             </select>
             <select
               value={auditSortBy}
@@ -1143,7 +1190,7 @@ export default function SuperAdmin() {
             >
               <option value="time">Time</option>
               <option value="user">User</option>
-              <option value="type">Type</option>
+              <option value="action">Action</option>
             </select>
             <button
               onClick={() => setAuditSortDirection(prev => prev === "asc" ? "desc" : "asc")}
@@ -1158,7 +1205,7 @@ export default function SuperAdmin() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
             <input
-              placeholder="Search by user or action..."
+              placeholder="Search by user, action, or details..."
               className="w-full pl-9 pr-3 py-2 bg-gray-50 rounded-xl text-xs outline-none"
               value={auditSearch}
               onChange={(e) => setAuditSearch(e.target.value)}
@@ -1166,36 +1213,53 @@ export default function SuperAdmin() {
           </div>
         </div>
         <div className="space-y-0 max-h-[28rem] overflow-y-auto pr-2">
-          {sortedAudit.map((a, i) => (
-            <div key={i} className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-3 h-3 rounded-full ${auditDotColors[a.type] || "bg-gray-300"} ring-4 ring-white shrink-0 mt-1`}
-                />
-                {i <
-                  sortedAudit.length -
-                    1 && (
-                  <div className="w-px flex-1 bg-gray-100 min-h-[32px]" />
-                )}
-              </div>
-              <div className="pb-5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-[#1B263B]">
-                    {a.user}
-                  </span>
-                  <span className="text-xs text-gray-300">
-                    {a.time}
-                  </span>
-                  <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded-full ${a.type === "success" ? "bg-emerald-50 text-emerald-600" : a.type === "warning" ? "bg-amber-50 text-amber-600" : a.type === "error" ? "bg-rose-50 text-rose-600" : "bg-blue-50 text-blue-600"}`}>
-                    {a.type}
-                  </span>
+          {sortedAudit.map((a, i) => {
+            const category = getAuditActionCategory(a);
+            const config = auditActionConfig[category];
+            const details = getAuditActionDetails(a);
+            return (
+              <div key={i} className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-3 h-3 rounded-full ${config.dot} ring-4 ring-white shrink-0 mt-1`}
+                  />
+                  {i <
+                    sortedAudit.length -
+                      1 && (
+                    <div className="w-px flex-1 bg-gray-100 min-h-[44px]" />
+                  )}
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {a.action}
-                </p>
+                <div className="pb-5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-[#1B263B]">
+                      {a.user}
+                    </span>
+                    <span className="text-xs text-gray-300">
+                      {a.time}
+                    </span>
+                    <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded-full ${config.badge}`}>
+                      {config.label}
+                    </span>
+                    <span className="text-[10px] uppercase px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400">
+                      {getAuditRoleLabel(a)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {getAuditActionSummary(a)}
+                  </p>
+                  {details.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {details.map((detail) => (
+                        <span key={detail} className="text-[10px] bg-gray-50 text-gray-500 px-2 py-1 rounded-lg">
+                          {detail}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {sortedAudit.length === 0 && (
             <p className="text-xs text-gray-400 py-3">No audit entries match your search.</p>
           )}
