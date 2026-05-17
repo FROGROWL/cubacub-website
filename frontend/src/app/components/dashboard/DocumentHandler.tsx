@@ -204,21 +204,39 @@ export default function DocumentHandler() {
 
   const addEvent = () => {
     if (newEvent.date && newEvent.title) {
-      createCalendarEvent({ date: newEvent.date, title: newEvent.title, color: newEvent.color, source: "document_handler" }).then(() => {
+      const eventPayload = {
+        date: newEvent.date,
+        title: newEvent.title.trim(),
+        color: newEvent.color,
+        source: "document_handler",
+      };
+      createCalendarEvent(eventPayload).then((createdEvent) => {
         getCalendarEvents().then(setEvents);
-        logAudit(`Added document calendar event "${newEvent.title}" on ${newEvent.date}`, "info");
+        logAudit(
+          `Created document calendar event ${createdEvent.id}: "${eventPayload.title}" scheduled on ${eventPayload.date}; source: ${eventPayload.source}; color: ${eventPayload.color}`,
+          "info",
+        );
+        setNewEvent({ date: "", title: "", color: "bg-[#1B263B]" });
+        setShowAddEvent(false);
+        showToast("Event added to calendar!");
+      }).catch(() => {
+        showToast("Failed to add calendar event. Please try again.");
       });
-      setNewEvent({ date: "", title: "", color: "bg-[#1B263B]" });
-      setShowAddEvent(false);
-      showToast("Event added to calendar!");
     }
   };
 
   const handleRemoveEvent = (id: string) => {
     const target = events.find(e => e.id === id);
+    if (!window.confirm(`Delete calendar event${target ? ` "${target.title}"` : ""}? This cannot be undone.`)) return;
     deleteCalendarEvent(id).then(() => {
       getCalendarEvents().then(setEvents);
-      logAudit(`Removed document calendar event${target ? ` "${target.title}" on ${target.date}` : ` ${id}`}`, "warning");
+      logAudit(
+        `Deleted document calendar event ${id}: "${target?.title || "Unknown event"}" scheduled on ${target?.date || "unknown date"}; source: ${target?.source || "document_handler"}; color: ${target?.color || "unknown"}`,
+        "warning",
+      );
+      showToast("Calendar event deleted.");
+    }).catch(() => {
+      showToast("Failed to delete calendar event. Please refresh and try again.");
     });
   };
 
@@ -558,7 +576,7 @@ export default function DocumentHandler() {
           <button onClick={() => setMonth(m => Math.max(0, m - 1))} className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"><ChevronLeft className="w-4 h-4 text-gray-400" /></button>
           <h3 className="text-[#1B263B] flex items-center gap-2"><CalIcon className="w-5 h-5 text-[#008080]" /> {monthNames[month]} {year}</h3>
           <div className="flex gap-2">
-            <button onClick={() => setShowAddEvent(true)} className="px-3 py-1.5 rounded-xl bg-[#008080] text-white text-xs flex items-center gap-1 hover:shadow-md transition-all"><Plus className="w-3.5 h-3.5" /> Add Event</button>
+            <button type="button" onClick={() => setShowAddEvent(true)} className="px-3 py-1.5 rounded-xl bg-[#008080] text-white text-xs flex items-center gap-1 hover:shadow-md transition-all"><Plus className="w-3.5 h-3.5" /> Add Event</button>
             <button onClick={() => setMonth(m => Math.min(11, m + 1))} className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"><ChevronRight className="w-4 h-4 text-gray-400" /></button>
           </div>
         </div>
@@ -587,7 +605,7 @@ export default function DocumentHandler() {
                 <span className="text-gray-600">{e.title}</span>
                 <span className="text-[10px] text-gray-300">({e.source.replace("_", " ")})</span>
               </div>
-              <button onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors"><X className="w-3 h-3" /></button>
+              <button type="button" onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors" title="Delete calendar event" aria-label={`Delete ${e.title}`}><X className="w-3 h-3" /></button>
             </div>
           ))}
         </div>

@@ -161,33 +161,47 @@ export default function ClinicHandler() {
 
   const handleAddEvent = () => {
     if (newEvent.date && newEvent.title) {
-      createCalendarEvent({ date: newEvent.date, title: newEvent.title, color: newEvent.type === "closure" ? "bg-rose-500" : "bg-[#008080]", source: "clinic_handler", icon: newEvent.icon, type: newEvent.type }).then(() => {
+      const eventPayload = {
+        date: newEvent.date,
+        title: newEvent.title.trim(),
+        color: newEvent.type === "closure" ? "bg-rose-500" : "bg-[#008080]",
+        source: "clinic_handler",
+        icon: newEvent.icon,
+        type: newEvent.type,
+      };
+      createCalendarEvent(eventPayload).then((createdEvent) => {
         getCalendarEvents().then(setEvents);
         const user = getCurrentUser();
         createAuditLogEntry({
           time: new Date().toLocaleString("en-PH"),
           user: user?.name || "Clinic Handler",
-          action: `Added clinic ${newEvent.type} "${newEvent.title}" on ${newEvent.date}`,
-          type: newEvent.type === "closure" ? "warning" : "info",
+          action: `Created clinic calendar ${eventPayload.type} ${createdEvent.id}: "${eventPayload.title}" scheduled on ${eventPayload.date}; source: ${eventPayload.source}; icon: ${eventPayload.icon}; color: ${eventPayload.color}`,
+          type: eventPayload.type === "closure" ? "warning" : "info",
         });
+        setNewEvent({ date: "", title: "", icon: "\u{1F3E5}", type: "event" });
+        setShowAddEvent(false);
+        showToast("Event added to health calendar!");
+      }).catch(() => {
+        showToast("Failed to add health calendar event.", "error");
       });
-      setNewEvent({ date: "", title: "", icon: "\u{1F3E5}", type: "event" });
-      setShowAddEvent(false);
-      showToast("Event added to health calendar!");
     }
   };
 
   const handleRemoveEvent = (id: string) => {
     const target = events.find(e => e.id === id);
+    if (!window.confirm(`Delete clinic calendar event${target ? ` "${target.title}"` : ""}? This cannot be undone.`)) return;
     deleteCalendarEvent(id).then(() => {
       getCalendarEvents().then(setEvents);
       const user = getCurrentUser();
       createAuditLogEntry({
         time: new Date().toLocaleString("en-PH"),
         user: user?.name || "Clinic Handler",
-        action: `Removed clinic calendar event${target ? ` "${target.title}" on ${target.date}` : ` ${id}`}`,
+        action: `Deleted clinic calendar event ${id}: "${target?.title || "Unknown event"}" scheduled on ${target?.date || "unknown date"}; type: ${target?.type || "event"}; source: ${target?.source || "clinic_handler"}; icon: ${target?.icon || "none"}`,
         type: "warning",
       });
+      showToast("Health calendar event deleted.");
+    }).catch(() => {
+      showToast("Failed to delete health calendar event.", "error");
     });
   };
 
@@ -412,7 +426,7 @@ export default function ClinicHandler() {
           <button onClick={() => setMonth(m => Math.max(0, m - 1))} className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"><ChevronLeft className="w-4 h-4 text-gray-400" /></button>
           <h3 className="text-[#008080] flex items-center gap-2"><Syringe className="w-5 h-5" /> Health Calendar - {monthNames[month]} {year}</h3>
           <div className="flex gap-2">
-            <button onClick={() => setShowAddEvent(true)} className="px-3 py-1.5 rounded-xl bg-[#008080] text-white text-xs flex items-center gap-1 hover:shadow-md transition-all"><Plus className="w-3.5 h-3.5" /> Add Event</button>
+            <button type="button" onClick={() => setShowAddEvent(true)} className="px-3 py-1.5 rounded-xl bg-[#008080] text-white text-xs flex items-center gap-1 hover:shadow-md transition-all"><Plus className="w-3.5 h-3.5" /> Add Event</button>
             <button onClick={() => setMonth(m => Math.min(11, m + 1))} className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"><ChevronRight className="w-4 h-4 text-gray-400" /></button>
           </div>
         </div>
@@ -442,7 +456,7 @@ export default function ClinicHandler() {
                   <p className="text-xs text-gray-400">{monthNames[month]} {new Date(e.date).getDate()}, {year}</p>
                 </div>
               </div>
-              <button onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors"><X className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors" title="Delete health calendar event" aria-label={`Delete ${e.title}`}><X className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>
