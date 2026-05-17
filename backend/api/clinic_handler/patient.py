@@ -11,6 +11,11 @@ class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all().order_by("-dateBooked", "-created_at", "-queueDate")
     serializer_class = PatientSerializer
 
+    def get_permissions(self):
+        if self.action == "create":
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
 
 CLINIC_SLOTS = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"]
 

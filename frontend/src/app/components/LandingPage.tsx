@@ -1440,7 +1440,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                     } catch (error) {
                       getBookedSlots(form.preferredDate).then(setTaken).catch(() => {});
                       const message = error instanceof Error ? error.message : "";
-                      showToast(message.includes("already booked") ? "That time slot was just booked. Please choose another slot." : "Failed to create appointment. Please try again.");
+                      showToast(message.includes("already booked") ? "That time slot was just booked. Please choose another slot." : message.includes("401") || message.includes("403") ? "Clinic booking is blocked by backend permissions. Please redeploy the backend." : "Failed to create appointment. Please try again.");
                       setIsBooking(false);
                       return;
                     }
