@@ -1667,11 +1667,12 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                      * DJANGO: This will POST to /api/incidents/public-report/ */
                     const refundReason = form.subcategory === "Other" ? (form.otherSubcategory || "Other") : form.subcategory;
                     if (!isRefund && isLostFoundCategory) {
+                      const lostFoundDraftId = reportDraftId.startsWith("LF-") ? reportDraftId : `LF-${Math.floor(100000 + Math.random() * 900000)}`;
                       createLostFoundItem({
                         item_type: form.category === "Lost Item" ? "lost" : "found",
                         reporter_name: anon ? "Anonymous" : form.reporterName,
                         reporter_phone: anon ? "" : form.reporterPhone,
-                        reporter_id: reportDraftId,
+                        reporter_id: lostFoundDraftId,
                         is_anonymous: anon,
                         item_name: form.itemName,
                         description: form.details,
@@ -1685,7 +1686,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                         reporter_relation: anon ? undefined : form.reporterRelation,
                         status: "pending",
                       }).then(result => {
-                        const trackingId = result.id || reportDraftId;
+                        const trackingId = result.id || lostFoundDraftId;
                         showToast("Lost & found report submitted successfully! Reference: " + trackingId);
                         window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
                       });
