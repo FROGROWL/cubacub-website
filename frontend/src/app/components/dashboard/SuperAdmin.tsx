@@ -26,7 +26,6 @@ import {
   createAuditLogEntry,
   moveAuditLogsToTrash,
   restoreAuditLogs,
-  permanentlyDeleteAuditLogs,
   updateStaffAccount,
   deleteStaffAccount as apiDeleteStaffAccount,
   getAuditLog,
@@ -331,25 +330,6 @@ export default function SuperAdmin() {
       showToast("Filtered audit entries restored.");
     }).catch(() => {
       showToast("Failed to restore audit entries.", "error");
-    });
-  };
-
-  const permanentlyDeleteFilteredAudit = () => {
-    if (selectedAuditIds.length === 0) {
-      showToast("No audit entries match the current filters.", "error");
-      return;
-    }
-    if (!window.confirm(`Permanently delete ${selectedAuditIds.length} filtered audit trail entries? This cannot be undone.`)) return;
-    permanentlyDeleteAuditLogs(selectedAuditIds).then(() => {
-      createAuditLogEntry({
-        time: new Date().toLocaleString("en-PH"),
-        user: adminAuditUser,
-        action: `Permanently deleted ${selectedAuditIds.length} filtered audit trail entries; source view: ${auditView}; role filter: ${auditRoleFilter}; action filter: ${auditActionFilter}`,
-        type: "error",
-      }).finally(refreshAuditTrail);
-      showToast("Filtered audit entries permanently deleted.");
-    }).catch(() => {
-      showToast("Failed to permanently delete audit entries.", "error");
     });
   };
 
@@ -1285,7 +1265,7 @@ export default function SuperAdmin() {
           </div>
         </div>
         <div className="mb-4 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-xs text-violet-700">
-          Audit trail entries are automatically permanently deleted after 1 month. Items moved to the Trash Bin remain viewable until they expire, but they are not included in the active action count.
+          Audit trail entries are automatically permanently deleted after 1 month from their original audit date. Moving an entry to the Trash Bin does not extend its deletion date, and trashed entries are not included in the active action count.
         </div>
         <div className="mb-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2">
           <div className="relative w-full sm:w-72">
@@ -1317,14 +1297,6 @@ export default function SuperAdmin() {
                 Restore Filtered
               </button>
             )}
-            <button
-              type="button"
-              onClick={permanentlyDeleteFilteredAudit}
-              disabled={selectedAuditIds.length === 0}
-              className="text-xs px-3 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 disabled:opacity-40"
-            >
-              Permanently Delete Filtered
-            </button>
           </div>
         </div>
         <div className="space-y-0 max-h-[28rem] overflow-y-auto pr-2">

@@ -21,7 +21,7 @@ def parse_ids(request):
     return [item for item in ids if item is not None]
 
 
-@api_view(["GET", "POST", "PATCH", "DELETE"])
+@api_view(["GET", "POST", "PATCH"])
 @permission_classes([IsAuthenticated])
 def audit_log_summary(request):
     cleanup_expired_audit_logs()
@@ -53,10 +53,3 @@ def audit_log_summary(request):
         }
         updated = AuditLog.objects.filter(id__in=ids).update(**updates)
         return Response({"updated": updated})
-
-    if request.method == "DELETE":
-        ids = parse_ids(request)
-        if not ids:
-            return Response({"detail": "No audit log ids were provided."}, status=status.HTTP_400_BAD_REQUEST)
-        deleted_count, _ = AuditLog.objects.filter(id__in=ids).delete()
-        return Response({"deleted": deleted_count})

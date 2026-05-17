@@ -924,13 +924,6 @@ export async function restoreAuditLogs(ids: number[]): Promise<void> {
   });
 }
 
-export async function permanentlyDeleteAuditLogs(ids: number[]): Promise<void> {
-  await apiFetch("/api/audit-log/", {
-    method: "DELETE",
-    body: JSON.stringify({ ids }),
-  });
-}
-
 
 // ---------------------------------------------------------------------------
 // ANALYTICS (Super Admin)
