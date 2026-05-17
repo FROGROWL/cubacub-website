@@ -9,6 +9,13 @@ import {
   type DocRequest, type DocCaseRecord, type CalendarEvent
 } from "../../api/services";
 
+const toInputDate = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function DocumentHandler() {
   const [requests, setRequests] = useState<DocRequest[]>([]);
   const [search, setSearch] = useState("");
@@ -30,6 +37,7 @@ export default function DocumentHandler() {
   const [historySortDirection, setHistorySortDirection] = useState<"asc" | "desc">("desc");
   const [showHistory, setShowHistory] = useState(false);
   const [editingStatus, setEditingStatus] = useState<string | null>(null);
+  const todayDate = toInputDate();
 
   const normalizeFileUrl = (value: string, fallbackMime: string) => {
     if (!value) return "";
@@ -203,10 +211,15 @@ export default function DocumentHandler() {
   const startDay = new Date(year, month, 1).getDay();
 
   const addEvent = () => {
-    if (newEvent.date && newEvent.title) {
+    const title = newEvent.title.trim();
+    if (newEvent.date && title) {
+      if (newEvent.date < todayDate) {
+        showToast("Calendar events cannot be scheduled on a previous date.", "error");
+        return;
+      }
       const eventPayload = {
         date: newEvent.date,
-        title: newEvent.title.trim(),
+        title,
         color: newEvent.color,
         source: "document_handler",
       };
@@ -628,7 +641,7 @@ export default function DocumentHandler() {
                   <label className="text-xs text-gray-500 uppercase mb-1 block">Date of Schedule</label>
                   <div className="relative">
                     <CalIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <input type="date" className="w-full bg-[#F5F7FA] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/20" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} />
+                    <input type="date" min={todayDate} className="w-full bg-[#F5F7FA] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/20" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} />
                   </div>
                 </div>
                 <div>
@@ -643,7 +656,7 @@ export default function DocumentHandler() {
                     ))}
                   </div>
                 </div>
-                <button onClick={addEvent} disabled={!newEvent.date || !newEvent.title} className="w-full bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-2.5 rounded-xl text-sm disabled:opacity-40 hover:shadow-md transition-all">Add Event</button>
+                <button onClick={addEvent} disabled={!newEvent.date || !newEvent.title.trim() || newEvent.date < todayDate} className="w-full bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-2.5 rounded-xl text-sm disabled:opacity-40 hover:shadow-md transition-all">Add Event</button>
               </div>
             </motion.div>
           </div>

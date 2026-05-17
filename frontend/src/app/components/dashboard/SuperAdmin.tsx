@@ -34,6 +34,9 @@ import {
   updateAdminProfile,
   getIncidents,
   getProjects,
+  getCalendarEvents,
+  createCalendarEvent,
+  deleteCalendarEvent,
   pingActivity,
   type StaffAccount,
   type AuditLogEntry,
@@ -42,6 +45,7 @@ import {
   type StaffAccountForm,
   type Incident,
   type Project,
+  type CalendarEvent,
 } from "../../api/services";
 
 const COLORS = [
@@ -87,6 +91,13 @@ const auditDotColors: Record<string, string> = {
 
 const normalizePhoneInput = (value: string) => value.replace(/\D/g, "").slice(0, 11);
 const isValidPhilippineMobile = (value?: string) => !value || /^09\d{9}$/.test(value);
+const toInputDate = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 export default function SuperAdmin() {
   const STAFF_PAGE_SIZE = 6;
@@ -119,6 +130,11 @@ export default function SuperAdmin() {
   const [auditSortBy, setAuditSortBy] = useState<"time" | "user" | "type">("time");
   const [auditSortDirection, setAuditSortDirection] = useState<"asc" | "desc">("desc");
   const [showMyProfile, setShowMyProfile] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [showAddCalendarEvent, setShowAddCalendarEvent] = useState(false);
+  const [newCalendarEvent, setNewCalendarEvent] = useState({ date: "", title: "", color: "bg-violet-500" });
   const [adminProfile, setAdminProfile] =
     useState<AdminProfile>({
       name: getCurrentUser()?.name || "Kap. Roberto",
@@ -126,6 +142,7 @@ export default function SuperAdmin() {
       phone: "09621234567",
       address: "Barangay Hall, Cubacub",
     });
+  const todayDate = toInputDate();
 
   /* Load data from services.ts on mount */
     useEffect(() => {
@@ -135,6 +152,18 @@ export default function SuperAdmin() {
     getIncidents().then(setIncidents);
     getProjects().then(setProjects);
     getAdminProfile().then(setAdminProfile);
+  }, []);
+
+  useEffect(() => {
+    const loadEvents = () => getCalendarEvents().then(setCalendarEvents);
+    loadEvents();
+    const handler = () => { loadEvents(); };
+    window.addEventListener("calendarUpdate", handler);
+    window.addEventListener("storage", handler);
+    return () => {
+      window.removeEventListener("calendarUpdate", handler);
+      window.removeEventListener("storage", handler);
+    };
   }, []);
 
   const isDocumentRefund = (incident: Incident) =>
@@ -202,6 +231,67 @@ export default function SuperAdmin() {
       : String(leftValue).localeCompare(String(rightValue), undefined, { sensitivity: "base" });
     return auditSortDirection === "asc" ? result : -result;
   });
+  const adminCalendarDaysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const adminCalendarStartDay = new Date(calendarYear, calendarMonth, 1).getDay();
+  const adminMonthEvents = calendarEvents.filter((event) => {
+    const date = new Date(event.date);
+    return date.getMonth() === calendarMonth && date.getFullYear() === calendarYear;
+  });
+  const adminAuditUser = `${getCurrentUser()?.name || adminProfile.name || "Super Admin"} (super_admin, Super Admin)`;
+
+  const refreshAuditTrail = () => {
+    getAuditLog().then(setAuditLog).catch(() => {});
+  };
+
+  const addAdminCalendarEvent = () => {
+    const title = newCalendarEvent.title.trim();
+    if (!newCalendarEvent.date || !title) return;
+    if (newCalendarEvent.date < todayDate) {
+      showToast("Calendar events cannot be scheduled on a previous date.", "error");
+      return;
+    }
+
+    const eventPayload = {
+      date: newCalendarEvent.date,
+      title,
+      color: newCalendarEvent.color,
+      source: "super_admin",
+      type: "event" as const,
+    };
+
+    createCalendarEvent(eventPayload).then((createdEvent) => {
+      getCalendarEvents().then(setCalendarEvents);
+      createAuditLogEntry({
+        time: new Date().toLocaleString("en-PH"),
+        user: adminAuditUser,
+        action: `Created admin calendar event ${createdEvent.id}: "${eventPayload.title}" scheduled on ${eventPayload.date}; source: ${eventPayload.source}; color: ${eventPayload.color}`,
+        type: "info",
+      }).then(refreshAuditTrail).catch(() => {});
+      setNewCalendarEvent({ date: "", title: "", color: "bg-violet-500" });
+      setShowAddCalendarEvent(false);
+      showToast("Admin calendar event added.");
+    }).catch(() => {
+      showToast("Failed to add admin calendar event.", "error");
+    });
+  };
+
+  const deleteAdminCalendarEvent = (id: string) => {
+    const target = calendarEvents.find((event) => event.id === id);
+    if (!window.confirm(`Delete calendar event${target ? ` "${target.title}"` : ""}? This cannot be undone.`)) return;
+
+    deleteCalendarEvent(id).then(() => {
+      getCalendarEvents().then(setCalendarEvents);
+      createAuditLogEntry({
+        time: new Date().toLocaleString("en-PH"),
+        user: adminAuditUser,
+        action: `Deleted admin calendar event ${id}: "${target?.title || "Unknown event"}" scheduled on ${target?.date || "unknown date"}; source: ${target?.source || "unknown"}; type: ${target?.type || "event"}; color: ${target?.color || "unknown"}`,
+        type: "warning",
+      }).then(refreshAuditTrail).catch(() => {});
+      showToast("Calendar event deleted.");
+    }).catch(() => {
+      showToast("Failed to delete calendar event.", "error");
+    });
+  };
 
   useEffect(() => {
     setStaffPage(1);
@@ -816,6 +906,195 @@ export default function SuperAdmin() {
                   className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-40"
                 >
                   Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin Calendar */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+          <div>
+            <h3 className="text-[#1B263B] flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-violet-500" /> Admin Calendar
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">Shared calendar events across handler dashboards.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAddCalendarEvent(true)}
+              className="px-3 py-2 rounded-xl bg-violet-500 text-white text-xs flex items-center gap-1 hover:shadow-md transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Event
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (calendarMonth === 0) {
+                  setCalendarMonth(11);
+                  setCalendarYear(year => year - 1);
+                  return;
+                }
+                setCalendarMonth(month => month - 1);
+              }}
+              className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-gray-400" />
+            </button>
+            <span className="text-xs text-gray-500 min-w-32 text-center">
+              {monthNames[calendarMonth]} {calendarYear}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (calendarMonth === 11) {
+                  setCalendarMonth(0);
+                  setCalendarYear(year => year + 1);
+                  return;
+                }
+                setCalendarMonth(month => month + 1);
+              }}
+              className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-[1fr_22rem] gap-5">
+          <div>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+              {["S","M","T","W","T","F","S"].map((day, index) => (
+                <div key={`${day}-${index}`} className="text-gray-300 py-1">{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: adminCalendarStartDay }).map((_, index) => (
+                <div key={`empty-${index}`} />
+              ))}
+              {Array.from({ length: adminCalendarDaysInMonth }).map((_, index) => {
+                const day = index + 1;
+                const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const event = adminMonthEvents.find(item => item.date === dateStr);
+                return (
+                  <div
+                    key={day}
+                    className={`min-h-12 rounded-xl text-xs p-2 transition-all ${event ? `${event.color} text-white shadow-sm` : dateStr < todayDate ? "bg-gray-50 text-gray-300" : "hover:bg-gray-50 text-gray-500"}`}
+                    title={event?.title}
+                  >
+                    <span>{day}</span>
+                    {event && <p className="mt-1 truncate text-[10px]">{event.title}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wider">Events this month</p>
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+              {[...adminMonthEvents].sort((a, b) => a.date.localeCompare(b.date)).map((event) => (
+                <div key={event.id} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 p-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${event.color} shrink-0`} />
+                      <p className="text-xs text-[#1B263B] truncate">{event.title}</p>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {monthNames[calendarMonth]} {new Date(event.date).getDate()}, {new Date(event.date).getFullYear()} - {event.source.replace("_", " ")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteAdminCalendarEvent(event.id)}
+                    className="w-8 h-8 rounded-xl bg-white text-gray-300 hover:text-rose-500 flex items-center justify-center transition-colors shrink-0"
+                    title="Delete calendar event"
+                    aria-label={`Delete ${event.title}`}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {adminMonthEvents.length === 0 && (
+                <p className="text-xs text-gray-400 py-3">No calendar events for this month.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showAddCalendarEvent && (
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowAddCalendarEvent(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-white text-sm" style={{ fontFamily: "Montserrat" }}>Add Admin Calendar Event</h3>
+                  <button type="button" onClick={() => setShowAddCalendarEvent(false)} className="text-white/50 hover:text-white"><X className="w-4 h-4" /></button>
+                </div>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="text-xs text-gray-500 uppercase mb-1 block">Date of Schedule</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="date"
+                      min={todayDate}
+                      className="w-full bg-[#F5F7FA] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-200"
+                      value={newCalendarEvent.date}
+                      onChange={(event) => setNewCalendarEvent({ ...newCalendarEvent, date: event.target.value })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase mb-1 block">Event Title</label>
+                  <input
+                    className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none"
+                    placeholder="e.g. Council Session"
+                    value={newCalendarEvent.title}
+                    onChange={(event) => setNewCalendarEvent({ ...newCalendarEvent, title: event.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase mb-2 block">Event Color</label>
+                  <div className="flex gap-2">
+                    {[
+                      { label: "Admin", color: "bg-violet-500" },
+                      { label: "Official", color: "bg-[#1B263B]" },
+                      { label: "Public", color: "bg-[#008080]" },
+                      { label: "Urgent", color: "bg-rose-500" },
+                    ].map((option) => (
+                      <button
+                        key={option.color}
+                        type="button"
+                        onClick={() => setNewCalendarEvent({ ...newCalendarEvent, color: option.color })}
+                        className={`w-9 h-9 rounded-lg ${option.color} ${newCalendarEvent.color === option.color ? "ring-2 ring-offset-2 ring-violet-500" : ""}`}
+                        title={option.label}
+                        aria-label={option.label}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={addAdminCalendarEvent}
+                  disabled={!newCalendarEvent.date || !newCalendarEvent.title.trim() || newCalendarEvent.date < todayDate}
+                  className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-2.5 rounded-xl text-sm disabled:opacity-40 hover:shadow-md transition-all"
+                >
+                  Add Event
                 </button>
               </div>
             </motion.div>

@@ -160,10 +160,15 @@ export default function ClinicHandler() {
   };
 
   const handleAddEvent = () => {
-    if (newEvent.date && newEvent.title) {
+    const title = newEvent.title.trim();
+    if (newEvent.date && title) {
+      if (newEvent.date < todayDate) {
+        showToast("Health calendar events cannot be scheduled on a previous date.", "error");
+        return;
+      }
       const eventPayload = {
         date: newEvent.date,
-        title: newEvent.title.trim(),
+        title,
         color: newEvent.type === "closure" ? "bg-rose-500" : "bg-[#008080]",
         source: "clinic_handler",
         icon: newEvent.icon,
@@ -479,7 +484,7 @@ export default function ClinicHandler() {
                   <label className="text-xs text-gray-500 uppercase mb-1 block">Date of Schedule</label>
                   <div className="relative">
                     <CalIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <input type="date" className="w-full bg-[#F5F7FA] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/20" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} />
+                    <input type="date" min={todayDate} className="w-full bg-[#F5F7FA] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/20" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} />
                   </div>
                 </div>
                 <div>
@@ -501,7 +506,7 @@ export default function ClinicHandler() {
                     ))}
                   </div>
                 </div>
-                <button onClick={handleAddEvent} disabled={!newEvent.date || !newEvent.title} className="w-full bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-2.5 rounded-xl text-sm disabled:opacity-40 hover:shadow-md transition-all">Add Event</button>
+                <button onClick={handleAddEvent} disabled={!newEvent.date || !newEvent.title.trim() || newEvent.date < todayDate} className="w-full bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-2.5 rounded-xl text-sm disabled:opacity-40 hover:shadow-md transition-all">Add Event</button>
               </div>
             </motion.div>
           </div>
