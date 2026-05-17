@@ -22,9 +22,9 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.status not in {"rejected", "ready_to_pickup"}:
+        if instance.status not in {"rejected", "ready_to_pickup", "claimed", "unclaimed"}:
             return Response(
-                {"detail": "Delete is only allowed for rejected or ready_to_pickup requests."},
+                {"detail": "Delete is only allowed for rejected, ready_to_pickup, claimed, or unclaimed requests."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         self.perform_destroy(instance)

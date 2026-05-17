@@ -194,6 +194,8 @@ export default function DocumentHandler() {
       if (reviewReq?.id === id) {
         setReviewReq(null);
       }
+    }).catch(() => {
+      showToast(`Failed to delete ${id}. Please refresh and try again.`);
     });
   };
 
