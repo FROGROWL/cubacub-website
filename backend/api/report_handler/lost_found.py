@@ -30,7 +30,7 @@ class LostFoundViewSet(viewsets.ModelViewSet):
             if is_anon:
                 data['reporter_id'] = f"ANON-{random.randint(1000, 9999)}"
             else:
-                data['reporter_id'] = f"RPT-{random.randint(1000, 9999)}"
+                data['reporter_id'] = f"LF-{random.randint(1000, 9999)}"
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)

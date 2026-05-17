@@ -1602,12 +1602,14 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                         onChange={e => ru("itemName", e.target.value)}
                       />
                     )}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Select label="Urgency Level" required value={form.urgency} onChange={e => ru("urgency", e.target.value)}>
-                          <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
-                        </Select>
-                      </div>
+                    <div className={`grid ${isLostFoundCategory ? "grid-cols-2" : "grid-cols-3"} gap-4`}>
+                      {!isLostFoundCategory && (
+                        <div>
+                          <Select label="Urgency Level" required value={form.urgency} onChange={e => ru("urgency", e.target.value)}>
+                            <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+                          </Select>
+                        </div>
+                      )}
                       <div>
                         <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Date of Incident<span className="text-rose-400 ml-0.5">*</span></label>
                         <input type="date" className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-300 outline-none" value={form.incidentDate} onChange={e => ru("incidentDate", e.target.value)} />
@@ -1726,8 +1728,18 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                         <div key={l} className="flex justify-between"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                       ))}
                       <div className="border-t border-gray-200 my-2" />
-                      <p className="text-xs text-rose-500 uppercase tracking-wider mb-1">Incident</p>
-                      {[ ["Category", `${form.category}${resolvedSubcategory ? " — " + resolvedSubcategory : ""}`],["Urgency", form.urgency],["Incident Date", `${form.incidentDate} ${form.incidentTime || ""}`],["Reported At", formatExactTimestamp(form.reportCreatedAt)],["Location", form.location],["Landmark", form.landmark || "—"],["Suspect", form.suspectName || "Unknown"],["Description", form.suspectDescription || "—"],["Victims", form.victimsInvolved || "—"]].map(([l, v]) => (
+                      <p className="text-xs text-rose-500 uppercase tracking-wider mb-1">{isLostFoundCategory ? "Item Report" : "Incident"}</p>
+                      {[
+                        ["Category", `${form.category}${resolvedSubcategory ? " — " + resolvedSubcategory : ""}`],
+                        ...(isLostFoundCategory ? [["Item Name", form.itemName]] : [["Urgency", form.urgency]]),
+                        ["Incident Date", `${form.incidentDate} ${form.incidentTime || ""}`],
+                        ["Reported At", formatExactTimestamp(form.reportCreatedAt)],
+                        ["Location", form.location],
+                        ["Landmark", form.landmark || "—"],
+                        ["Suspect", form.suspectName || "Unknown"],
+                        ["Description", form.suspectDescription || "—"],
+                        ["Victims", form.victimsInvolved || "—"]
+                      ].map(([l, v]) => (
                         <div key={l} className="flex justify-between"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
                       ))}
                       <div className="border-t border-gray-200 my-2" />
