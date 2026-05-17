@@ -46,9 +46,11 @@ class AuditLog(models.Model):
         on_delete=models.SET_NULL,
         related_name="audit_logs"
     )
-    action = models.CharField(max_length=255)
+    action = models.TextField()
     status = models.CharField(max_length=50, default="info")
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_trashed = models.BooleanField(default=False)
+    trashed_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.username if self.user else 'Deleted User'} - {self.action}"

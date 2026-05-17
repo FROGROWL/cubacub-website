@@ -38,7 +38,8 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AuditLog
-        fields = ["id", "user", "action", "status", "timestamp"]
+        fields = ["id", "user", "action", "status", "timestamp", "is_trashed", "trashed_at"]
+        read_only_fields = ["is_trashed", "trashed_at"]
 
     def get_user(self, obj):
         if not obj.user:

@@ -859,11 +859,13 @@ export interface AuditLogEntry {
   user: string;
   action: string;
   type: string;
+  isTrashed?: boolean;
+  trashedAt?: string | null;
 }
 
 /** DJANGO: GET /api/audit-log/ */
-export async function getAuditLog(): Promise<AuditLogEntry[]> {
-  const rows = await apiFetch("/api/audit-log/");
+export async function getAuditLog(options?: { trash?: boolean }): Promise<AuditLogEntry[]> {
+  const rows = await apiFetch(`/api/audit-log/${options?.trash ? "?trash=true" : ""}`);
   return (rows || []).map((row: any) => ({
     id: row.id,
     time: row.timestamp
@@ -878,6 +880,8 @@ export async function getAuditLog(): Promise<AuditLogEntry[]> {
     user: row.user || "System",
     action: row.action || "",
     type: row.status || "info",
+    isTrashed: Boolean(row.is_trashed),
+    trashedAt: row.trashed_at || null,
   }));
 }
 
@@ -901,7 +905,30 @@ export async function createAuditLogEntry(entry: Omit<AuditLogEntry, "id">): Pro
     user: row?.user || entry.user || "System",
     action: row?.action || entry.action,
     type: row?.status || entry.type || "info",
+    isTrashed: Boolean(row?.is_trashed),
+    trashedAt: row?.trashed_at || null,
   };
+}
+
+export async function moveAuditLogsToTrash(ids: number[]): Promise<void> {
+  await apiFetch("/api/audit-log/", {
+    method: "PATCH",
+    body: JSON.stringify({ action: "trash", ids }),
+  });
+}
+
+export async function restoreAuditLogs(ids: number[]): Promise<void> {
+  await apiFetch("/api/audit-log/", {
+    method: "PATCH",
+    body: JSON.stringify({ action: "restore", ids }),
+  });
+}
+
+export async function permanentlyDeleteAuditLogs(ids: number[]): Promise<void> {
+  await apiFetch("/api/audit-log/", {
+    method: "DELETE",
+    body: JSON.stringify({ ids }),
+  });
 }
 
 

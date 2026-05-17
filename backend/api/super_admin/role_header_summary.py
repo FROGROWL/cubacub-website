@@ -24,10 +24,11 @@ def superadmin_summary(request):
     # Then count online staff
     online_staff = visible_staff.filter(is_online=True).count()
 
-    actions_today = AuditLog.objects.filter(timestamp__date=now().date()).count()
+    active_audit_logs = AuditLog.objects.filter(is_trashed=False)
+    actions_today = active_audit_logs.filter(timestamp__date=now().date()).count()
     role_distribution = visible_staff.values("role").annotate(count=Count("id"))
-    audit_actions = AuditLog.objects.values("action").annotate(count=Count("id"))
-    audit_status = AuditLog.objects.values("status").annotate(count=Count("id"))
+    audit_actions = active_audit_logs.values("action").annotate(count=Count("id"))
+    audit_status = active_audit_logs.values("status").annotate(count=Count("id"))
 
     documents_count = DocumentRequest.objects.count()
     document_refund_count = Incident.objects.filter(

@@ -24,6 +24,9 @@ import {
   getStaffAccounts,
   createStaffAccount,
   createAuditLogEntry,
+  moveAuditLogsToTrash,
+  restoreAuditLogs,
+  permanentlyDeleteAuditLogs,
   updateStaffAccount,
   deleteStaffAccount as apiDeleteStaffAccount,
   getAuditLog,
@@ -136,6 +139,8 @@ export default function SuperAdmin() {
   const { showToast } = useToast();
 
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [trashAuditLog, setTrashAuditLog] = useState<AuditLogEntry[]>([]);
+  const [auditView, setAuditView] = useState<"active" | "trash">("active");
   const [analytics, setAnalytics] =
     useState<AnalyticsSummary | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -164,6 +169,7 @@ export default function SuperAdmin() {
     useEffect(() => {
     getStaffAccounts().then(setAccounts);
     getAuditLog().then(setAuditLog);
+    getAuditLog({ trash: true }).then(setTrashAuditLog);
     getAnalyticsSummary().then(setAnalytics);
     getIncidents().then(setIncidents);
     getProjects().then(setProjects);
@@ -245,8 +251,9 @@ export default function SuperAdmin() {
   const getAuditActionSummary = (entry: AuditLogEntry) => entry.action.split(";")[0].trim();
   const getAuditActionDetails = (entry: AuditLogEntry) =>
     entry.action.split(";").slice(1).map(detail => detail.trim()).filter(Boolean);
+  const displayedAuditLog = auditView === "trash" ? trashAuditLog : auditLog;
 
-  const filteredAudit = auditLog.filter((a) => {
+  const filteredAudit = displayedAuditLog.filter((a) => {
     const auditRole = getAuditRoleLabel(a);
     const roleLabel = roleConfig[auditRoleFilter]?.label;
     const actionCategory = getAuditActionCategory(a);
@@ -284,6 +291,66 @@ export default function SuperAdmin() {
 
   const refreshAuditTrail = () => {
     getAuditLog().then(setAuditLog).catch(() => {});
+    getAuditLog({ trash: true }).then(setTrashAuditLog).catch(() => {});
+  };
+
+  const selectedAuditIds = sortedAudit.map(entry => entry.id).filter((id): id is number => typeof id === "number");
+
+  const moveFilteredAuditToTrash = () => {
+    if (selectedAuditIds.length === 0) {
+      showToast("No audit entries match the current filters.", "error");
+      return;
+    }
+    if (!window.confirm(`Move ${selectedAuditIds.length} filtered audit trail entries to Trash?`)) return;
+    moveAuditLogsToTrash(selectedAuditIds).then(() => {
+      createAuditLogEntry({
+        time: new Date().toLocaleString("en-PH"),
+        user: adminAuditUser,
+        action: `Moved ${selectedAuditIds.length} filtered audit trail entries to Trash; view: ${auditView}; role filter: ${auditRoleFilter}; action filter: ${auditActionFilter}`,
+        type: "warning",
+      }).finally(refreshAuditTrail);
+      showToast("Filtered audit entries moved to Trash.");
+    }).catch(() => {
+      showToast("Failed to move audit entries to Trash.", "error");
+    });
+  };
+
+  const restoreFilteredAudit = () => {
+    if (selectedAuditIds.length === 0) {
+      showToast("No trashed audit entries match the current filters.", "error");
+      return;
+    }
+    if (!window.confirm(`Restore ${selectedAuditIds.length} filtered audit trail entries?`)) return;
+    restoreAuditLogs(selectedAuditIds).then(() => {
+      createAuditLogEntry({
+        time: new Date().toLocaleString("en-PH"),
+        user: adminAuditUser,
+        action: `Restored ${selectedAuditIds.length} filtered audit trail entries from Trash; role filter: ${auditRoleFilter}; action filter: ${auditActionFilter}`,
+        type: "info",
+      }).finally(refreshAuditTrail);
+      showToast("Filtered audit entries restored.");
+    }).catch(() => {
+      showToast("Failed to restore audit entries.", "error");
+    });
+  };
+
+  const permanentlyDeleteFilteredAudit = () => {
+    if (selectedAuditIds.length === 0) {
+      showToast("No audit entries match the current filters.", "error");
+      return;
+    }
+    if (!window.confirm(`Permanently delete ${selectedAuditIds.length} filtered audit trail entries? This cannot be undone.`)) return;
+    permanentlyDeleteAuditLogs(selectedAuditIds).then(() => {
+      createAuditLogEntry({
+        time: new Date().toLocaleString("en-PH"),
+        user: adminAuditUser,
+        action: `Permanently deleted ${selectedAuditIds.length} filtered audit trail entries; source view: ${auditView}; role filter: ${auditRoleFilter}; action filter: ${auditActionFilter}`,
+        type: "error",
+      }).finally(refreshAuditTrail);
+      showToast("Filtered audit entries permanently deleted.");
+    }).catch(() => {
+      showToast("Failed to permanently delete audit entries.", "error");
+    });
   };
 
   const addAdminCalendarEvent = () => {
@@ -383,7 +450,7 @@ export default function SuperAdmin() {
             a.id === editId ? ({ ...a, ...payload } as StaffAccount) : a
           )
         );
-        getAuditLog().then(setAuditLog);
+        refreshAuditTrail();
         showToast("Account updated!");
         setShowForm(false);
         setEditId(null);
@@ -395,7 +462,7 @@ export default function SuperAdmin() {
       createStaffAccount(payload as Omit<StaffAccount, "id"> & { password: string })
         .then((newAcc) => {
           setAccounts((prev) => [...prev, newAcc]);
-          getAuditLog().then(setAuditLog);
+          refreshAuditTrail();
           showToast("Account created!");
           setShowForm(false);
           setEditId(null);
@@ -409,7 +476,7 @@ export default function SuperAdmin() {
   const deleteAccount = (id: string) => {
     apiDeleteStaffAccount(id).then(() => {
       setAccounts((prev) => prev.filter((a) => a.id !== id));
-      getAuditLog().then(setAuditLog); // refresh from backend
+      refreshAuditTrail();
       showToast("Account deleted!", "error");
     }).catch(() => {
       showToast("Failed to delete account. Please try again.", "error");
@@ -444,7 +511,7 @@ export default function SuperAdmin() {
         action: `Updated own admin profile: ${adminProfile.name}, ${adminProfile.email}, ${adminProfile.phone}`,
         type: "info",
       }).catch(() => {});
-      getAuditLog().then(setAuditLog); // refresh from backend
+      refreshAuditTrail();
     });
     setShowMyProfile(false);
     showToast("Profile updated! Refresh to see name change.");
@@ -1154,8 +1221,24 @@ export default function SuperAdmin() {
           </h3>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-xs text-gray-400">
-              Showing {sortedAudit.length} of {auditLog.length}
+              Showing {sortedAudit.length} of {displayedAuditLog.length} {auditView === "trash" ? "trashed" : "active"}
             </p>
+            <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setAuditView("active")}
+                className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${auditView === "active" ? "bg-white text-violet-600 shadow-sm" : "text-gray-400"}`}
+              >
+                Active
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuditView("trash")}
+                className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${auditView === "trash" ? "bg-white text-violet-600 shadow-sm" : "text-gray-400"}`}
+              >
+                Trash Bin
+              </button>
+            </div>
             <select
               value={auditRoleFilter}
               onChange={(e) => setAuditRoleFilter(e.target.value)}
@@ -1201,7 +1284,10 @@ export default function SuperAdmin() {
             </button>
           </div>
         </div>
-        <div className="mb-4 flex flex-col sm:flex-row gap-2">
+        <div className="mb-4 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-xs text-violet-700">
+          Audit trail entries are automatically permanently deleted after 1 month. Items moved to the Trash Bin remain viewable until they expire, but they are not included in the active action count.
+        </div>
+        <div className="mb-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2">
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
             <input
@@ -1210,6 +1296,35 @@ export default function SuperAdmin() {
               value={auditSearch}
               onChange={(e) => setAuditSearch(e.target.value)}
             />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {auditView === "active" ? (
+              <button
+                type="button"
+                onClick={moveFilteredAuditToTrash}
+                disabled={selectedAuditIds.length === 0}
+                className="text-xs px-3 py-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 disabled:opacity-40 flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Move Filtered to Trash
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={restoreFilteredAudit}
+                disabled={selectedAuditIds.length === 0}
+                className="text-xs px-3 py-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 disabled:opacity-40"
+              >
+                Restore Filtered
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={permanentlyDeleteFilteredAudit}
+              disabled={selectedAuditIds.length === 0}
+              className="text-xs px-3 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 disabled:opacity-40"
+            >
+              Permanently Delete Filtered
+            </button>
           </div>
         </div>
         <div className="space-y-0 max-h-[28rem] overflow-y-auto pr-2">
