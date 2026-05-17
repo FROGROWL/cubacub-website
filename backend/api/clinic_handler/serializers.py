@@ -26,6 +26,15 @@ class PatientSerializer(serializers.ModelSerializer):
             if slot and ClinicUnavailableSlot.objects.filter(date=queue_date, time=slot).exists():
                 raise serializers.ValidationError({"time": "This appointment time is not available."})
 
+            should_check_booking = self.instance is None or "queueDate" in attrs or "time" in attrs
+            booked = Patient.objects.none()
+            if should_check_booking and slot:
+                booked = Patient.objects.filter(queueDate=queue_date, time=slot).exclude(status="canceled")
+                if self.instance:
+                    booked = booked.exclude(pk=self.instance.pk)
+            if booked.exists():
+                raise serializers.ValidationError({"time": "This appointment time is already booked."})
+
         return attrs
 
     class Meta:

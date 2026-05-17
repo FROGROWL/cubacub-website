@@ -25,7 +25,13 @@ const communityImg = "https://images.unsplash.com/photo-1762245832988-82c6ecf9a7
 const formatCurrency = (value: number | string) => Number(value || 0).toLocaleString();
 const normalizePhoneInput = (value: string) => value.replace(/\D/g, "").slice(0, 11);
 const isValidPhilippineMobile = (value: string) => /^09\d{9}$/.test(value);
-const todayInputDate = () => new Date().toLocaleDateString("en-CA");
+const toInputDate = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+const todayInputDate = () => toInputDate();
 function getStatusBadge(status?: string) {
   switch ((status || "").toLowerCase()) {
     case "completed": return { label: "Completed", bg: "bg-emerald-600" };
@@ -1197,7 +1203,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
   });
   const cu = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
   const slots = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
-  const todayDate = new Date().toLocaleDateString("en-CA");
+  const todayDate = todayInputDate();
   const isSelectedToday = form.preferredDate === todayDate;
   const selectedDateIsPast = Boolean(form.preferredDate && form.preferredDate < todayDate);
   const slotToMinutes = (slot: string) => {
@@ -1341,6 +1347,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                       showToast("Please choose an available current or future schedule.");
                       return;
                     }
+                    const confirmationWindow = window.open("", "_blank");
                     const apptId = `CLN-${Date.now().toString().slice(-6)}`;
                     const dateBookedIso = new Date().toISOString();
                     const dateBookedText = new Date(dateBookedIso).toLocaleString("en-PH", {
@@ -1375,7 +1382,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                       return;
                     }
                     window.dispatchEvent(new CustomEvent("clinicUpdate"));
-                    const w = window.open("", "_blank");
+                    const w = confirmationWindow;
                     if (w) {
                       const flds = [["Appointment ID", apptId],["Patient Name", form.name],["Phone", form.phone],["Birthdate", form.birthdate],["Sex", form.sex],["Consultation Type", form.consultType === "Other" ? form.otherConsultType : form.consultType],["Chief Complaint", form.chiefComplaint],["Known Allergies", form.allergies || "None"],["Current Medications", form.medications || "None"],["Pre-existing Conditions", form.conditions || "None"],["Preferred Date", form.preferredDate],["Time Slot", form.slot],["Date Booked", dateBookedText]];
                       w.document.write(`<html><head><title>Appointment Confirmation</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}.warn{margin-top:16px;background:#FFF3CD;padding:12px;border-radius:8px;font-size:11px;color:#856404;text-align:center}</style></head><body>`);
@@ -1385,7 +1392,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                       w.document.write(`<div class="ft">Cubacub Health Center — Mon–Fri 8AM–5PM | (032) 345-6789<br/>This serves as your official proof of appointment.</div></body></html>`);
                       w.document.close(); w.print();
                     }
-                    showToast(`Appointment confirmed! ID: ${apptId}`);
+                    showToast(w ? `Appointment confirmed! ID: ${apptId}` : `Appointment confirmed! ID: ${apptId}. Popups are blocked on this device.`);
                     onClose();
                   }} disabled={!form.preferredDate || !form.slot || selectedDateIsPast || isPastSlot(form.slot)}
                     className="flex-1 bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-lg transition-all">
@@ -1409,7 +1416,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
   const [agreed, setAgreed] = useState(false);
   const [form, setForm] = useState(() => {
     const now = new Date();
-    const currentDate = now.toISOString().split('T')[0];
+    const currentDate = toInputDate(now);
     const currentTime = now.toTimeString().slice(0, 5);
     
     if (isDocumentRefund) {
@@ -1844,15 +1851,16 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                         const trackingId = result.id || lostFoundDraftId;
                         showToast("Lost & found report submitted successfully! Reference: " + trackingId);
                         window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
+                        onClose();
+                      }).catch(() => {
+                        showToast("Failed to submit lost & found report. Please try again.");
                       });
-                      onClose();
                       return;
                     }
 
                     const reportPrintWindow = window.open("", "_blank");
                     if (!reportPrintWindow) {
-                      showToast("Popup blocked. Please allow popups and try again.");
-                      return;
+                      showToast("Popup blocked. The report will still be submitted.");
                     }
 
                     submitPublicReport({
@@ -1902,22 +1910,22 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                           ["Evidence Photos", String(evidencePhotos.length)],
                           ["Date Filed", new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })],
                         ];
-                        reportPrintWindow.document.write(`<html><head><title>Report Summary</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:680px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #e11d48}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#e11d48;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;gap:18px;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:58%}.block{margin-top:18px}.block h2{font-size:13px;color:#e11d48;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}.block p{font-size:12px;line-height:1.55;white-space:pre-wrap}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}</style></head><body>`);
-                        reportPrintWindow.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Report Summary</p><span class="badge">CIVIC-FLOW</span></div>`);
-                        fields.filter(([, value]) => value).forEach(([l, v]) => reportPrintWindow.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
-                        reportPrintWindow.document.write(`<div class="block"><h2>${isRefund ? "Refund Details" : "Narrative"}</h2><p>${isRefund ? `Document refund request for tracking ID ${refundForm.trackingId}. Reason: ${refundReason || "Not specified"}.` : form.details}</p></div>`);
+                        reportPrintWindow?.document.write(`<html><head><title>Report Summary</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:680px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #e11d48}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#e11d48;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;gap:18px;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:58%}.block{margin-top:18px}.block h2{font-size:13px;color:#e11d48;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}.block p{font-size:12px;line-height:1.55;white-space:pre-wrap}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}</style></head><body>`);
+                        reportPrintWindow?.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Report Summary</p><span class="badge">CIVIC-FLOW</span></div>`);
+                        fields.filter(([, value]) => value).forEach(([l, v]) => reportPrintWindow?.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
+                        reportPrintWindow?.document.write(`<div class="block"><h2>${isRefund ? "Refund Details" : "Narrative"}</h2><p>${isRefund ? `Document refund request for tracking ID ${refundForm.trackingId}. Reason: ${refundReason || "Not specified"}.` : form.details}</p></div>`);
                         if (!isRefund && form.evidenceDesc) {
-                          reportPrintWindow.document.write(`<div class="block"><h2>Evidence Description</h2><p>${form.evidenceDesc}</p></div>`);
+                          reportPrintWindow?.document.write(`<div class="block"><h2>Evidence Description</h2><p>${form.evidenceDesc}</p></div>`);
                         }
-                        reportPrintWindow.document.write(`<div class="ft">Keep this summary for your records. Use the tracking number in the Report Tracker to check status updates.<br/>For inquiries call (032) 345-6789.</div></body></html>`);
-                        reportPrintWindow.document.close();
-                        reportPrintWindow.print();
+                        reportPrintWindow?.document.write(`<div class="ft">Keep this summary for your records. Use the tracking number in the Report Tracker to check status updates.<br/>For inquiries call (032) 345-6789.</div></body></html>`);
+                        reportPrintWindow?.document.close();
+                        reportPrintWindow?.print();
                         window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
+                        onClose();
                       }).catch(() => {
-                        reportPrintWindow.close();
+                        reportPrintWindow?.close();
                         showToast("Failed to submit report. Please try again.");
                       });
-                    onClose();
                   }} disabled={!agreed}
                     className="flex-1 bg-gradient-to-r from-rose-600 to-orange-500 text-white py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-lg transition-all">
                     <Send className="w-4 h-4" /> Submit Report

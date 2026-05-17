@@ -28,6 +28,13 @@ function AnimCounter({ target, suffix = "" }: { target: number; suffix?: string 
   return <span>{val.toLocaleString()}{suffix}</span>;
 }
 
+const toInputDate = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function ClinicHandler() {
   const [queue, setQueue] = useState<Patient[]>([]);
   const [search, setSearch] = useState("");
@@ -36,7 +43,7 @@ export default function ClinicHandler() {
   const [clinicOpen, setClinicOpen] = useState<boolean | null>(null); // null = loading
   const [month, setMonth] = useState(new Date().getMonth());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [scheduleDate, setScheduleDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [scheduleDate, setScheduleDate] = useState(toInputDate());
   const [unavailableSlots, setUnavailableSlots] = useState<ClinicUnavailableSlot[]>([]);
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({ date: "", title: "", icon: "\u{1F3E5}", type: "event" as "event" | "closure" });
@@ -45,7 +52,7 @@ export default function ClinicHandler() {
 
   const year = 2026;
   const clinicSlots = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
-  const todayDate = new Date().toLocaleDateString("en-CA");
+  const todayDate = toInputDate();
   const slotToMinutes = (slot: string) => {
     const [time, period] = slot.split(" ");
     const [hourText, minuteText] = time.split(":");
