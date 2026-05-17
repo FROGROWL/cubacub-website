@@ -23,6 +23,8 @@ const logoImg = new URL("./images/logo.png", import.meta.url).href;
 const projectImg = "https://images.unsplash.com/photo-1758164281460-bdd4f3bcc471?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25jcmV0ZSUyMGJyaWRnZSUyMGNvbnN0cnVjdGlvbiUyMHByb2dyZXNzfGVufDF8fHx8MTc3NDY4NDM5MXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 const communityImg = "https://images.unsplash.com/photo-1762245832988-82c6ecf9a79f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBjb21tdW5pdHklMjBjZW50ZXIlMjBidWlsZGluZ3xlbnwxfHx8fDE3NzQ2ODQzOTB8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 const formatCurrency = (value: number | string) => Number(value || 0).toLocaleString();
+const normalizePhoneInput = (value: string) => value.replace(/\D/g, "").slice(0, 11);
+const isValidPhilippineMobile = (value: string) => /^09\d{9}$/.test(value);
 function getStatusBadge(status?: string) {
   switch ((status || "").toLowerCase()) {
     case "completed": return { label: "Completed", bg: "bg-emerald-600" };
@@ -389,7 +391,7 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
   const fullName = `${form.firstName || ""} ${form.middleName ? form.middleName + " " : ""}${form.lastName || ""}`.trim();
   const docPrice = (DOC_PRICING[form.docType] || 0) * parseInt(form.numCopies || "1");
   const emailValid = !form.email || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.email);
-  const phoneValid = /^09\d{9}$/.test(form.phone.replace(/[-\s]/g, ""));
+  const phoneValid = isValidPhilippineMobile(form.phone);
   
 
   const handlePrint = async () => {
@@ -576,7 +578,7 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Phone Number<span className="text-rose-400 ml-0.5">*</span></label>
-                    <input placeholder="09XXXXXXXXX" value={form.phone} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 11); u("phone", v); }} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" inputMode="numeric" />
+                    <input placeholder="09XXXXXXXXX" value={form.phone} onChange={e => u("phone", normalizePhoneInput(e.target.value))} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" inputMode="numeric" maxLength={11} />
                     {form.phone && !phoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
                   </div>
                   <div>
@@ -1255,8 +1257,8 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                   <Input label="Full Name" required placeholder="Full name" value={form.name} onChange={e => cu("name", e.target.value)} />
                   <div>
                     <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Phone<span className="text-rose-400 ml-0.5">*</span></label>
-                    <input placeholder="09XXXXXXXXX" value={form.phone} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 11); cu("phone", v); }} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" inputMode="numeric" />
-                    {form.phone && !/^09\d{9}$/.test(form.phone) && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
+                    <input placeholder="09XXXXXXXXX" value={form.phone} onChange={e => cu("phone", normalizePhoneInput(e.target.value))} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" inputMode="numeric" maxLength={11} />
+                    {form.phone && !isValidPhilippineMobile(form.phone) && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -1275,7 +1277,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                   <Input label="Please specify consultation type" required placeholder="Describe what kind of consultation you need..." value={form.otherConsultType || ""} onChange={e => cu("otherConsultType", e.target.value)} />
                 )}
                 <Textarea label="Chief Complaint / Reason for Visit" required rows={2} placeholder="Briefly describe your symptoms or reason for visit..." value={form.chiefComplaint} onChange={e => cu("chiefComplaint", e.target.value)} />
-                <button onClick={() => setCStep(2)} disabled={!form.name || !/^09\d{9}$/.test(form.phone) || !form.birthdate || !form.chiefComplaint}
+                <button onClick={() => setCStep(2)} disabled={!form.name || !isValidPhilippineMobile(form.phone) || !form.birthdate || !form.chiefComplaint}
                   className="w-full bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-lg transition-all">
                   Continue <ArrowRight className="w-4 h-4" />
                 </button>
@@ -1479,9 +1481,11 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
   const isLostFoundCategory = form.category === "Lost Item" || form.category === "Found Item";
   const needsOtherSpecification = isOtherCategory || form.subcategory === "Other";
   const resolvedSubcategory = needsOtherSpecification ? form.otherSubcategory : form.subcategory;
+  const refundPhoneValid = isValidPhilippineMobile(refundForm.gcashNumber);
+  const reporterPhoneValid = isValidPhilippineMobile(form.reporterPhone);
   const canR1 = isRefund
-    ? (refundForm.gcashNumber && refundForm.gcashName && refundForm.trackingId)
-    : (anon || (form.reporterName && form.reporterPhone));
+    ? (refundPhoneValid && refundForm.gcashName && refundForm.trackingId)
+    : (anon || (form.reporterName && reporterPhoneValid));
   const canR2 = isRefund
     ? (form.subcategory && form.subcategory !== "" && (form.subcategory !== "Other" || form.otherSubcategory.trim().length > 0))
     : (form.category && form.incidentDate && form.location && (!isLostFoundCategory || form.itemName.trim().length > 0) && (!needsOtherSpecification || form.otherSubcategory.trim().length > 0));
@@ -1526,7 +1530,10 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                     <Input label="Document Tracking ID" required placeholder="e.g. BRG-001234" value={refundForm.trackingId} onChange={e => setRefundForm({ ...refundForm, trackingId: e.target.value })} />
                     <p className="text-xs text-gray-500 uppercase tracking-wider">Payment Information (Required for Refund)</p>
                     <div className="grid grid-cols-2 gap-4">
-                      <Input label="GCash Number" required placeholder="09XXXXXXXXX" value={refundForm.gcashNumber} onChange={e => setRefundForm({ ...refundForm, gcashNumber: e.target.value })} />
+                      <div>
+                        <Input label="GCash Number" required placeholder="09XXXXXXXXX" value={refundForm.gcashNumber} onChange={e => setRefundForm({ ...refundForm, gcashNumber: normalizePhoneInput(e.target.value) })} inputMode="numeric" maxLength={11} />
+                        {refundForm.gcashNumber && !refundPhoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
+                      </div>
                       <Input label="GCash Account Name" required placeholder="Full name of account owner" value={refundForm.gcashName} onChange={e => setRefundForm({ ...refundForm, gcashName: e.target.value })} />
                     </div>
                   </div>
@@ -1543,7 +1550,10 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-4 overflow-hidden">
                           <div className="grid grid-cols-2 gap-4">
                             <Input label="Full Name" required placeholder="Your full name" value={form.reporterName} onChange={e => ru("reporterName", e.target.value)} />
-                            <Input label="Phone Number" required placeholder="09XX-XXX-XXXX" value={form.reporterPhone} onChange={e => ru("reporterPhone", e.target.value)} />
+                            <div>
+                              <Input label="Phone Number" required placeholder="09XXXXXXXXX" value={form.reporterPhone} onChange={e => ru("reporterPhone", normalizePhoneInput(e.target.value))} inputMode="numeric" maxLength={11} />
+                              {form.reporterPhone && !reporterPhoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
+                            </div>
                           </div>
                           <Input label="Address (optional)" placeholder="Your address in Cubacub" value={form.reporterAddress} onChange={e => ru("reporterAddress", e.target.value)} />
                           <Select label="Your Relation to the Incident" value={form.reporterRelation} onChange={e => ru("reporterRelation", e.target.value)}>

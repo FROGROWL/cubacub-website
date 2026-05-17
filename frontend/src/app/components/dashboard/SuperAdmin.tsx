@@ -85,6 +85,9 @@ const auditDotColors: Record<string, string> = {
   info: "bg-blue-400",
 };
 
+const normalizePhoneInput = (value: string) => value.replace(/\D/g, "").slice(0, 11);
+const isValidPhilippineMobile = (value?: string) => !value || /^09\d{9}$/.test(value);
+
 export default function SuperAdmin() {
   const STAFF_PAGE_SIZE = 6;
   const [accounts, setAccounts] = useState<StaffAccount[]>([]);
@@ -234,6 +237,11 @@ export default function SuperAdmin() {
       return;
     }
 
+    if (!isValidPhilippineMobile(form.phone)) {
+      showToast("Phone number must be 11 digits and start with 09.", "error");
+      return;
+    }
+
     const payload = { ...form, username, name, role, password };
     if (editId) {
       updateStaffAccount(editId, payload).then(() => {
@@ -291,6 +299,11 @@ export default function SuperAdmin() {
   };
 
   const saveAdminProfile = () => {
+    if (!isValidPhilippineMobile(adminProfile.phone)) {
+      showToast("Phone number must be 11 digits and start with 09.", "error");
+      return;
+    }
+
     updateAdminProfile(adminProfile).then(() => {
       createAuditLogEntry({
         time: new Date().toLocaleString("en-PH"),
@@ -638,10 +651,15 @@ export default function SuperAdmin() {
                       onChange={(e) =>
                         setForm({
                           ...form,
-                          phone: e.target.value,
+                          phone: normalizePhoneInput(e.target.value),
                         })
                       }
+                      inputMode="numeric"
+                      maxLength={11}
                     />
+                    {form.phone && !isValidPhilippineMobile(form.phone) && (
+                      <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">
@@ -679,7 +697,7 @@ export default function SuperAdmin() {
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={saveAccount}
-                  disabled={!form.username?.trim() || !form.name?.trim() || !form.role || (!editId && !form.password?.trim())}
+                  disabled={!form.username?.trim() || !form.name?.trim() || !form.role || (!editId && !form.password?.trim()) || !isValidPhilippineMobile(form.phone)}
                   className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-3 rounded-xl disabled:opacity-40 hover:shadow-lg transition-all mt-2"
                 >
                   {editId ? "Update" : "Create"} Account
@@ -767,10 +785,15 @@ export default function SuperAdmin() {
                     onChange={(e) =>
                       setAdminProfile({
                         ...adminProfile,
-                        phone: e.target.value,
+                        phone: normalizePhoneInput(e.target.value),
                       })
                     }
+                    inputMode="numeric"
+                    maxLength={11}
                   />
+                  {adminProfile.phone && !isValidPhilippineMobile(adminProfile.phone) && (
+                    <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 uppercase mb-1 block">
@@ -789,7 +812,8 @@ export default function SuperAdmin() {
                 </div>
                 <button
                   onClick={saveAdminProfile}
-                  className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-3 rounded-xl hover:shadow-lg transition-all"
+                  disabled={!isValidPhilippineMobile(adminProfile.phone)}
+                  className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-40"
                 >
                   Save Changes
                 </button>
