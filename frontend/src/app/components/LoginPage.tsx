@@ -52,7 +52,7 @@ export default function LoginPage() {
             </div>
             <h1 className="text-white text-4xl leading-tight tracking-tight mb-4" style={{ fontFamily: "Montserrat" }}>
               Welcome to<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00d4aa] to-[#008080]">Civic-Flow</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00d4aa] to-[#008080]">Cubacub Staff Portal</span>
             </h1>
             <p className="text-white/40 max-w-sm leading-relaxed text-sm">
               The digital governance platform for Barangay Cubacub. Manage documents, reports, clinic operations, and more.
