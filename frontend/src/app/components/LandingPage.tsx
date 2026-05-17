@@ -12,7 +12,7 @@ import { FileText, Search, Calendar, DollarSign, AlertCircle, Clock, ChevronRigh
 import { useToast } from "./Toast";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import {
-  getCalendarEvents, getPublicProjects, getLostFoundItems, submitPublicDocumentRequest, submitPublicReport, addPatient, getDocumentStatus, getBookedSlots,
+  getCalendarEvents, getPublicProjects, getLostFoundItems, createLostFoundItem, submitPublicDocumentRequest, submitPublicReport, addPatient, getDocumentStatus, getBookedSlots,
   getPublicLandingStats, getPublicWeather,
   type CalendarEvent, type DocumentTrackingStatus, type PublicProject, type LostFoundItem, type PublicLandingStats, type PublicWeather
 } from "../api/services";
@@ -1291,7 +1291,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
         // Reporter info
         reporterName: "", reporterPhone: "", reporterAddress: "", reporterRelation: "Witness",
         // Incident info
-        category: "Document Refund", subcategory: "", urgency: "Low",
+        category: "Document Refund", subcategory: "", urgency: "Low", itemName: "",
         incidentDate: currentDate, incidentTime: currentTime, location: "", landmark: "",
         // People involved
         suspectName: "", suspectDescription: "", victimsInvolved: "",
@@ -1304,7 +1304,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
       // Reporter info
       reporterName: "", reporterPhone: "", reporterAddress: "", reporterRelation: "Witness",
       // Incident info
-      category: "Noise Complaint", subcategory: "", urgency: "Medium",
+      category: "Noise Complaint", subcategory: "", urgency: "Medium", itemName: "",
       incidentDate: "", incidentTime: "", location: "", landmark: "",
       // People involved
       suspectName: "", suspectDescription: "", victimsInvolved: "",
@@ -1345,12 +1345,15 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
     "Illegal Activity": ["Gambling", "Drug-related", "Theft / Robbery", "Illegal Vending", "Other"],
     "Domestic Dispute": ["Verbal Abuse", "Physical Abuse", "Property Dispute", "Other"],
     "Environmental": ["Garbage Dumping", "Smoke / Air Pollution", "Stagnant Water / Mosquito Breeding", "Other"],
+    "Lost Item": ["Personal Belongings", "Electronics", "Documents / IDs", "Jewelry", "Cash / Wallet", "Pets / Animals", "Other"],
+    "Found Item": ["Personal Belongings", "Electronics", "Documents / IDs", "Jewelry", "Cash / Wallet", "Pets / Animals", "Other"],
     "Document Refund": ["Expired Pickup Deadline", "Other"],
     "Other": ["Other"],
   };
 
   const isRefundCategory = form.category === "Document Refund";
   const isOtherCategory = form.category === "Other";
+  const isLostFoundCategory = form.category === "Lost Item" || form.category === "Found Item";
   const needsOtherSpecification = isOtherCategory || form.subcategory === "Other";
   const resolvedSubcategory = needsOtherSpecification ? form.otherSubcategory : form.subcategory;
   const canR1 = isRefund
@@ -1358,7 +1361,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
     : (anon || (form.reporterName && form.reporterPhone));
   const canR2 = isRefund
     ? (form.subcategory && form.subcategory !== "" && (form.subcategory !== "Other" || form.otherSubcategory.trim().length > 0))
-    : (form.category && form.incidentDate && form.location && (!needsOtherSpecification || form.otherSubcategory.trim().length > 0));
+    : (form.category && form.incidentDate && form.location && (!isLostFoundCategory || form.itemName.trim().length > 0) && (!needsOtherSpecification || form.otherSubcategory.trim().length > 0));
   const canR3 = isRefund ? evidencePhotos.length > 0 : form.details.length >= 20;
 
   return (
@@ -1485,10 +1488,19 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                           ru("otherSubcategory", "");
                         }}>
                           <option value="">Select...</option>
-                          {(subcategories[form.category] || []).map(s => <option key={s}>{s}</option>)}
-                        </Select>
+                        {(subcategories[form.category] || []).map(s => <option key={s}>{s}</option>)}
+                      </Select>
                       )}
                     </div>
+                    {isLostFoundCategory && (
+                      <Input
+                        label="Item Name"
+                        required
+                        placeholder={form.category === "Lost Item" ? "e.g. Black wallet, school ID, phone" : "e.g. Keys, wallet, pet collar"}
+                        value={form.itemName}
+                        onChange={e => ru("itemName", e.target.value)}
+                      />
+                    )}
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Select label="Urgency Level" required value={form.urgency} onChange={e => ru("urgency", e.target.value)}>
@@ -1654,6 +1666,33 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                     /* Save to services.ts so Report Handler dashboard can see this report.
                      * DJANGO: This will POST to /api/incidents/public-report/ */
                     const refundReason = form.subcategory === "Other" ? (form.otherSubcategory || "Other") : form.subcategory;
+                    if (!isRefund && isLostFoundCategory) {
+                      createLostFoundItem({
+                        item_type: form.category === "Lost Item" ? "lost" : "found",
+                        reporter_name: anon ? "Anonymous" : form.reporterName,
+                        reporter_phone: anon ? "" : form.reporterPhone,
+                        reporter_id: reportDraftId,
+                        is_anonymous: anon,
+                        item_name: form.itemName,
+                        description: form.details,
+                        category: resolvedSubcategory || undefined,
+                        location: form.location,
+                        date_of_incident: form.incidentDate,
+                        image_url: evidencePhotos[0],
+                        landmark: form.landmark,
+                        person_involved: form.suspectName,
+                        victims_involved: form.victimsInvolved,
+                        reporter_relation: anon ? undefined : form.reporterRelation,
+                        status: "pending",
+                      }).then(result => {
+                        const trackingId = result.id || reportDraftId;
+                        showToast("Lost & found report submitted successfully! Reference: " + trackingId);
+                        window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
+                      });
+                      onClose();
+                      return;
+                    }
+
                     submitPublicReport({
                         id: reportDraftId,
                         category: form.category,
