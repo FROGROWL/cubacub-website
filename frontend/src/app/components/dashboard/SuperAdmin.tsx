@@ -186,7 +186,7 @@ export default function SuperAdmin() {
 
   const filteredAudit = auditLog.filter((a) => {
     const auditRole = getAuditRoleLabel(a);
-    const roleLabel = auditRoleFilter === "system" ? "System" : roleConfig[auditRoleFilter]?.label;
+    const roleLabel = roleConfig[auditRoleFilter]?.label;
     const matchRole = auditRoleFilter === "all" || auditRole === roleLabel;
     const matchType = auditTypeFilter === "all" || a.type === auditTypeFilter;
     const matchSearch =
@@ -845,7 +845,6 @@ export default function SuperAdmin() {
               <option value="clinic_handler">Clinic Handler</option>
               <option value="treasurer">Treasurer</option>
               <option value="super_admin">Super Admin</option>
-              <option value="system">System</option>
             </select>
             <select
               value={auditTypeFilter}
