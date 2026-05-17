@@ -42,10 +42,9 @@ def booked_slots(request):
     except ValueError:
         return Response({"date": "Invalid date format."}, status=status.HTTP_400_BAD_REQUEST)
 
-    booked = set(Patient.objects.filter(queueDate=date_value).exclude(status="canceled").values_list("time", flat=True))
     manually_unavailable = set(ClinicUnavailableSlot.objects.filter(date=date_value).values_list("time", flat=True))
     past = {slot for slot in CLINIC_SLOTS if _slot_is_past(date_value, slot)}
-    return Response(sorted(booked | manually_unavailable | past, key=lambda slot: CLINIC_SLOTS.index(slot) if slot in CLINIC_SLOTS else 999))
+    return Response(sorted(manually_unavailable | past, key=lambda slot: CLINIC_SLOTS.index(slot) if slot in CLINIC_SLOTS else 999))
 
 
 @api_view(["GET", "POST"])

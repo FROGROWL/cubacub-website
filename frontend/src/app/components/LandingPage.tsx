@@ -1244,8 +1244,10 @@ function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clin
     w.print();
   };
 
-  /* Load booked slots from services.ts when date changes
-   * DJANGO: GET /api/patients/booked-slots/?date=YYYY-MM-DD */
+  /* Load unavailable slots from services.ts when date changes
+   * DJANGO: GET /api/patients/booked-slots/?date=YYYY-MM-DD
+   * The endpoint returns handler-disabled and past slots, not already-booked slots.
+   */
   const [taken, setTaken] = useState<string[]>([]);
   useEffect(() => {
     if (form.preferredDate) {
@@ -1397,7 +1399,7 @@ function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clin
                       );
                     })}
                   </div>
-                  <p className="text-xs text-gray-300 mt-2">Grayed out slots are unavailable, already past, or fully booked.</p>
+                  <p className="text-xs text-gray-300 mt-2">Grayed out slots are unavailable because the clinic handler closed them or the time has passed.</p>
                 </div>
                 {/* Summary */}
                 <div className="bg-gradient-to-br from-[#F5F7FA] to-[#E8F0F0] rounded-2xl p-4 space-y-2 text-sm">
@@ -1446,7 +1448,7 @@ function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clin
                     } catch (error) {
                       getBookedSlots(form.preferredDate).then(setTaken).catch(() => {});
                       const message = error instanceof Error ? error.message : "";
-                      showToast(message.includes("already booked") ? "That time slot was just booked. Please choose another slot." : message.includes("clinic_status") ? "Clinic booking is currently closed." : message.includes("401") || message.includes("403") ? "Clinic booking is blocked by backend permissions. Please redeploy the backend." : "Failed to create appointment. Please try again.");
+                      showToast(message.includes("not available") ? "That time slot is not available. Please choose another slot." : message.includes("clinic_status") ? "Clinic booking is currently closed." : message.includes("401") || message.includes("403") ? "Clinic booking is blocked by backend permissions. Please redeploy the backend." : "Failed to create appointment. Please try again.");
                       setIsBooking(false);
                       return;
                     }
