@@ -5,7 +5,7 @@ Defines API endpoints for all modules based on SQL schema.
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .incident import IncidentViewSet, public_report_view
+from .incident import IncidentViewSet, public_report_view, report_track
 from .case_record import CaseRecordViewSet
 from .lost_found import LostFoundViewSet
 from .role_header_summary import report_summary
@@ -43,6 +43,7 @@ router.register(r"lost-found", LostFoundViewSet, basename="lost_found")
 
 urlpatterns = [
     path("incidents/public-report/", public_report_view),
+    path("incidents/track/", report_track),
     path("reports/summary/", report_summary),
     path("", include(router.urls)),
     

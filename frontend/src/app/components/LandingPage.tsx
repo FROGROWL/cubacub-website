@@ -12,9 +12,9 @@ import { FileText, Search, Calendar, DollarSign, AlertCircle, Clock, ChevronRigh
 import { useToast } from "./Toast";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import {
-  getCalendarEvents, getPublicProjects, getLostFoundItems, createLostFoundItem, submitPublicDocumentRequest, submitPublicReport, addPatient, getDocumentStatus, getBookedSlots,
+  getCalendarEvents, getPublicProjects, getLostFoundItems, createLostFoundItem, submitPublicDocumentRequest, submitPublicReport, addPatient, getDocumentStatus, getReportStatus, getBookedSlots,
   getPublicLandingStats, getPublicWeather,
-  type CalendarEvent, type DocumentTrackingStatus, type PublicProject, type LostFoundItem, type PublicLandingStats, type PublicWeather
+  type CalendarEvent, type DocumentTrackingStatus, type ReportTrackingStatus, type PublicProject, type LostFoundItem, type PublicLandingStats, type PublicWeather
 } from "../api/services";
 
 // Small helpers / placeholders
@@ -1085,6 +1085,102 @@ function TrackerModal({ onClose, trackingId }: { onClose: () => void; trackingId
     </AnimatePresence>
   );
 }
+
+function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trackingId: string }) {
+  const [reportStatus, setReportStatus] = useState<ReportTrackingStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getReportStatus(trackingId).then(result => {
+      setReportStatus(result);
+      setLoading(false);
+    }).catch(() => {
+      setReportStatus(null);
+      setLoading(false);
+    });
+  }, [trackingId]);
+
+  const currentStep = reportStatus?.step ?? 0;
+  const statuses = [
+    { label: "Report Filed", desc: "Your report has been submitted" },
+    { label: "Under Investigation", desc: "Barangay staff is reviewing the report" },
+    { label: "Resolved", desc: "The report has been marked complete" },
+  ];
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="backdrop-blur-2xl bg-white/90 border border-white/50 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="bg-gradient-to-r from-rose-600 to-orange-500 px-6 py-5">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-white" style={{ fontFamily: "Montserrat" }}>Report Status</h3>
+                <p className="text-white/60 text-xs mt-0.5">Tracking #: <strong className="text-white/90">{trackingId}</strong></p>
+              </div>
+              <button onClick={onClose} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+          </div>
+          <div className="p-6 space-y-1">
+            <div className="mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+              This tracker is for incident reports and document refund requests only.
+            </div>
+            {loading ? (
+              <div className="py-8 flex flex-col items-center gap-3 text-gray-400">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-8 h-8 border-2 border-gray-200 border-t-rose-500 rounded-full" />
+                <p className="text-sm">Looking up your report...</p>
+              </div>
+            ) : !reportStatus?.found ? (
+              <div className="py-8 text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mx-auto"><X className="w-6 h-6 text-rose-400" /></div>
+                <p className="text-sm text-[#1B263B]">Tracking ID not found</p>
+                <p className="text-xs text-gray-400">No incident or refund request matches <strong>{trackingId}</strong>.</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 bg-[#F5F7FA] rounded-xl p-3 text-xs space-y-1">
+                  <div className="flex justify-between"><span className="text-gray-400">Tracking ID</span><span className="text-[#1B263B]">{reportStatus.id}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Type</span><span className="text-[#1B263B]">{reportStatus.type}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Category</span><span className="text-[#1B263B] text-right max-w-[60%]">{reportStatus.category}{reportStatus.subcategory ? ` - ${reportStatus.subcategory}` : ""}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Date Filed</span><span className="text-[#1B263B]">{reportStatus.date}</span></div>
+                  {reportStatus.location && <div className="flex justify-between"><span className="text-gray-400">Location</span><span className="text-[#1B263B] text-right max-w-[60%]">{reportStatus.location}</span></div>}
+                  {reportStatus.statusUpdatedAt && (
+                    <div className="flex justify-between"><span className="text-gray-400">Status Updated</span><span className="text-[#1B263B] text-right max-w-[60%]">{new Date(reportStatus.statusUpdatedAt).toLocaleString("en-PH", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div>
+                  )}
+                  <div className="flex justify-between"><span className="text-gray-400">Status</span><span className="capitalize text-rose-500">{reportStatus.status}</span></div>
+                </div>
+                {statuses.map((s, i) => (
+                  <div key={s.label} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: i * 0.15 }}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${i < currentStep ? "bg-rose-500 border-rose-500" : i === currentStep ? "border-rose-500 bg-white" : "border-gray-200 bg-white"}`}
+                      >
+                        {i < currentStep && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-2 h-2 rounded-full bg-white" />}
+                        {i === currentStep && <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
+                      </motion.div>
+                      {i < 2 && <div className={`w-0.5 h-10 ${i < currentStep ? "bg-rose-500" : "bg-gray-200"}`} />}
+                    </div>
+                    <div className="pb-6">
+                      <p className={`text-sm ${i <= currentStep ? "text-[#1B263B]" : "text-gray-300"}`}>{s.label}</p>
+                      <p className={`text-xs mt-0.5 ${i <= currentStep ? "text-gray-400" : "text-gray-200"}`}>{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
 // --- Clinic Booking (with patient health info) ---
  
 function ClinicBookingModal({ onClose }: { onClose: () => void }) {
@@ -1699,12 +1795,19 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                       return;
                     }
 
+                    const reportPrintWindow = window.open("", "_blank");
+                    if (!reportPrintWindow) {
+                      showToast("Popup blocked. Please allow popups and try again.");
+                      return;
+                    }
+
                     submitPublicReport({
                         id: reportDraftId,
                         category: form.category,
                         subcategory: refundReason || "",
                         details: isRefund ? `Document refund request for tracking ID ${refundForm.trackingId}. Reason: ${refundReason}.` : form.details,
                         location: form.location,
+                        incidentDate: form.incidentDate,
                         incidentTime: form.incidentTime,
                         urgency: form.urgency,
                         reporter: isRefund ? refundForm.gcashName || "Anonymous" : (anon ? "Anonymous" : form.reporterName),
@@ -1719,7 +1822,46 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                       }).then(result => {
                         const trackingId = result.trackingId || result.id || result.report?.id || reportDraftId;
                         showToast("Report submitted successfully! Reference: " + trackingId);
+                        const reportType = isRefund ? "Document Refund Request" : "Incident Report";
+                        const fields = isRefund ? [
+                          ["Tracking Number", trackingId],
+                          ["Report Type", reportType],
+                          ["Document Tracking ID", refundForm.trackingId],
+                          ["GCash Number", refundForm.gcashNumber],
+                          ["GCash Account Name", refundForm.gcashName],
+                          ["Refund Reason", refundReason || "Not specified"],
+                          ["Evidence Photos", String(evidencePhotos.length)],
+                          ["Date Filed", new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })],
+                        ] : [
+                          ["Tracking Number", trackingId],
+                          ["Report Type", reportType],
+                          ["Reporter", anon ? "Anonymous" : form.reporterName],
+                          ["Phone", anon ? "Hidden" : form.reporterPhone],
+                          ["Relation", anon ? "Hidden" : form.reporterRelation],
+                          ["Category", `${form.category}${resolvedSubcategory ? " - " + resolvedSubcategory : ""}`],
+                          ["Urgency", form.urgency],
+                          ["Incident Date", `${form.incidentDate} ${form.incidentTime || ""}`],
+                          ["Location", form.location],
+                          ["Landmark", form.landmark || ""],
+                          ["Person Involved", form.suspectName || "Unknown"],
+                          ["People Affected", form.victimsInvolved || ""],
+                          ["Evidence Photos", String(evidencePhotos.length)],
+                          ["Date Filed", new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })],
+                        ];
+                        reportPrintWindow.document.write(`<html><head><title>Report Summary</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:680px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #e11d48}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#e11d48;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;gap:18px;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:58%}.block{margin-top:18px}.block h2{font-size:13px;color:#e11d48;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}.block p{font-size:12px;line-height:1.55;white-space:pre-wrap}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}</style></head><body>`);
+                        reportPrintWindow.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Report Summary</p><span class="badge">CIVIC-FLOW</span></div>`);
+                        fields.filter(([, value]) => value).forEach(([l, v]) => reportPrintWindow.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
+                        reportPrintWindow.document.write(`<div class="block"><h2>${isRefund ? "Refund Details" : "Narrative"}</h2><p>${isRefund ? `Document refund request for tracking ID ${refundForm.trackingId}. Reason: ${refundReason || "Not specified"}.` : form.details}</p></div>`);
+                        if (!isRefund && form.evidenceDesc) {
+                          reportPrintWindow.document.write(`<div class="block"><h2>Evidence Description</h2><p>${form.evidenceDesc}</p></div>`);
+                        }
+                        reportPrintWindow.document.write(`<div class="ft">Keep this summary for your records. Use the tracking number in the Report Tracker to check status updates.<br/>For inquiries call (032) 345-6789.</div></body></html>`);
+                        reportPrintWindow.document.close();
+                        reportPrintWindow.print();
                         window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
+                      }).catch(() => {
+                        reportPrintWindow.close();
+                        showToast("Failed to submit report. Please try again.");
                       });
                     onClose();
                   }} disabled={!agreed}
@@ -2094,11 +2236,14 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [showDocForm, setShowDocForm] = useState(false);
   const [showTracker, setShowTracker] = useState(false);
+  const [showReportTracker, setShowReportTracker] = useState(false);
   const [showClinic, setShowClinic] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [isDocumentRefund, setIsDocumentRefund] = useState(false);
   const [trackingId, setTrackingId] = useState("");
   const [trackerInput, setTrackerInput] = useState("");
+  const [reportTrackingId, setReportTrackingId] = useState("");
+  const [reportTrackerInput, setReportTrackerInput] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [financeProjects, setFinanceProjects] = useState<PublicProject[]>([]);
@@ -2304,7 +2449,7 @@ export default function LandingPage() {
           <p className="text-gray-400 mt-2 max-w-md mx-auto text-sm">Access government services without the hassle. Everything you need, right at your fingertips.</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Document Request */}
           <motion.button
             whileHover={{ y: -6 }}
@@ -2335,6 +2480,22 @@ export default function LandingPage() {
               </button>
             </div>
             <p className="text-[10px] text-gray-400 mt-2">Document requests are deleted 4 months after the request date.</p>
+          </motion.div>
+
+          {/* Report Tracker */}
+          <motion.div whileHover={{ y: -6 }} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 hover:shadow-xl hover:shadow-rose-500/10 transition-shadow">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center mb-5 shadow-lg shadow-rose-500/20">
+              <Search className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-[#1B263B] mb-2">Track Report</h3>
+            <p className="text-sm text-gray-400 mb-4">Check incident and refund request status.</p>
+            <div className="flex gap-2">
+              <input placeholder="e.g. RPT-001 or RDF-001" className="flex-1 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-300 border-0" value={reportTrackerInput} onChange={e => setReportTrackerInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && reportTrackerInput) { setReportTrackingId(reportTrackerInput); setShowReportTracker(true); }}} />
+              <button onClick={() => { if (reportTrackerInput) { setReportTrackingId(reportTrackerInput); setShowReportTracker(true); } }} className="bg-gradient-to-r from-rose-500 to-orange-500 text-white px-4 py-2.5 rounded-xl text-sm hover:shadow-md transition-all">
+                <Search className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2">For incident reports and request refunds only.</p>
           </motion.div>
 
           {/* Clinic Booking */}
@@ -2507,6 +2668,7 @@ export default function LandingPage() {
       <AnimatePresence>
         {showDocForm && <DocumentRequestForm onClose={() => setShowDocForm(false)} />}
         {showTracker && <TrackerModal onClose={() => setShowTracker(false)} trackingId={trackingId} />}
+        {showReportTracker && <ReportTrackerModal onClose={() => setShowReportTracker(false)} trackingId={reportTrackingId} />}
         {showClinic && <ClinicBookingModal onClose={() => setShowClinic(false)} />}
         {showReport && <ReportModal onClose={() => { setShowReport(false); setIsDocumentRefund(false); }} isDocumentRefund={isDocumentRefund} />}
       </AnimatePresence>

@@ -968,6 +968,7 @@ export async function submitPublicReport(data: {
   subcategory?: string;
   details: string;
   location: string;
+  incidentDate?: string;
   incidentTime?: string;
   urgency?: string;
   reporter: string;
@@ -1183,6 +1184,29 @@ export async function getDocumentStatus(
  *  Returns already-booked time slots for a given date so the public booking
  *  form can disable unavailable slots in real-time.
  */
+export interface ReportTrackingStatus {
+  found: boolean;
+  id: string;
+  type: "Incident Report" | "Request Refund";
+  category: string;
+  subcategory?: string | null;
+  status: "new" | "investigating" | "resolved";
+  date: string;
+  location?: string | null;
+  urgency?: string | null;
+  step: number;
+  statusUpdatedAt?: string | null;
+}
+
+/** DJANGO: GET /api/incidents/track/?id=RPT-001 or RDF-001 (public, no auth)
+ *  Tracks only incident reports and document refund requests.
+ */
+export async function getReportStatus(
+  trackingId: string
+): Promise<ReportTrackingStatus | null> {
+  return apiFetch(`/api/incidents/track/?id=${encodeURIComponent(trackingId)}`);
+}
+
 export async function getBookedSlots(date: string): Promise<string[]> {
   if (!date) return [];
   return apiFetch(`/api/patients/booked-slots/?date=${encodeURIComponent(date)}`);

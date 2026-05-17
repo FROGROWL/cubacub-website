@@ -113,3 +113,41 @@ def public_report_view(request):
             'report': payload,
         }, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def report_track(request):
+    tracking_id = request.query_params.get("id")
+    if not tracking_id:
+        return Response({"found": False}, status=status.HTTP_400_BAD_REQUEST)
+
+    cleanup_expired_reports()
+
+    incident = Incident.objects.filter(id=tracking_id).first()
+    if not incident or incident.id.startswith("LF-"):
+        return Response({"found": False}, status=status.HTTP_200_OK)
+
+    is_refund = incident.category == "Document Refund" or incident.id.startswith("RDF-")
+    if not is_refund and not incident.id.startswith("RPT-"):
+        return Response({"found": False}, status=status.HTTP_200_OK)
+
+    status_map = {
+        "new": 0,
+        "investigating": 1,
+        "resolved": 2,
+    }
+
+    return Response({
+        "found": True,
+        "id": incident.id,
+        "type": "Request Refund" if is_refund else "Incident Report",
+        "category": incident.category,
+        "subcategory": incident.subcategory,
+        "status": incident.status,
+        "date": incident.incident_date,
+        "location": incident.location,
+        "urgency": incident.urgency,
+        "step": status_map.get(incident.status, 0),
+        "statusUpdatedAt": incident.updated_at,
+    })
