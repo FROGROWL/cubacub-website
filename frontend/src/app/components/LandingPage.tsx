@@ -1195,6 +1195,8 @@ function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trac
 function ClinicBookingModal({ onClose }: { onClose: () => void }) {
   const { showToast } = useToast();
   const [cStep, setCStep] = useState(1);
+  const [isBooking, setIsBooking] = useState(false);
+  const [confirmedAppointment, setConfirmedAppointment] = useState<{ id: string; dateBookedText: string } | null>(null);
   const [form, setForm] = useState({
     name: "", birthdate: "", sex: "Male", phone: "",
     consultType: "General Checkup", chiefComplaint: "", otherConsultType: "",
@@ -1217,6 +1219,36 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
   };
   const currentMinutes = new Date().getHours() * 60 + new Date().getMinutes();
   const isPastSlot = (slot: string) => isSelectedToday && slotToMinutes(slot) <= currentMinutes;
+  const appointmentFields = confirmedAppointment ? [
+    ["Appointment ID", confirmedAppointment.id],
+    ["Patient Name", form.name],
+    ["Phone", form.phone],
+    ["Birthdate", form.birthdate],
+    ["Sex", form.sex],
+    ["Consultation Type", form.consultType === "Other" ? form.otherConsultType : form.consultType],
+    ["Chief Complaint", form.chiefComplaint],
+    ["Known Allergies", form.allergies || "None"],
+    ["Current Medications", form.medications || "None"],
+    ["Pre-existing Conditions", form.conditions || "None"],
+    ["Preferred Date", form.preferredDate],
+    ["Time Slot", form.slot],
+    ["Date Booked", confirmedAppointment.dateBookedText],
+  ] : [];
+  const printAppointmentConfirmation = () => {
+    if (!confirmedAppointment) return;
+    const w = window.open("", "_blank");
+    if (!w) {
+      showToast("Popup blocked. Your appointment is already saved.");
+      return;
+    }
+    w.document.write(`<html><head><title>Appointment Confirmation</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}.warn{margin-top:16px;background:#FFF3CD;padding:12px;border-radius:8px;font-size:11px;color:#856404;text-align:center}</style></head><body>`);
+    w.document.write(`<div class="hdr"><h1>CUBACUB HEALTH CENTER</h1><p>Official Appointment Confirmation</p><span class="badge">CIVIC-FLOW</span></div>`);
+    appointmentFields.forEach(([l, v]) => w.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
+    w.document.write(`<div class="warn">Please bring this confirmation and a valid ID on your appointment date. Arrive 15 minutes early.</div>`);
+    w.document.write(`<div class="ft">Cubacub Health Center - Mon-Fri 8AM-5PM | (032) 345-6789<br/>This serves as your official proof of appointment.</div></body></html>`);
+    w.document.close();
+    w.print();
+  };
 
   /* Load booked slots from services.ts when date changes
    * DJANGO: GET /api/patients/booked-slots/?date=YYYY-MM-DD */
@@ -1257,7 +1289,35 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="p-6 overflow-y-auto flex-1">
           <AnimatePresence mode="wait">
-            {cStep === 1 && (
+            {confirmedAppointment && (
+              <motion.div key="confirmed" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-5">
+                <div className="text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                    <Check className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-[#1B263B]" style={{ fontFamily: "Montserrat" }}>Appointment Confirmed</h3>
+                  <p className="text-xs text-gray-400 mt-1">Screenshot this summary or print it when your device allows popups.</p>
+                </div>
+                <div className="bg-[#F5F7FA] rounded-2xl p-4 space-y-2">
+                  {appointmentFields.map(([label, value]) => (
+                    <div key={label} className="flex justify-between gap-4 text-sm border-b border-white last:border-0 pb-2 last:pb-0">
+                      <span className="text-gray-400">{label}</span>
+                      <span className="text-[#1B263B] text-right max-w-[60%] break-words">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-amber-50 text-amber-700 rounded-xl p-3 text-xs">
+                  Please bring this confirmation and a valid ID on your appointment date. Arrive 15 minutes early.
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={printAppointmentConfirmation} className="flex-1 bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-3 rounded-xl flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4" /> Print
+                  </button>
+                  <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors">Done</button>
+                </div>
+              </motion.div>
+            )}
+            {!confirmedAppointment && cStep === 1 && (
               <motion.div key="c1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
                 <p className="text-xs text-gray-400">Patient details for your medical record.</p>
                 <div className="grid grid-cols-2 gap-4">
@@ -1290,7 +1350,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                 </button>
               </motion.div>
             )}
-            {cStep === 2 && (
+            {!confirmedAppointment && cStep === 2 && (
               <motion.div key="c2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
                 <p className="text-xs text-gray-400">Help our health workers prepare. Leave blank if none.</p>
                 <Textarea label="Known Allergies" rows={2} placeholder="e.g. Penicillin, Seafood, Latex, None" value={form.allergies} onChange={e => cu("allergies", e.target.value)} />
@@ -1308,7 +1368,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                 </div>
               </motion.div>
             )}
-            {cStep === 3 && (
+            {!confirmedAppointment && cStep === 3 && (
               <motion.div key="c3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-5">
                 <div>
                   <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Preferred Date<span className="text-rose-400 ml-0.5">*</span></label>
@@ -1347,7 +1407,6 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                       showToast("Please choose an available current or future schedule.");
                       return;
                     }
-                    const confirmationWindow = window.open("", "_blank");
                     const apptId = `CLN-${Date.now().toString().slice(-6)}`;
                     const dateBookedIso = new Date().toISOString();
                     const dateBookedText = new Date(dateBookedIso).toLocaleString("en-PH", {
@@ -1361,6 +1420,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                     /* Save to services.ts so Clinic Handler dashboard can see this booking.
                      * DJANGO: This will POST to /api/patients/ */
                     try {
+                      setIsBooking(true);
                       await addPatient({
                         name: form.name,
                         time: form.slot,
@@ -1377,26 +1437,20 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                         conditions: form.conditions || "None",
                         queueDate: form.preferredDate,
                       });
-                    } catch {
-                      showToast("Failed to create appointment. Please try again.");
+                    } catch (error) {
+                      getBookedSlots(form.preferredDate).then(setTaken).catch(() => {});
+                      const message = error instanceof Error ? error.message : "";
+                      showToast(message.includes("already booked") ? "That time slot was just booked. Please choose another slot." : "Failed to create appointment. Please try again.");
+                      setIsBooking(false);
                       return;
                     }
+                    setIsBooking(false);
                     window.dispatchEvent(new CustomEvent("clinicUpdate"));
-                    const w = confirmationWindow;
-                    if (w) {
-                      const flds = [["Appointment ID", apptId],["Patient Name", form.name],["Phone", form.phone],["Birthdate", form.birthdate],["Sex", form.sex],["Consultation Type", form.consultType === "Other" ? form.otherConsultType : form.consultType],["Chief Complaint", form.chiefComplaint],["Known Allergies", form.allergies || "None"],["Current Medications", form.medications || "None"],["Pre-existing Conditions", form.conditions || "None"],["Preferred Date", form.preferredDate],["Time Slot", form.slot],["Date Booked", dateBookedText]];
-                      w.document.write(`<html><head><title>Appointment Confirmation</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}.warn{margin-top:16px;background:#FFF3CD;padding:12px;border-radius:8px;font-size:11px;color:#856404;text-align:center}</style></head><body>`);
-                      w.document.write(`<div class="hdr"><h1>CUBACUB HEALTH CENTER</h1><p>Official Appointment Confirmation</p><span class="badge">CIVIC-FLOW</span></div>`);
-                      flds.forEach(([l, v]) => w.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
-                      w.document.write(`<div class="warn">Please bring this confirmation and a valid ID on your appointment date. Arrive 15 minutes early.</div>`);
-                      w.document.write(`<div class="ft">Cubacub Health Center — Mon–Fri 8AM–5PM | (032) 345-6789<br/>This serves as your official proof of appointment.</div></body></html>`);
-                      w.document.close(); w.print();
-                    }
-                    showToast(w ? `Appointment confirmed! ID: ${apptId}` : `Appointment confirmed! ID: ${apptId}. Popups are blocked on this device.`);
-                    onClose();
-                  }} disabled={!form.preferredDate || !form.slot || selectedDateIsPast || isPastSlot(form.slot)}
+                    setConfirmedAppointment({ id: apptId, dateBookedText });
+                    showToast(`Appointment confirmed! ID: ${apptId}`);
+                  }} disabled={isBooking || !form.preferredDate || !form.slot || selectedDateIsPast || isPastSlot(form.slot)}
                     className="flex-1 bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-lg transition-all">
-                    <Sparkles className="w-4 h-4" /> Confirm & Print
+                    <Sparkles className="w-4 h-4" /> {isBooking ? "Saving..." : "Confirm Appointment"}
                   </button>
                 </div>
               </motion.div>
@@ -2746,4 +2800,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
 
