@@ -1,0 +1,151 @@
+BARANGAY CUBACUB CIVIC-FLOW WEBSITE RESEARCH DESCRIPTION
+=========================================================
+
+Barangay Cubacub Civic-Flow Website and Management Portal is a public-facing and staff-operated web-based information system designed to support barangay service delivery, transparency, reporting, clinic queue management, document processing, project monitoring, and administrative supervision. The system serves two main user groups: residents/public users and authorized barangay staff. Public users can access information, submit requests, track documents, view finance transparency data, report incidents, and interact with public services. Staff users access role-based dashboards for managing barangay operations.
+
+The website is built as a full-stack system using a React + Vite frontend, a Django REST Framework backend, and a PostgreSQL database. The frontend is deployed as a static web application through Cloudflare Pages, while the backend is deployed as a Django API service on Render. PostgreSQL stores persistent records such as staff accounts, document requests, incidents, cases, clinic patients, calendar events, projects, and audit logs.
+
+
+1. SYSTEM LOGIC
+---------------
+
+The system follows a client-server architecture. The frontend handles page rendering, user interaction, forms, dashboards, local UI state, and API requests. The backend handles authentication, authorization, business rules, database operations, data validation, and API responses. The database provides persistent storage for all operational data.
+
+The public website allows residents to perform services without needing a staff account. Examples include submitting document requests, reporting incidents, checking document status, viewing public projects, viewing weather information, checking clinic appointment slots, and browsing posted lost-and-found items. Staff functions require authentication through JWT tokens. Once logged in, the system stores the access and refresh tokens in the browser and uses them for authenticated API requests.
+
+The frontend communicates with the backend through a centralized service layer located in frontend/src/app/api/services.ts. This file defines the API base URL, token handling, refresh-token logic, and all frontend data operations. The frontend uses VITE_API_BASE_URL to connect to the deployed backend.
+
+
+2. FRONTEND DESCRIPTION
+-----------------------
+
+The frontend is a React application built with Vite. It uses React Router to define the main pages:
+
+- / for the public landing page
+- /staff-login for staff login
+- /dashboard for role-based staff dashboards
+- /finance for public finance transparency
+
+The main frontend entry point is App.tsx, which loads the router configuration. The layout component wraps the application and provides shared UI behavior such as notifications.
+
+The public landing page presents barangay information and service access points. It includes public forms for document requests, incident reports, lost-and-found reports, and clinic appointment-related functions. It also displays live or periodically refreshed public data, such as landing statistics, public weather information, calendar events, and finance transparency records.
+
+The staff dashboard uses the logged-in user's role to display the correct operational interface. The system supports several staff roles:
+
+- Super Admin
+- Document Handler
+- Report Handler
+- Clinic Handler
+- Treasurer
+
+Each dashboard is responsible for a specific barangay function. For example, the Document Handler manages document requests, the Report Handler manages incident and case records, the Clinic Handler manages patient queue records, and the Treasurer manages public projects, budgets, and financial transparency data.
+
+The frontend uses periodic API refreshes and custom browser events to keep certain views updated. For example, public statistics refresh at intervals, while dashboard modules dispatch update events after records are created, updated, or deleted. This gives the system near real-time behavior without requiring WebSockets.
+
+
+3. BACKEND DESCRIPTION
+----------------------
+
+The backend is built with Django and Django REST Framework. It exposes REST API endpoints under /api/ and authentication endpoints under /auth/. JWT authentication is used for staff login, token refresh, and protected API access.
+
+The backend is organized into functional modules:
+
+- super_admin
+- document_handler
+- report_handler
+- clinic_handler
+- treasurer_handler
+- other
+
+Each module contains related models, serializers, views, permissions, and URL configurations. The root API URL file includes these modules into one API namespace.
+
+The backend implements both public and protected endpoints. Public endpoints use AllowAny permissions where residents need access without logging in, such as document submission, incident submission, document tracking, public project viewing, weather data, and public statistics. Staff endpoints use authentication and role-based permissions to restrict access to authorized users.
+
+The backend also includes deployment-oriented configuration. It supports environment variables for production settings, including SECRET_KEY, DEBUG, ALLOWED_HOSTS, DATABASE_URL, CORS origins, and CSRF trusted origins. It uses gunicorn for production serving, whitenoise for static file handling, and dj-database-url for Render PostgreSQL connection support.
+
+
+4. DATABASE DESCRIPTION
+-----------------------
+
+The database uses PostgreSQL and stores the system's operational records. The main database entities include:
+
+- StaffAccount
+- PasswordResetCode
+- AuditLog
+- DocumentRequest
+- DocumentCaseRecord
+- Incident
+- CaseRecord
+- LostFoundItem
+- Patient
+- Project
+- TreasurerSettings
+- CalendarEvent
+
+StaffAccount extends Django's AbstractUser and represents barangay staff users. It includes fields such as name, role, online status, contact information, and profile details. Staff roles determine which dashboard and backend functions a user may access.
+
+DocumentRequest stores resident document requests. It includes applicant details, requested document type, purpose, status, uploaded document references, payment proof, requirements, pickup deadline, notes, and rejection reason. Status values include pending, approved, processing, ready to pick up, claimed, unclaimed, and rejected.
+
+DocumentCaseRecord stores case-checking or verification records related to document processing. It can mark a person or request as cleared, flagged, or under review.
+
+Incident stores public or staff-submitted reports and complaints. It includes reporter information, anonymity option, category, urgency, details, location, suspect information, evidence photo references, status, source, and assigned handler.
+
+CaseRecord stores formal case management information. It includes subject name, crime or complaint description, status, charges, complainant, respondent, mediator, remarks, and resolution details.
+
+LostFoundItem stores lost-and-found reports. It includes item type, reporter details, item description, category, location, incident date, status, image URL, and handler notes.
+
+Patient stores clinic queue and appointment-related data. It includes patient name, time, reason, status, phone, birthdate, sex, complaint, allergies, medications, conditions, queue date, appointment ID, and booking date.
+
+Project stores barangay project and finance transparency data. It includes project name, status, budget, amount spent, progress, description, location, dates, contractor, funding source, category, images, milestones, and staff update references.
+
+CalendarEvent stores public or internal calendar records, including event date, title, color, source, icon, and type.
+
+
+5. AUTHENTICATION AND SECURITY
+------------------------------
+
+The system uses JWT authentication through Django REST Framework SimpleJWT. Staff users log in through /auth/login/, receive access and refresh tokens, and use the access token for protected API requests. When the access token expires, the frontend attempts to refresh it automatically.
+
+Production security depends on environment variables. The backend should run with:
+
+DEBUG=False
+ALLOWED_HOSTS=cubacub-website.onrender.com
+CORS_ALLOW_ALL_ORIGINS=False
+CORS_ALLOWED_ORIGINS=https://your-cloudflare-domain.pages.dev
+CSRF_TRUSTED_ORIGINS=https://your-cloudflare-domain.pages.dev
+DATABASE_URL=your-render-postgres-internal-url
+
+Private staff dashboards require authentication, while public-facing service endpoints remain accessible to residents.
+
+
+6. DEPLOYMENT DESCRIPTION
+-------------------------
+
+The frontend is deployed on Cloudflare Pages. Since the frontend project is inside the frontend directory, Cloudflare must use:
+
+Root directory: frontend
+Build command: pnpm run build
+Build output directory: dist
+
+The backend is deployed on Render. Render should use:
+
+Root directory: backend
+Build command: pip install -r requirements.txt && python manage.py collectstatic --noinput
+Start command: gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
+
+Migrations and superuser creation can be handled through a Render Pre-Deploy Command:
+
+python manage.py migrate && python manage.py ensure_superuser
+
+The admin account is created from environment variables:
+
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_EMAIL=your-email@example.com
+DJANGO_SUPERUSER_PASSWORD=your-strong-password
+
+
+7. SUMMARY
+----------
+
+Overall, the Barangay Cubacub Civic-Flow system is a digital governance platform that combines public service access with internal barangay management. Its frontend provides an accessible interface for residents and role-based dashboards for staff. Its backend provides secure REST APIs, authentication, permissions, and business logic. Its PostgreSQL database stores persistent operational records. The system supports transparency, faster request handling, organized reporting, clinic management, project monitoring, and centralized staff administration.
+
