@@ -32,6 +32,9 @@ class LostFoundViewSet(viewsets.ModelViewSet):
             else:
                 data['reporter_id'] = f"LF-{random.randint(1000, 9999)}"
 
+        if data.get('image_urls') and not data.get('image_url'):
+            data['image_url'] = data['image_urls'][0]
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)

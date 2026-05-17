@@ -650,13 +650,14 @@ export default function ReportHandler() {
                           </span>
                           <span className="text-xs bg-gray-50 text-gray-500 px-2.5 py-1 rounded-full capitalize">{item.item_type}</span>
                           <span className="text-xs bg-gray-50 text-gray-500 px-2.5 py-1 rounded-full">{item.category || "—"}</span>
-                          {item.image_url && <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full flex items-center gap-1"><ImageIcon className="w-3 h-3" />1 photo</span>}
+                          {(item.image_urls?.length || item.image_url) && <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full flex items-center gap-1"><ImageIcon className="w-3 h-3" />{item.image_urls?.length || 1} photo{(item.image_urls?.length || 1) === 1 ? "" : "s"}</span>}
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-300">
                           <Clock className="w-3 h-3" />{formatExactTimestamp(item.created_at || item.date_reported)}
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-2">{item.description || item.item_name}</p>
+                      <p className="text-sm text-[#1B263B] mb-1 leading-relaxed line-clamp-1" style={{ fontWeight: 600 }}>{item.item_name}</p>
+                      <p className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-2">{item.description || "No description provided."}</p>
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div className="flex items-center gap-4 text-xs text-gray-400">
                           <span className="flex items-center gap-1.5">{item.is_anonymous ? <Shield className="w-3.5 h-3.5 text-[#008080]" /> : <User className="w-3.5 h-3.5" />}{item.is_anonymous ? "Anonymous" : item.reporter_name || "—"}</span>
@@ -775,19 +776,23 @@ export default function ReportHandler() {
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
                   <p className="text-xs text-blue-500 uppercase tracking-wider mt-3">Item</p>
-                  {[ ["Type", reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"], ["Category", reviewLF.category || "—"], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
+                  {[ ["Item Name", reviewLF.item_name || "—"], ["Type", reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"], ["Category", reviewLF.category || "—"], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
                   ))}
                   <p className="text-xs text-blue-500 uppercase tracking-wider mt-3">Narrative</p>
                   <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{reviewLF.description || "—"}</p>
                 </div>
 
-                {reviewLF.image_url && (
+                {((reviewLF.image_urls && reviewLF.image_urls.length > 0) || reviewLF.image_url) && (
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Evidence</p>
-                    <button onClick={() => setViewPhoto(reviewLF.image_url || null)} className="w-full h-40 rounded-xl border border-gray-200 overflow-hidden hover:opacity-80 transition-opacity">
-                      <img src={reviewLF.image_url} alt={reviewLF.item_name} className="w-full h-full object-cover" />
-                    </button>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Evidence ({reviewLF.image_urls?.length || 1})</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(reviewLF.image_urls?.length ? reviewLF.image_urls : [reviewLF.image_url]).filter(Boolean).map((photo, i) => (
+                        <button key={i} onClick={() => setViewPhoto(photo || null)} className="w-full h-32 rounded-xl border border-gray-200 overflow-hidden hover:opacity-80 transition-opacity">
+                          <img src={photo || ""} alt={`${reviewLF.item_name} ${i + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 

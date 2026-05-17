@@ -25,6 +25,7 @@ const communityImg = "https://images.unsplash.com/photo-1762245832988-82c6ecf9a7
 const formatCurrency = (value: number | string) => Number(value || 0).toLocaleString();
 const normalizePhoneInput = (value: string) => value.replace(/\D/g, "").slice(0, 11);
 const isValidPhilippineMobile = (value: string) => /^09\d{9}$/.test(value);
+const todayInputDate = () => new Date().toLocaleDateString("en-CA");
 function getStatusBadge(status?: string) {
   switch ((status || "").toLowerCase()) {
     case "completed": return { label: "Completed", bg: "bg-emerald-600" };
@@ -578,7 +579,7 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Phone Number<span className="text-rose-400 ml-0.5">*</span></label>
-                    <input placeholder="09XXXXXXXXX" value={form.phone} onChange={e => u("phone", normalizePhoneInput(e.target.value))} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" inputMode="numeric" maxLength={11} />
+                    <input type="tel" placeholder="09XXXXXXXXX" value={form.phone} onChange={e => u("phone", normalizePhoneInput(e.target.value))} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" inputMode="numeric" maxLength={11} pattern="09[0-9]{9}" />
                     {form.phone && !phoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
                   </div>
                   <div>
@@ -1257,7 +1258,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                   <Input label="Full Name" required placeholder="Full name" value={form.name} onChange={e => cu("name", e.target.value)} />
                   <div>
                     <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Phone<span className="text-rose-400 ml-0.5">*</span></label>
-                    <input placeholder="09XXXXXXXXX" value={form.phone} onChange={e => cu("phone", normalizePhoneInput(e.target.value))} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" inputMode="numeric" maxLength={11} />
+                    <input type="tel" placeholder="09XXXXXXXXX" value={form.phone} onChange={e => cu("phone", normalizePhoneInput(e.target.value))} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" inputMode="numeric" maxLength={11} pattern="09[0-9]{9}" />
                     {form.phone && !isValidPhilippineMobile(form.phone) && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
                   </div>
                 </div>
@@ -1481,6 +1482,8 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
   const isLostFoundCategory = form.category === "Lost Item" || form.category === "Found Item";
   const needsOtherSpecification = isOtherCategory || form.subcategory === "Other";
   const resolvedSubcategory = needsOtherSpecification ? form.otherSubcategory : form.subcategory;
+  const reportToday = todayInputDate();
+  const incidentDateIsFuture = Boolean(form.incidentDate && form.incidentDate > reportToday);
   const refundPhoneValid = isValidPhilippineMobile(refundForm.gcashNumber);
   const reporterPhoneValid = isValidPhilippineMobile(form.reporterPhone);
   const canR1 = isRefund
@@ -1488,7 +1491,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
     : (anon || (form.reporterName && reporterPhoneValid));
   const canR2 = isRefund
     ? (form.subcategory && form.subcategory !== "" && (form.subcategory !== "Other" || form.otherSubcategory.trim().length > 0))
-    : (form.category && form.incidentDate && form.location && (!isLostFoundCategory || form.itemName.trim().length > 0) && (!needsOtherSpecification || form.otherSubcategory.trim().length > 0));
+    : (form.category && form.incidentDate && !incidentDateIsFuture && form.location && (!isLostFoundCategory || form.itemName.trim().length > 0) && (!needsOtherSpecification || form.otherSubcategory.trim().length > 0));
   const canR3 = isRefund ? evidencePhotos.length > 0 : form.details.length >= 20;
 
   return (
@@ -1531,7 +1534,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                     <p className="text-xs text-gray-500 uppercase tracking-wider">Payment Information (Required for Refund)</p>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Input label="GCash Number" required placeholder="09XXXXXXXXX" value={refundForm.gcashNumber} onChange={e => setRefundForm({ ...refundForm, gcashNumber: normalizePhoneInput(e.target.value) })} inputMode="numeric" maxLength={11} />
+                        <Input label="GCash Number" required type="tel" placeholder="09XXXXXXXXX" value={refundForm.gcashNumber} onChange={e => setRefundForm({ ...refundForm, gcashNumber: normalizePhoneInput(e.target.value) })} inputMode="numeric" maxLength={11} pattern="09[0-9]{9}" />
                         {refundForm.gcashNumber && !refundPhoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
                       </div>
                       <Input label="GCash Account Name" required placeholder="Full name of account owner" value={refundForm.gcashName} onChange={e => setRefundForm({ ...refundForm, gcashName: e.target.value })} />
@@ -1551,7 +1554,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                           <div className="grid grid-cols-2 gap-4">
                             <Input label="Full Name" required placeholder="Your full name" value={form.reporterName} onChange={e => ru("reporterName", e.target.value)} />
                             <div>
-                              <Input label="Phone Number" required placeholder="09XXXXXXXXX" value={form.reporterPhone} onChange={e => ru("reporterPhone", normalizePhoneInput(e.target.value))} inputMode="numeric" maxLength={11} />
+                              <Input label="Phone Number" required type="tel" placeholder="09XXXXXXXXX" value={form.reporterPhone} onChange={e => ru("reporterPhone", normalizePhoneInput(e.target.value))} inputMode="numeric" maxLength={11} pattern="09[0-9]{9}" />
                               {form.reporterPhone && !reporterPhoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
                             </div>
                           </div>
@@ -1649,7 +1652,8 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                       )}
                       <div>
                         <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Date of Incident<span className="text-rose-400 ml-0.5">*</span></label>
-                        <input type="date" className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-300 outline-none" value={form.incidentDate} onChange={e => ru("incidentDate", e.target.value)} />
+                        <input type="date" max={reportToday} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-300 outline-none" value={form.incidentDate} onChange={e => ru("incidentDate", e.target.value)} />
+                        {incidentDateIsFuture && <p className="text-xs text-rose-400 mt-1">Date of incident cannot be in the future.</p>}
                       </div>
                       <div>
                         <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Approx. Time</label>
@@ -1830,6 +1834,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                         location: form.location,
                         date_of_incident: form.incidentDate,
                         image_url: evidencePhotos[0],
+                        image_urls: evidencePhotos,
                         landmark: form.landmark,
                         person_involved: form.suspectName,
                         victims_involved: form.victimsInvolved,
@@ -2159,11 +2164,15 @@ function LostFoundSection() {
                       item.image_url ? 'text-white/70' : 'text-gray-300'
                     }`}>
                       <Clock className="w-3 h-3" />{formatExactTimestamp(item.created_at || item.date_reported)}
+                      {(item.image_urls?.length || item.image_url) && <span className="flex items-center gap-1"><Camera className="w-3 h-3" />{item.image_urls?.length || 1}</span>}
                     </div>
                   </div>
+                    <p className={`text-sm mb-1 leading-relaxed line-clamp-1 ${
+                      item.image_url ? 'text-white' : 'text-[#1B263B]'
+                    }`} style={{ fontWeight: 600 }}>{item.item_name}</p>
                     <p className={`text-sm mb-2 leading-relaxed line-clamp-1 ${
                       item.image_url ? 'text-white/90' : 'text-gray-600'
-                    }`}>{item.description || item.item_name}</p>
+                    }`}>{item.description || "No description provided."}</p>
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                       <div className="flex items-center gap-4 text-xs text-white/70">
                       <span className="flex items-center gap-1.5">{item.is_anonymous ? <Shield className="w-3.5 h-3.5 text-[#008080]" /> : <User className="w-3.5 h-3.5" />}{item.is_anonymous ? "Anonymous" : item.reporter_name || "—"}</span>
@@ -2229,6 +2238,7 @@ function LostFoundSection() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Item</p>
+                      <div className="text-[#1B263B] text-sm">{viewItem.item_name || "—"}</div>
                       <div className="text-[#1B263B] text-sm capitalize">{viewItem.item_type}</div>
                       <div className="text-xs text-gray-400 mt-1">{viewItem.category || "—"}</div>
                     </div>
@@ -2236,7 +2246,7 @@ function LostFoundSection() {
 
                   <div className="border-t border-gray-100 pt-3">
                     <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Item / Incident</p>
-                    {[ ["Type", viewItem.item_type === "lost" ? "Lost Item" : "Found Item"], ["Location", viewItem.location || "—"], ["Landmark", viewItem.landmark || "—"], ["Person Involved", viewItem.person_involved || "—"], ["Victims", viewItem.victims_involved || "—"] ].map(([label, value]) => (
+                    {[ ["Item Name", viewItem.item_name || "—"], ["Type", viewItem.item_type === "lost" ? "Lost Item" : "Found Item"], ["Location", viewItem.location || "—"], ["Landmark", viewItem.landmark || "—"], ["Person Involved", viewItem.person_involved || "—"], ["Victims", viewItem.victims_involved || "—"] ].map(([label, value]) => (
                       <div key={label} className="flex justify-between text-xs"><span className="text-gray-400">{label}</span><span className="text-[#1B263B] max-w-[55%] text-right">{value}</span></div>
                     ))}
                   </div>
@@ -2246,12 +2256,16 @@ function LostFoundSection() {
                     <div className="text-sm text-[#1B263B] whitespace-pre-wrap">{viewItem.description || "—"}</div>
                   </div>
 
-                  {viewItem.image_url && (
+                  {((viewItem.image_urls && viewItem.image_urls.length > 0) || viewItem.image_url) && (
                     <div className="border-t border-gray-100 pt-3">
-                      <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Evidence</p>
-                      <button onClick={() => setViewPhoto(viewItem.image_url || null)} className="w-full rounded-xl overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity max-h-44">
-                        <img src={viewItem.image_url} alt={viewItem.item_name} className="w-full h-44 object-cover" />
-                      </button>
+                      <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Evidence ({viewItem.image_urls?.length || 1})</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(viewItem.image_urls?.length ? viewItem.image_urls : [viewItem.image_url]).filter(Boolean).map((photo, i) => (
+                          <button key={i} onClick={() => setViewPhoto(photo || null)} className="w-full rounded-xl overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity">
+                            <img src={photo || ""} alt={`${viewItem.item_name} ${i + 1}`} className="w-full h-32 object-cover" />
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -776,6 +776,7 @@ export interface LostFoundItem {
   date_reported: string;
   date_of_incident?: string;
   image_url?: string;
+  image_urls?: string[];
   landmark?: string;
   person_involved?: string;
   victims_involved?: string;

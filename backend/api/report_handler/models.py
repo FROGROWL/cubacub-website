@@ -281,6 +281,7 @@ class LostFoundItem(models.Model):
 
     # Media
     image_url = models.TextField(blank=True, null=True)  # URL to uploaded image
+    image_urls = models.JSONField(default=list, blank=True)
 
     # Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
