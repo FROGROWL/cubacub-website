@@ -184,11 +184,12 @@ export default function ClinicHandler() {
     });
   };
 
-  const bookedSlotsForScheduleDate = new Set(
-    queue
-      .filter(p => (p.queueDate || p.queue_date) === scheduleDate && p.status !== "canceled")
-      .map(p => p.time)
-  );
+  const bookingCountsForScheduleDate = queue
+    .filter(p => (p.queueDate || p.queue_date) === scheduleDate && p.status !== "canceled")
+    .reduce<Record<string, number>>((counts, patient) => {
+      counts[patient.time] = (counts[patient.time] || 0) + 1;
+      return counts;
+    }, {});
 
   const toggleUnavailableSlot = async (slot: string) => {
     const existing = unavailableSlots.find(item => item.date === scheduleDate && item.time === slot);
@@ -291,10 +292,10 @@ export default function ClinicHandler() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {clinicSlots.map(slot => {
             const manual = unavailableSlots.find(item => item.date === scheduleDate && item.time === slot);
-            const isBooked = bookedSlotsForScheduleDate.has(slot);
+            const bookingCount = bookingCountsForScheduleDate[slot] || 0;
             const isPast = isPastScheduleSlot(slot);
-            const locked = isBooked || isPast;
-            const statusText = isPast ? "Past" : isBooked ? "Booked" : manual ? "Unavailable" : "Available";
+            const locked = isPast;
+            const statusText = isPast ? "Past" : manual ? "Unavailable" : "Available";
             return (
               <button
                 key={slot}
@@ -302,7 +303,6 @@ export default function ClinicHandler() {
                 disabled={locked}
                 className={`rounded-xl border px-3 py-3 text-left transition-all ${
                   isPast ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed line-through" :
-                  isBooked ? "bg-blue-50 border-blue-100 text-blue-500 cursor-not-allowed" :
                   manual ? "bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100" :
                   "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100"
                 }`}
@@ -310,6 +310,7 @@ export default function ClinicHandler() {
               >
                 <span className="block text-sm">{slot}</span>
                 <span className="block text-[10px] mt-1 uppercase tracking-wide">{statusText}</span>
+                <span className={`block text-[10px] mt-1 ${bookingCount > 0 ? "text-blue-500" : "text-gray-300"}`}>{bookingCount} booking{bookingCount === 1 ? "" : "s"}</span>
               </button>
             );
           })}
