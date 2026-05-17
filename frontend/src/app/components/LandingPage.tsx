@@ -1194,6 +1194,20 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
   });
   const cu = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
   const slots = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
+  const todayDate = new Date().toLocaleDateString("en-CA");
+  const isSelectedToday = form.preferredDate === todayDate;
+  const selectedDateIsPast = Boolean(form.preferredDate && form.preferredDate < todayDate);
+  const slotToMinutes = (slot: string) => {
+    const [time, period] = slot.split(" ");
+    const [hourText, minuteText] = time.split(":");
+    let hour = Number(hourText);
+    const minute = Number(minuteText);
+    if (period === "PM" && hour !== 12) hour += 12;
+    if (period === "AM" && hour === 12) hour = 0;
+    return hour * 60 + minute;
+  };
+  const currentMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const isPastSlot = (slot: string) => isSelectedToday && slotToMinutes(slot) <= currentMinutes;
 
   /* Load booked slots from services.ts when date changes
    * DJANGO: GET /api/patients/booked-slots/?date=YYYY-MM-DD */
@@ -1205,6 +1219,12 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
       setTaken([]);
     }
   }, [form.preferredDate]);
+
+  useEffect(() => {
+    if (selectedDateIsPast || (form.slot && isPastSlot(form.slot))) {
+      cu("slot", "");
+    }
+  }, [form.preferredDate, form.slot, selectedDateIsPast]);
 
   return (
     <AnimatePresence>
@@ -1283,23 +1303,26 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
               <motion.div key="c3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-5">
                 <div>
                   <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Preferred Date<span className="text-rose-400 ml-0.5">*</span></label>
-                  <input type="date" className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" value={form.preferredDate} onChange={e => cu("preferredDate", e.target.value)} />
+                  <input type="date" min={todayDate} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#008080]/30 outline-none" value={form.preferredDate} onChange={e => { cu("preferredDate", e.target.value); cu("slot", ""); }} />
+                  {selectedDateIsPast && <p className="text-xs text-rose-400 mt-1">Please choose today or a future date.</p>}
                 </div>
                 <div>
                   <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Time Slot<span className="text-rose-400 ml-0.5">*</span></label>
                   <div className="grid grid-cols-4 gap-2">
                     {slots.map(s => {
                       const isTaken = taken.includes(s);
+                      const isPast = isPastSlot(s);
+                      const isDisabled = isTaken || isPast || selectedDateIsPast;
                       return (
-                        <button key={s} onClick={() => !isTaken && cu("slot", s)} disabled={isTaken}
+                        <button key={s} onClick={() => !isDisabled && cu("slot", s)} disabled={isDisabled}
                           className={`text-xs py-2.5 rounded-xl border transition-all ${
-                            isTaken ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through" :
+                            isDisabled ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through" :
                             form.slot === s ? "bg-[#008080] text-white border-[#008080] shadow-md shadow-[#008080]/20" : "border-gray-200 hover:border-[#008080] hover:bg-[#008080]/5"
                           }`}>{s}</button>
                       );
                     })}
                   </div>
-                  <p className="text-xs text-gray-300 mt-2">Grayed out slots are fully booked</p>
+                  <p className="text-xs text-gray-300 mt-2">Grayed out slots are unavailable, already past, or fully booked.</p>
                 </div>
                 {/* Summary */}
                 <div className="bg-gradient-to-br from-[#F5F7FA] to-[#E8F0F0] rounded-2xl p-4 space-y-2 text-sm">
@@ -1311,6 +1334,10 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                 <div className="flex gap-3">
                   <button onClick={() => setCStep(2)} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors">Back</button>
                   <button onClick={async () => {
+                    if (selectedDateIsPast || !form.slot || isPastSlot(form.slot)) {
+                      showToast("Please choose an available current or future schedule.");
+                      return;
+                    }
                     const apptId = `CLN-${Date.now().toString().slice(-6)}`;
                     const dateBookedIso = new Date().toISOString();
                     const dateBookedText = new Date(dateBookedIso).toLocaleString("en-PH", {
@@ -1357,7 +1384,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                     }
                     showToast(`Appointment confirmed! ID: ${apptId}`);
                     onClose();
-                  }} disabled={!form.preferredDate || !form.slot}
+                  }} disabled={!form.preferredDate || !form.slot || selectedDateIsPast || isPastSlot(form.slot)}
                     className="flex-1 bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-lg transition-all">
                     <Sparkles className="w-4 h-4" /> Confirm & Print
                   </button>

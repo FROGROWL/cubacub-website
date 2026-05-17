@@ -1,7 +1,30 @@
+from datetime import datetime
+from django.utils import timezone
 from rest_framework import serializers
 from .models import Patient
 
 class PatientSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        queue_date = attrs.get("queueDate", getattr(self.instance, "queueDate", None))
+        slot = attrs.get("time", getattr(self.instance, "time", None))
+
+        if queue_date:
+            today = timezone.localdate()
+            if queue_date < today:
+                raise serializers.ValidationError({"queueDate": "Appointment date cannot be in the past."})
+
+            if queue_date == today and slot:
+                try:
+                    slot_time = datetime.strptime(slot, "%I:%M %p").time()
+                except ValueError:
+                    raise serializers.ValidationError({"time": "Invalid appointment time format."})
+
+                now_time = timezone.localtime().time()
+                if slot_time <= now_time:
+                    raise serializers.ValidationError({"time": "Appointment time cannot be in the past."})
+
+        return attrs
+
     class Meta:
         model = Patient
         fields = "__all__"
