@@ -287,7 +287,54 @@ Use this section if your Django backend is hosted on Render.
    If Render shows "No open ports detected", it usually means the Start Command is doing work before starting Gunicorn, or the command is crashing before Gunicorn starts. Keep the Start Command as Gunicorn only.
 
 
-6. DEPLOY THE FRONTEND
+6. RENDER NO-SHELL MIGRATION AND ADMIN SETUP
+--------------------------------------------
+
+Use this section if you want Render to run database migrations and create the admin account automatically without opening Render Shell.
+
+1. Open your Render backend web service.
+
+2. Go to Environment.
+
+3. Add these admin environment variables:
+
+   DJANGO_SUPERUSER_USERNAME=admin
+   DJANGO_SUPERUSER_EMAIL=your-email@example.com
+   DJANGO_SUPERUSER_PASSWORD=use-a-strong-password
+
+4. Make sure these required production variables are also set:
+
+   SECRET_KEY=your-production-secret-key
+   DEBUG=False
+   ALLOWED_HOSTS=cubacub-website.onrender.com
+   DATABASE_URL=your-render-postgres-internal-database-url
+   CORS_ALLOW_ALL_ORIGINS=False
+   CORS_ALLOWED_ORIGINS=https://your-cloudflare-pages-domain.pages.dev
+   CSRF_TRUSTED_ORIGINS=https://your-cloudflare-pages-domain.pages.dev
+
+5. Set Render Pre-Deploy Command to:
+
+   python manage.py migrate && python manage.py ensure_superuser
+
+6. Set Render Start Command to:
+
+   gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
+
+7. Redeploy the backend.
+
+What this does:
+- python manage.py migrate creates and updates the database tables.
+- python manage.py ensure_superuser creates or updates the admin account using DJANGO_SUPERUSER_* variables.
+- gunicorn starts the backend web server after the pre-deploy work is done.
+
+Important:
+- Do not put python manage.py migrate before gunicorn in the Start Command.
+- Keep migrations and admin creation in the Pre-Deploy Command.
+- If you change DJANGO_SUPERUSER_PASSWORD later, redeploy and ensure_superuser will update the password.
+- Use a strong password because this account controls the admin and super admin features.
+
+
+7. DEPLOY THE FRONTEND
 ----------------------
 
 You can deploy the frontend to Cloudflare Pages, Vercel, Netlify, GitHub Pages, or another static hosting service.
@@ -372,7 +419,7 @@ For single-page routing:
   /* /index.html 200
 
 
-7. CONNECT FRONTEND AND BACKEND
+8. CONNECT FRONTEND AND BACKEND
 -------------------------------
 
 After both apps are deployed:
@@ -399,7 +446,7 @@ After both apps are deployed:
 6. Redeploy both apps after changing environment variables or settings.
 
 
-8. DATABASE SETUP
+9. DATABASE SETUP
 -----------------
 
 If the production database is empty, run:
@@ -441,7 +488,7 @@ For public use:
 - Keep staff accounts limited to the correct roles.
 
 
-9. FINAL TESTING CHECKLIST
+10. FINAL TESTING CHECKLIST
 --------------------------
 
 After deployment, test these features:
@@ -486,7 +533,7 @@ If real-time public updates are delayed:
 - If using a free backend host, move to an always-on plan for better public reliability.
 
 
-10. PUBLIC RELEASE CHECKLIST
+11. PUBLIC RELEASE CHECKLIST
 ---------------------------
 
 Before sharing the website link with residents:
@@ -509,7 +556,7 @@ Before sharing the website link with residents:
 - Backend is always-on or has acceptable wake-up time
 
 
-11. COMMON COMMANDS
+12. COMMON COMMANDS
 ------------------
 
 Backend local commands:
@@ -527,7 +574,7 @@ pnpm run build
 pnpm run preview
 
 
-12. SIMPLE DEPLOYMENT SUMMARY
+13. SIMPLE DEPLOYMENT SUMMARY
 ----------------------------
 
 1. Deploy PostgreSQL database.
