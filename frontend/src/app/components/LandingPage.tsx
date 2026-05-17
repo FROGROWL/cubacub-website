@@ -1471,6 +1471,11 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                       <Select label="Category" required value={form.category} onChange={e => {
                         const value = e.target.value;
                         ru("category", value);
+                        if ((value === "Lost Item" || value === "Found Item") && !reportDraftId.startsWith("LF-")) {
+                          setReportDraftId(`LF-${Math.floor(100000 + Math.random() * 900000)}`);
+                        } else if (value !== "Lost Item" && value !== "Found Item" && reportDraftId.startsWith("LF-")) {
+                          setReportDraftId(`RPT-${Math.floor(100000 + Math.random() * 900000)}`);
+                        }
                         if (value === "Other") {
                           ru("subcategory", "Other");
                         } else if (form.subcategory === "Other") {
