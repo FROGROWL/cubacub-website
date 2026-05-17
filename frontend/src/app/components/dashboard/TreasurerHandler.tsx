@@ -594,7 +594,7 @@ export default function TreasurerHandler() {
                         <label className="h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
                           <ImageIcon className="w-5 h-5 text-gray-300" />
                           <span className="text-[9px] text-gray-400">Add Cover Image</span>
-                          <input type="file" accept="image/*" className="hidden" onChange={e => {
+                          <input type="file" accept="image/*" className="sr-only" onChange={e => {
                             const f = e.target.files?.[0];
                             if (f) {
                               const reader = new FileReader();
@@ -631,7 +631,7 @@ export default function TreasurerHandler() {
                           <label className="h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
                         <ImageIcon className="w-5 h-5 text-gray-300" />
                         <span className="text-[9px] text-gray-400">Add Other</span>
-                        <input type="file" accept="image/*" className="hidden" onChange={e => {
+                        <input type="file" accept="image/*" className="sr-only" onChange={e => {
                           const f = e.target.files?.[0];
                           if (f) {
                             const reader = new FileReader();

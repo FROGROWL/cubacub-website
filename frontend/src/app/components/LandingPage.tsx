@@ -248,7 +248,7 @@ function RequirementFileUploader({
             </div>
           ) : null
         ) : (
-          <button onClick={() => fileRef.current?.click()}
+          <button type="button" onClick={() => fileRef.current?.click()}
             className="w-full border-2 border-dashed border-gray-200 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-[#008080]/50 hover:bg-[#008080]/5 transition-all group">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gray-100 group-hover:bg-[#008080]/10 flex items-center justify-center transition-colors">
@@ -262,7 +262,7 @@ function RequirementFileUploader({
             <span className="text-[10px] text-gray-300">JPG · PNG · PDF accepted</span>
           </button>
         )}
-        <input ref={fileRef} type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={handleFile} />
+        <input ref={fileRef} type="file" accept="image/*,application/pdf" className="sr-only" onChange={handleFile} />
       </div>
     </div>
   );
@@ -292,7 +292,7 @@ function ImageUploader({ label, required, value, onChange, hint, acceptPdf }: { 
   return (
     <div>
       <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">{label}{required && <span className="text-rose-400 ml-0.5">*</span>}</label>
-      <input ref={ref} type="file" accept={acceptPdf ? "image/*,application/pdf" : "image/*"} capture="environment" className="hidden" onChange={handleFile} />
+      <input ref={ref} type="file" accept={acceptPdf ? "image/*,application/pdf" : "image/*"} className="sr-only" onChange={handleFile} />
 
       {value ? (
         <div className="relative rounded-xl overflow-hidden border-2 border-[#008080]/30 bg-[#F5F7FA]">
@@ -309,7 +309,7 @@ function ImageUploader({ label, required, value, onChange, hint, acceptPdf }: { 
           </button>
         </div>
       ) : (
-        <button onClick={() => ref.current?.click()} className="w-full border-2 border-dashed border-gray-200 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-[#008080]/50 hover:bg-[#008080]/5 transition-all group">
+          <button type="button" onClick={() => ref.current?.click()} className="w-full border-2 border-dashed border-gray-200 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-[#008080]/50 hover:bg-[#008080]/5 transition-all group">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gray-100 group-hover:bg-[#008080]/10 flex items-center justify-center transition-colors">
               <Camera className="w-4 h-4 text-gray-400 group-hover:text-[#008080] transition-colors" />
@@ -1747,16 +1747,16 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                     <p className="text-xs text-gray-400">Upload proof of payment or claim slip images for refund verification.</p>
                     <div>
                       <label className="text-xs tracking-wide text-gray-500 uppercase mb-2 flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5 text-rose-500" /> Screenshot Evidence (required)</label>
-                      <input ref={evidenceRef} type="file" accept="image/*" className="hidden" onChange={addEvidence} />
+                      <input ref={evidenceRef} type="file" accept="image/*" className="sr-only" onChange={addEvidence} />
                       <div className="grid grid-cols-5 gap-2">
                         {evidencePhotos.map((p, i) => (
                           <div key={i} className="relative rounded-xl overflow-hidden border border-gray-200 h-20">
                             <img src={p} alt={`Evidence ${i+1}`} className="w-full h-full object-cover" />
-                            <button onClick={() => setEvidencePhotos(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center"><X className="w-3 h-3" /></button>
+                            <button type="button" onClick={() => setEvidencePhotos(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center"><X className="w-3 h-3" /></button>
                           </div>
                         ))}
                         {evidencePhotos.length < 5 && (
-                          <button onClick={() => evidenceRef.current?.click()} className="h-20 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 hover:border-rose-300 hover:bg-rose-50/50 transition-all">
+                          <button type="button" onClick={() => evidenceRef.current?.click()} className="h-20 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 hover:border-rose-300 hover:bg-rose-50/50 transition-all">
                             <Camera className="w-4 h-4 text-gray-300" />
                             <span className="text-[9px] text-gray-300">Add</span>
                           </button>
@@ -1774,16 +1774,16 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
                     {/* Photo Evidence Upload */}
                     <div>
                       <label className="text-xs tracking-wide text-gray-500 uppercase mb-2 flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5 text-rose-500" /> Photo Evidence (up to 5)</label>
-                      <input ref={evidenceRef} type="file" accept="image/*" className="hidden" onChange={addEvidence} />
+                      <input ref={evidenceRef} type="file" accept="image/*" className="sr-only" onChange={addEvidence} />
                       <div className="grid grid-cols-5 gap-2">
                         {evidencePhotos.map((p, i) => (
                           <div key={i} className="relative rounded-xl overflow-hidden border border-gray-200 h-20">
                             <img src={p} alt={`Evidence ${i+1}`} className="w-full h-full object-cover" />
-                            <button onClick={() => setEvidencePhotos(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center"><X className="w-3 h-3" /></button>
+                            <button type="button" onClick={() => setEvidencePhotos(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center"><X className="w-3 h-3" /></button>
                           </div>
                         ))}
                         {evidencePhotos.length < 5 && (
-                          <button onClick={() => evidenceRef.current?.click()} className="h-20 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 hover:border-rose-300 hover:bg-rose-50/50 transition-all">
+                          <button type="button" onClick={() => evidenceRef.current?.click()} className="h-20 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 hover:border-rose-300 hover:bg-rose-50/50 transition-all">
                             <Camera className="w-4 h-4 text-gray-300" />
                             <span className="text-[9px] text-gray-300">Add</span>
                           </button>
