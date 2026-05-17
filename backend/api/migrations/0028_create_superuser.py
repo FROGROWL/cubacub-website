@@ -4,18 +4,26 @@ from django.db import migrations
 
 def create_superuser(apps, schema_editor):
     User = apps.get_model("api", "StaffAccount")
-    username = os.environ.get("SUPERUSER_USERNAME", "superadmin")
-    email = os.environ.get("SUPERUSER_EMAIL", "superadmin@barangay.gov")
-    password = os.environ.get("SUPERUSER_PASSWORD", "timothy25")
+    username = os.environ.get("DJANGO_SUPERUSER_USERNAME") or os.environ.get("SUPERUSER_USERNAME")
+    email = os.environ.get("DJANGO_SUPERUSER_EMAIL") or os.environ.get("SUPERUSER_EMAIL") or ""
+    password = os.environ.get("DJANGO_SUPERUSER_PASSWORD") or os.environ.get("SUPERUSER_PASSWORD")
 
-    User.objects.filter(username=username).delete()
-    User.objects.create_superuser(
+    if not username or not password:
+        return
+
+    user, _ = User.objects.update_or_create(
         username=username,
-        email=email,
-        password=password,
-        name="Super Admin",
-        role="super_admin",
+        defaults={
+            "email": email,
+            "name": os.environ.get("DJANGO_SUPERUSER_NAME", "Super Admin"),
+            "role": "super_admin",
+            "is_staff": True,
+            "is_superuser": True,
+            "is_active": True,
+        },
     )
+    user.set_password(password)
+    user.save()
 
 
 class Migration(migrations.Migration):
