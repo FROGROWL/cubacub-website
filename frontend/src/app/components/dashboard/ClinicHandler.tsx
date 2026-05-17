@@ -4,10 +4,11 @@ import { Search, UserCheck, Clock, ChevronLeft, ChevronRight, Activity, Stethosc
 import { useToast } from "../Toast";
 import {
   getPatientQueue, updatePatientStatus, deletePatient,
+  getClinicUnavailableSlots, createClinicUnavailableSlot, deleteClinicUnavailableSlot,
   getSystemSettings, updateSystemSettings,
   getCalendarEvents, createCalendarEvent, deleteCalendarEvent,
   createAuditLogEntry, getCurrentUser,
-  type Patient, type CalendarEvent
+  type Patient, type CalendarEvent, type ClinicUnavailableSlot
 } from "../../api/services";
 
 // small animated counter used in summary cards
@@ -35,12 +36,27 @@ export default function ClinicHandler() {
   const [clinicOpen, setClinicOpen] = useState<boolean | null>(null); // null = loading
   const [month, setMonth] = useState(new Date().getMonth());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [scheduleDate, setScheduleDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [unavailableSlots, setUnavailableSlots] = useState<ClinicUnavailableSlot[]>([]);
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({ date: "", title: "", icon: "\u{1F3E5}", type: "event" as "event" | "closure" });
   const [reviewPatient, setReviewPatient] = useState<Patient | null>(null);
   const { showToast } = useToast();
 
   const year = 2026;
+  const clinicSlots = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
+  const todayDate = new Date().toLocaleDateString("en-CA");
+  const slotToMinutes = (slot: string) => {
+    const [time, period] = slot.split(" ");
+    const [hourText, minuteText] = time.split(":");
+    let hour = Number(hourText);
+    const minute = Number(minuteText);
+    if (period === "PM" && hour !== 12) hour += 12;
+    if (period === "AM" && hour === 12) hour = 0;
+    return hour * 60 + minute;
+  };
+  const currentMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const isPastScheduleSlot = (slot: string) => scheduleDate < todayDate || (scheduleDate === todayDate && slotToMinutes(slot) <= currentMinutes);
   const getDateBookedRaw = (p: Patient) => p.dateBooked || p.date_booked || p.created_at || "";
   const getPreferredDate = (p: Patient) => p.queueDate || p.queue_date || "—";
   const formatDateBooked = (p: Patient) => {
@@ -76,6 +92,10 @@ export default function ClinicHandler() {
     window.addEventListener("clinicUpdate", handler);
     return () => window.removeEventListener("clinicUpdate", handler);
   }, []);
+
+  useEffect(() => {
+    getClinicUnavailableSlots(scheduleDate).then(setUnavailableSlots).catch(() => setUnavailableSlots([]));
+  }, [scheduleDate]);
 
   /* Calendar events sync */
   useEffect(() => {
@@ -164,6 +184,29 @@ export default function ClinicHandler() {
     });
   };
 
+  const bookedSlotsForScheduleDate = new Set(
+    queue
+      .filter(p => (p.queueDate || p.queue_date) === scheduleDate && p.status !== "canceled")
+      .map(p => p.time)
+  );
+
+  const toggleUnavailableSlot = async (slot: string) => {
+    const existing = unavailableSlots.find(item => item.date === scheduleDate && item.time === slot);
+    try {
+      if (existing) {
+        await deleteClinicUnavailableSlot(existing.id);
+        setUnavailableSlots(prev => prev.filter(item => item.id !== existing.id));
+        showToast(`${slot} is now available.`);
+        return;
+      }
+      const created = await createClinicUnavailableSlot({ date: scheduleDate, time: slot, reason: "Marked unavailable by clinic handler" });
+      setUnavailableSlots(prev => [...prev, created]);
+      showToast(`${slot} marked unavailable.`);
+    } catch {
+      showToast("Failed to update slot availability.", "error");
+    }
+  };
+
   const statusConfig: Record<string, { bg: string; text: string; dot: string; label: string }> = {
     waiting: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400", label: "Waiting" },
     "in-progress": { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400", label: "In Progress" },
@@ -233,6 +276,45 @@ export default function ClinicHandler() {
           <p className="text-rose-600 text-sm">Clinic is currently closed. No patients are being accepted.</p>
         </motion.div>
       )}
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-[#1B263B] flex items-center gap-2"><Clock className="w-5 h-5 text-[#008080]" /> Time Slot Availability</h3>
+            <p className="text-xs text-gray-400 mt-1">Mark appointment slots unavailable for public booking.</p>
+          </div>
+          <div className="relative w-full sm:w-56">
+            <CalIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input type="date" min={todayDate} className="w-full bg-[#F5F7FA] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/20" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {clinicSlots.map(slot => {
+            const manual = unavailableSlots.find(item => item.date === scheduleDate && item.time === slot);
+            const isBooked = bookedSlotsForScheduleDate.has(slot);
+            const isPast = isPastScheduleSlot(slot);
+            const locked = isBooked || isPast;
+            const statusText = isPast ? "Past" : isBooked ? "Booked" : manual ? "Unavailable" : "Available";
+            return (
+              <button
+                key={slot}
+                onClick={() => !locked && toggleUnavailableSlot(slot)}
+                disabled={locked}
+                className={`rounded-xl border px-3 py-3 text-left transition-all ${
+                  isPast ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed line-through" :
+                  isBooked ? "bg-blue-50 border-blue-100 text-blue-500 cursor-not-allowed" :
+                  manual ? "bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100" :
+                  "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100"
+                }`}
+                title={locked ? `${slot} is ${statusText.toLowerCase()}` : `Click to ${manual ? "make available" : "mark unavailable"}`}
+              >
+                <span className="block text-sm">{slot}</span>
+                <span className="block text-[10px] mt-1 uppercase tracking-wide">{statusText}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Appointments Area (scrollable) */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

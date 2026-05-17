@@ -26,3 +26,18 @@ class Patient(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.status})"
+
+
+class ClinicUnavailableSlot(models.Model):
+    date = models.DateField()
+    time = models.CharField(max_length=20)
+    reason = models.CharField(max_length=200, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "clinic_unavailable_slots"
+        unique_together = ("date", "time")
+        ordering = ["date", "time"]
+
+    def __str__(self):
+        return f"{self.date} {self.time}"

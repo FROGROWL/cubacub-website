@@ -533,6 +533,36 @@ export async function deletePatient(id: number): Promise<void> {
   });
 }
 
+export interface ClinicUnavailableSlot {
+  id: number;
+  date: string;
+  time: string;
+  reason?: string;
+  created_at?: string;
+}
+
+export async function getClinicUnavailableSlots(date?: string): Promise<ClinicUnavailableSlot[]> {
+  const query = date ? `?date=${encodeURIComponent(date)}` : "";
+  return apiFetch(`/api/clinic/unavailable-slots/${query}`);
+}
+
+export async function createClinicUnavailableSlot(slot: {
+  date: string;
+  time: string;
+  reason?: string;
+}): Promise<ClinicUnavailableSlot> {
+  return apiFetch("/api/clinic/unavailable-slots/", {
+    method: "POST",
+    body: JSON.stringify(slot),
+  });
+}
+
+export async function deleteClinicUnavailableSlot(id: number): Promise<void> {
+  await apiFetch(`/api/clinic/unavailable-slots/${id}/`, {
+    method: "DELETE",
+  });
+}
+
 
 // ---------------------------------------------------------------------------
 // TREASURER / PROJECTS

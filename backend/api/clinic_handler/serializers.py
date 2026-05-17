@@ -1,7 +1,7 @@
 from datetime import datetime
 from django.utils import timezone
 from rest_framework import serializers
-from .models import Patient
+from .models import Patient, ClinicUnavailableSlot
 
 class PatientSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
@@ -23,8 +23,17 @@ class PatientSerializer(serializers.ModelSerializer):
                 if slot_time <= now_time:
                     raise serializers.ValidationError({"time": "Appointment time cannot be in the past."})
 
+            if slot and ClinicUnavailableSlot.objects.filter(date=queue_date, time=slot).exists():
+                raise serializers.ValidationError({"time": "This appointment time is not available."})
+
         return attrs
 
     class Meta:
         model = Patient
+        fields = "__all__"
+
+
+class ClinicUnavailableSlotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClinicUnavailableSlot
         fields = "__all__"

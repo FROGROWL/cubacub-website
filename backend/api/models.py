@@ -1,7 +1,7 @@
 from .super_admin.models import StaffAccount, PasswordResetCode, AuditLog
 from .document_handler.models import DocumentRequest, DocumentCaseRecord
 from .report_handler.models import CaseRecord, LostFoundItem
-from .clinic_handler.models import Patient
+from .clinic_handler.models import Patient, ClinicUnavailableSlot
 from .treasurer_handler.models import Project
 from .other.models import CalendarEvent
 
@@ -14,6 +14,7 @@ __all__ = [
 	"CaseRecord",
 	"LostFoundItem",
 	"Patient",
+	"ClinicUnavailableSlot",
 	"Project",
 	"CalendarEvent",
 ]
