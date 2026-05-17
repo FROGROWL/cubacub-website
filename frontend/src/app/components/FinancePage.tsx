@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft, DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle,
   ChevronDown, ChevronUp, Building, MapPin, Calendar, Search, Filter,
-  PieChart as PieChartIcon, BarChart2, ExternalLink, ArrowUpDown
+  PieChart as PieChartIcon, BarChart2, ArrowUpDown, Eye, X
 } from "lucide-react";
 import { ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -129,6 +129,7 @@ export default function FinancePage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [annualBudget, setAnnualBudget] = useState(8500000);
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ src: string; label: string } | null>(null);
 
   /* Load data from services.ts on mount.
    * DJANGO: GET /api/projects/public/, /api/settings/, /api/analytics/budget-summary/ */
@@ -137,7 +138,9 @@ export default function FinancePage() {
       /* Assign images — DJANGO: images come from DB, this mapping won't be needed */
       const withImages = loaded.map(p => ({
         ...p,
-        image: p.image || PROJECT_IMAGES[p.id] || roadImg,
+        coverImage: p.coverImage || p.image || PROJECT_IMAGES[p.id] || roadImg,
+        image: p.coverImage || p.image || PROJECT_IMAGES[p.id] || roadImg,
+        otherImages: p.otherImages || [],
       }));
       setProjects(withImages);
     });
@@ -288,7 +291,10 @@ export default function FinancePage() {
                     className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
                     <div className="flex flex-col md:flex-row">
                       <div className="md:w-48 h-40 md:h-auto relative shrink-0">
-                        <ImageWithFallback src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setPreviewImage({ src: p.coverImage || p.image, label: `${p.name} - Cover Page` })} className="w-full h-full block">
+                          <ImageWithFallback src={p.coverImage || p.image} alt={p.name} className="w-full h-full object-cover" />
+                          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] text-white"><Eye className="w-3 h-3" /> Cover Page</span>
+                        </button>
                         <div className="absolute top-3 left-3">
                           <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${sc.bg} ${sc.text}`}>{sc.icon}{sc.label}</span>
                         </div>
@@ -363,6 +369,22 @@ export default function FinancePage() {
                                   </div>
                                 ))}
                               </div>
+                            </div>
+                            <div className="md:col-span-2">
+                              <p className="text-xs text-[#008080] uppercase tracking-wider mb-3">Project Images</p>
+                              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <button type="button" onClick={() => setPreviewImage({ src: p.coverImage || p.image, label: `${p.name} - Cover Page` })} className="relative h-28 rounded-xl overflow-hidden border border-gray-100">
+                                  <ImageWithFallback src={p.coverImage || p.image} alt={`${p.name} cover`} className="w-full h-full object-cover" />
+                                  <span className="absolute left-2 bottom-2 rounded-full bg-black/60 px-2 py-1 text-[10px] text-white">Cover Page</span>
+                                </button>
+                                {(p.otherImages || []).map((img, idx) => (
+                                  <button key={idx} type="button" onClick={() => setPreviewImage({ src: img, label: `${p.name} - Other Image ${idx + 1}` })} className="relative h-28 rounded-xl overflow-hidden border border-gray-100">
+                                    <ImageWithFallback src={img} alt={`${p.name} other ${idx + 1}`} className="w-full h-full object-cover" />
+                                    <span className="absolute left-2 bottom-2 rounded-full bg-black/60 px-2 py-1 text-[10px] text-white">Other Image {idx + 1}</span>
+                                  </button>
+                                ))}
+                              </div>
+                              {!(p.otherImages || []).length && <p className="text-[10px] text-gray-400 mt-2">No other images uploaded for this project yet.</p>}
                             </div>
                           </div>
                         </motion.div>
@@ -492,6 +514,19 @@ export default function FinancePage() {
           </div>
         )}
       </div>
+      <AnimatePresence>
+        {previewImage && (
+          <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} className="bg-white rounded-2xl overflow-hidden max-w-5xl w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <p className="text-sm text-[#1B263B]" style={{ fontFamily: "Montserrat" }}>{previewImage.label}</p>
+                <button type="button" onClick={() => setPreviewImage(null)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><X className="w-4 h-4" /></button>
+              </div>
+              <img src={previewImage.src} alt={previewImage.label} className="w-full max-h-[75vh] object-contain bg-black" />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

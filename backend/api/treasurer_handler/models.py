@@ -24,6 +24,8 @@ class Project(models.Model):
     source = models.CharField(max_length=100)
     category = models.CharField(max_length=100)
     images = models.JSONField(default=list, blank=True)  # store image URLs
+    coverImage = models.TextField(blank=True, null=True)
+    otherImages = models.JSONField(default=list, blank=True)
     milestones = models.JSONField(default=list, blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)

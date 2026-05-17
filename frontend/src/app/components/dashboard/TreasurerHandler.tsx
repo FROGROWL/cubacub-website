@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Plus, Edit2, DollarSign, TrendingUp, X, CheckCircle2, AlertCircle, PieChart as PieChartIcon, Save, Trash2, Image as ImageIcon, ArrowUpDown } from "lucide-react";
+import { Search, Plus, Edit2, DollarSign, TrendingUp, X, CheckCircle2, AlertCircle, PieChart as PieChartIcon, Save, Trash2, Image as ImageIcon, ArrowUpDown, Eye } from "lucide-react";
 import { useToast } from "../Toast";
 import {
   getProjects, createProject, updateProject, deleteProject as apiDeleteProject,
@@ -38,6 +38,7 @@ export default function TreasurerHandler() {
   const [editProject, setEditProject] = useState<Project | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Partial<Project>>({});
+  const [previewImage, setPreviewImage] = useState<{ src: string; label: string } | null>(null);
   const { showToast } = useToast();
   const [annualBudget, setAnnualBudget] = useState(8500000);
   const [budgetDraft, setBudgetDraft] = useState("8500000");
@@ -91,7 +92,16 @@ export default function TreasurerHandler() {
   });
 
   const startEdit = (p: Project) => {
-    setForm({ ...p, milestones: p.milestones || [] });
+    const legacyImages = p.images || [];
+    const coverImage = p.coverImage || legacyImages[0] || "";
+    const otherImages = p.otherImages || legacyImages.slice(1);
+    setForm({
+      ...p,
+      coverImage,
+      otherImages,
+      images: coverImage ? [coverImage, ...otherImages] : otherImages,
+      milestones: p.milestones || [],
+    });
     setEditProject(p);
     setShowForm(true);
   };
@@ -109,6 +119,9 @@ export default function TreasurerHandler() {
       contractor: "",
       source: "",
       category: "Infrastructure",
+      coverImage: "",
+      otherImages: [],
+      images: [],
       milestones: [{ label: "", date: "", done: false }],
     });
     setEditProject(null);
@@ -150,10 +163,15 @@ export default function TreasurerHandler() {
       return;
     }
 
+    const coverImage = (form.coverImage || "").trim();
+    const otherImages = Array.isArray(form.otherImages) ? form.otherImages.filter(Boolean) : [];
     const payload: Partial<Project> = {
       ...form,
       budget,
       spent,
+      coverImage,
+      otherImages,
+      images: coverImage ? [coverImage, ...otherImages] : otherImages,
       milestones: cleanedMilestones,
       progress: computeProgress(cleanedMilestones),
     };
@@ -558,36 +576,96 @@ export default function TreasurerHandler() {
                 {/* Project Images */}
                 <div>
                   <label className="text-xs text-gray-500 uppercase mb-1.5 block flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5" /> Project Images (Current / Expected Look)
+                    <ImageIcon className="w-3.5 h-3.5" /> Project Images
                   </label>
-                  <div className="grid grid-cols-3 gap-2 mb-2">
-                    {(form.images || []).map((img, i) => (
-                      <div key={i} className="relative rounded-xl overflow-hidden border border-gray-200 h-24">
-                        <img src={img} alt={`Project ${i + 1}`} className="w-full h-full object-cover" />
-                        <button onClick={() => setForm({ ...form, images: (form.images || []).filter((_, j) => j !== i) })}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"><X className="w-3 h-3" /></button>
-                      </div>
-                    ))}
-                    {(form.images || []).length < 6 && (
-                      <label className="h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] text-[#008080] uppercase tracking-wider mb-1">Cover Page</p>
+                      {form.coverImage ? (
+                        <div className="relative rounded-xl overflow-hidden border border-gray-200 h-32">
+                          <button type="button" onClick={() => setPreviewImage({ src: form.coverImage || "", label: "Cover Page" })} className="w-full h-full block group">
+                            <img src={form.coverImage} alt="Cover Page" className="w-full h-full object-cover" />
+                            <span className="absolute left-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] text-white"><Eye className="w-3 h-3" /> Cover Page</span>
+                          </button>
+                          <button type="button" onClick={() => setForm({ ...form, coverImage: "", images: form.otherImages || [] })}
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"><X className="w-3 h-3" /></button>
+                        </div>
+                      ) : (
+                        <label className="h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
+                          <ImageIcon className="w-5 h-5 text-gray-300" />
+                          <span className="text-[9px] text-gray-400">Add Cover Image</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) {
+                              const reader = new FileReader();
+                              reader.onload = () => setForm(prev => {
+                                const coverImage = reader.result as string;
+                                const otherImages = prev.otherImages || [];
+                                return { ...prev, coverImage, images: [coverImage, ...otherImages] };
+                              });
+                              reader.readAsDataURL(f);
+                            }
+                          }} />
+                        </label>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-[#008080] uppercase tracking-wider mb-1">Other Images</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(form.otherImages || []).map((img, i) => (
+                          <div key={i} className="relative rounded-xl overflow-hidden border border-gray-200 h-24">
+                            <button type="button" onClick={() => setPreviewImage({ src: img, label: `Other Image ${i + 1}` })} className="w-full h-full block">
+                              <img src={img} alt={`Other Image ${i + 1}`} className="w-full h-full object-cover" />
+                              <span className="absolute left-1 bottom-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] text-white">Other {i + 1}</span>
+                            </button>
+                            <button type="button" onClick={() => {
+                              const otherImages = (form.otherImages || []).filter((_, j) => j !== i);
+                              const coverImage = form.coverImage || "";
+                              setForm({ ...form, otherImages, images: coverImage ? [coverImage, ...otherImages] : otherImages });
+                            }}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"><X className="w-3 h-3" /></button>
+                          </div>
+                        ))}
+                        {(form.otherImages || []).length < 6 && (
+                          <label className="h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
                         <ImageIcon className="w-5 h-5 text-gray-300" />
-                        <span className="text-[9px] text-gray-400">Add Image</span>
+                        <span className="text-[9px] text-gray-400">Add Other</span>
                         <input type="file" accept="image/*" className="hidden" onChange={e => {
                           const f = e.target.files?.[0];
                           if (f) {
                             const reader = new FileReader();
-                            reader.onload = () => setForm(prev => ({ ...prev, images: [...(prev.images || []), reader.result as string] }));
+                            reader.onload = () => setForm(prev => {
+                              const otherImages = [...(prev.otherImages || []), reader.result as string];
+                              const coverImage = prev.coverImage || "";
+                              return { ...prev, otherImages, images: coverImage ? [coverImage, ...otherImages] : otherImages };
+                            });
                             reader.readAsDataURL(f);
                           }
                         }} />
                       </label>
-                    )}
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-gray-400">Upload up to 6 images showing current progress or expected project outcome</p>
+                  <p className="text-[10px] text-gray-400 mt-2">Use one cover page image plus up to 6 other project images.</p>
                 </div>
 
                 <button onClick={saveProject} disabled={!form.name} className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl disabled:opacity-40 hover:shadow-lg transition-all flex items-center justify-center gap-2"><Save className="w-4 h-4" /> {editProject ? "Update" : "Create"} Project</button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {previewImage && (
+          <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} className="bg-white rounded-2xl overflow-hidden max-w-4xl w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <p className="text-sm text-[#1B263B]" style={{ fontFamily: "Montserrat" }}>{previewImage.label}</p>
+                <button type="button" onClick={() => setPreviewImage(null)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><X className="w-4 h-4" /></button>
+              </div>
+              <img src={previewImage.src} alt={previewImage.label} className="w-full max-h-[75vh] object-contain bg-black" />
             </motion.div>
           </div>
         )}

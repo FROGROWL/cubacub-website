@@ -583,6 +583,8 @@ export interface Project {
   source: string;
   category: string;
   images?: string[];
+  coverImage?: string;
+  otherImages?: string[];
   milestones?: ProjectMilestone[];
   createdAt?: string;
   updatedAt?: string;
@@ -592,11 +594,21 @@ export interface Project {
 }
 
 function normalizeProject(row: any): Project {
+  const legacyImages = Array.isArray(row?.images) ? row.images : [];
+  const coverImage = row?.coverImage || row?.cover_image || legacyImages[0] || "";
+  const otherImages = Array.isArray(row?.otherImages)
+    ? row.otherImages
+    : Array.isArray(row?.other_images)
+      ? row.other_images
+      : legacyImages.slice(1);
   return {
     ...row,
     budget: Number(row?.budget ?? 0),
     spent: Number(row?.spent ?? 0),
     progress: Number(row?.progress ?? 0),
+    coverImage,
+    otherImages,
+    images: coverImage ? [coverImage, ...otherImages] : otherImages,
     milestones: Array.isArray(row?.milestones) ? row.milestones : [],
   } as Project;
 }
@@ -1036,6 +1048,9 @@ export interface PublicProject {
   spent: number;
   progress: number;
   image: string;
+  coverImage?: string;
+  otherImages?: string[];
+  images?: string[];
   description: string;
   location: string;
   startDate: string;
@@ -1049,13 +1064,26 @@ export interface PublicProject {
 /** DJANGO: GET /api/projects/public/ — returns projects with milestones for transparency page */
 export async function getPublicProjects(): Promise<PublicProject[]> {
   const rows = await apiFetch("/api/projects/public/");
-  return (rows || []).map((row: any) => ({
-    ...row,
-    budget: Number(row?.budget ?? 0),
-    spent: Number(row?.spent ?? 0),
-    progress: Number(row?.progress ?? 0),
-    milestones: Array.isArray(row?.milestones) ? row.milestones : [],
-  }));
+  return (rows || []).map((row: any) => {
+    const legacyImages = Array.isArray(row?.images) ? row.images : [];
+    const coverImage = row?.coverImage || row?.cover_image || row?.image || legacyImages[0] || "";
+    const otherImages = Array.isArray(row?.otherImages)
+      ? row.otherImages
+      : Array.isArray(row?.other_images)
+        ? row.other_images
+        : legacyImages.slice(1);
+    return {
+      ...row,
+      budget: Number(row?.budget ?? 0),
+      spent: Number(row?.spent ?? 0),
+      progress: Number(row?.progress ?? 0),
+      coverImage,
+      otherImages,
+      images: coverImage ? [coverImage, ...otherImages] : otherImages,
+      image: coverImage,
+      milestones: Array.isArray(row?.milestones) ? row.milestones : [],
+    };
+  });
 }
 
 

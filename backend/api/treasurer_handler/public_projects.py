@@ -15,11 +15,16 @@ def public_projects(request):
     # Keep payload compatible with existing public frontend cards.
     normalized = []
     for project in projects:
+        legacy_images = project.get("images") or []
+        cover_image = project.get("coverImage") or (legacy_images[0] if legacy_images else None)
+        other_images = project.get("otherImages") or (legacy_images[1:] if len(legacy_images) > 1 else [])
         normalized.append(
             {
                 **project,
                 "description": project.get("description") or "No description available.",
-                "image": (project.get("images") or [None])[0],
+                "coverImage": cover_image,
+                "otherImages": other_images,
+                "image": cover_image,
                 "milestones": project.get("milestones") or [],
             }
         )
