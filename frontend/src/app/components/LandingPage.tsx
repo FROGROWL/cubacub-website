@@ -2540,7 +2540,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Floating Stats Cards */}
-            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.7 }} className="hidden lg:grid grid-cols-2 gap-4">
+            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.7 }} className="grid grid-cols-2 gap-3 sm:gap-4">
               {[
                 { icon: <Users className="w-5 h-5" />, value: landingStats.residents_served, label: "Residents Served", color: "from-[#1B263B] to-[#2d4a6e]" },
                 { icon: <FileText className="w-5 h-5" />, value: landingStats.documents, label: "Documents Issued", color: "from-[#008080] to-[#00a89d]" },
@@ -2551,10 +2551,10 @@ export default function LandingPage() {
                   key={s.label}
                   whileHover={{ y: -4, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className={`bg-gradient-to-br ${s.color} rounded-2xl p-5 text-white shadow-xl h-full`}
+                  className={`bg-gradient-to-br ${s.color} rounded-2xl p-4 sm:p-5 text-white shadow-xl h-full`}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-3">{s.icon}</div>
-                  <p className="text-2xl" style={{ fontFamily: "Montserrat" }}>
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center mb-3">{s.icon}</div>
+                  <p className="text-xl sm:text-2xl" style={{ fontFamily: "Montserrat" }}>
                     {typeof s.value === "number" ? <AnimCounter target={s.value} /> : s.value}
                   </p>
                   <p className="text-xs text-white/60 mt-0.5">{s.label}</p>
