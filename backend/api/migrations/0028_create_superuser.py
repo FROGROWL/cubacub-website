@@ -1,4 +1,5 @@
 import os
+from django.contrib.auth.hashers import make_password
 from django.db import migrations
 
 
@@ -20,10 +21,9 @@ def create_superuser(apps, schema_editor):
             "is_staff": True,
             "is_superuser": True,
             "is_active": True,
+            "password": make_password(password),
         },
     )
-    user.set_password(password)
-    user.save()
 
 
 class Migration(migrations.Migration):
