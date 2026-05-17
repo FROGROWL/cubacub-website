@@ -295,9 +295,20 @@ export default function DocumentHandler() {
                         )}
                       </div>
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full capitalize ${statusConfig[item.status]?.bg} ${statusConfig[item.status]?.text}`}>
-                      {statusConfig[item.status]?.label || item.status.replace("_", " ")}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2.5 py-1 rounded-full capitalize ${statusConfig[item.status]?.bg} ${statusConfig[item.status]?.text}`}>
+                        {statusConfig[item.status]?.label || item.status.replace("_", " ")}
+                      </span>
+                      <motion.button
+                        whileHover={{ scale: 1.06 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => deleteRequest(item.id)}
+                        className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 hover:bg-rose-100 transition-colors"
+                        title="Delete history entry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </motion.button>
+                    </div>
                   </div>
                 ))}
               </div>
