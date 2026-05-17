@@ -1186,7 +1186,7 @@ function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trac
 }
 // --- Clinic Booking (with patient health info) ---
  
-function ClinicBookingModal({ onClose }: { onClose: () => void }) {
+function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clinicOpen: boolean }) {
   const { showToast } = useToast();
   const [cStep, setCStep] = useState(1);
   const [isBooking, setIsBooking] = useState(false);
@@ -1256,10 +1256,10 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
   }, [form.preferredDate]);
 
   useEffect(() => {
-    if (selectedDateIsPast || (form.slot && isPastSlot(form.slot))) {
+    if (!clinicOpen || selectedDateIsPast || (form.slot && isPastSlot(form.slot)) || (form.slot && taken.includes(form.slot))) {
       cu("slot", "");
     }
-  }, [form.preferredDate, form.slot, selectedDateIsPast]);
+  }, [clinicOpen, form.preferredDate, form.slot, selectedDateIsPast, taken]);
 
   return (
     <AnimatePresence>
@@ -1283,7 +1283,19 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="p-6 overflow-y-auto flex-1">
           <AnimatePresence mode="wait">
-            {confirmedAppointment && (
+            {!clinicOpen && (
+              <motion.div key="closed" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-5 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+                  <AlertCircle className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-[#1B263B]" style={{ fontFamily: "Montserrat" }}>Clinic Is Closed</h3>
+                  <p className="text-sm text-gray-400 mt-2">Online clinic booking is temporarily unavailable. Please check again later or contact the barangay health center.</p>
+                </div>
+                <button onClick={onClose} className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors">Close</button>
+              </motion.div>
+            )}
+            {clinicOpen && confirmedAppointment && (
               <motion.div key="confirmed" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-5">
                 <div className="text-center">
                   <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
@@ -1311,7 +1323,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                 </div>
               </motion.div>
             )}
-            {!confirmedAppointment && cStep === 1 && (
+            {clinicOpen && !confirmedAppointment && cStep === 1 && (
               <motion.div key="c1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
                 <p className="text-xs text-gray-400">Patient details for your medical record.</p>
                 <div className="grid grid-cols-2 gap-4">
@@ -1344,7 +1356,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                 </button>
               </motion.div>
             )}
-            {!confirmedAppointment && cStep === 2 && (
+            {clinicOpen && !confirmedAppointment && cStep === 2 && (
               <motion.div key="c2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
                 <p className="text-xs text-gray-400">Help our health workers prepare. Leave blank if none.</p>
                 <Textarea label="Known Allergies" rows={2} placeholder="e.g. Penicillin, Seafood, Latex, None" value={form.allergies} onChange={e => cu("allergies", e.target.value)} />
@@ -1362,7 +1374,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                 </div>
               </motion.div>
             )}
-            {!confirmedAppointment && cStep === 3 && (
+            {clinicOpen && !confirmedAppointment && cStep === 3 && (
               <motion.div key="c3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-5">
                 <div>
                   <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Preferred Date<span className="text-rose-400 ml-0.5">*</span></label>
@@ -1375,7 +1387,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                     {slots.map(s => {
                       const isTaken = taken.includes(s);
                       const isPast = isPastSlot(s);
-                      const isDisabled = isTaken || isPast || selectedDateIsPast;
+                      const isDisabled = isTaken || isPast || selectedDateIsPast || !clinicOpen;
                       return (
                         <button key={s} onClick={() => !isDisabled && cu("slot", s)} disabled={isDisabled}
                           className={`text-xs py-2.5 rounded-xl border transition-all ${
@@ -1397,7 +1409,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                 <div className="flex gap-3">
                   <button onClick={() => setCStep(2)} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors">Back</button>
                   <button onClick={async () => {
-                    if (selectedDateIsPast || !form.slot || isPastSlot(form.slot)) {
+                    if (!clinicOpen || selectedDateIsPast || !form.slot || isPastSlot(form.slot) || taken.includes(form.slot)) {
                       showToast("Please choose an available current or future schedule.");
                       return;
                     }
@@ -1434,7 +1446,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                     } catch (error) {
                       getBookedSlots(form.preferredDate).then(setTaken).catch(() => {});
                       const message = error instanceof Error ? error.message : "";
-                      showToast(message.includes("already booked") ? "That time slot was just booked. Please choose another slot." : message.includes("401") || message.includes("403") ? "Clinic booking is blocked by backend permissions. Please redeploy the backend." : "Failed to create appointment. Please try again.");
+                      showToast(message.includes("already booked") ? "That time slot was just booked. Please choose another slot." : message.includes("clinic_status") ? "Clinic booking is currently closed." : message.includes("401") || message.includes("403") ? "Clinic booking is blocked by backend permissions. Please redeploy the backend." : "Failed to create appointment. Please try again.");
                       setIsBooking(false);
                       return;
                     }
@@ -1442,7 +1454,7 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
                     window.dispatchEvent(new CustomEvent("clinicUpdate"));
                     setConfirmedAppointment({ id: apptId, dateBookedText });
                     showToast(`Appointment confirmed! ID: ${apptId}`);
-                  }} disabled={isBooking || !form.preferredDate || !form.slot || selectedDateIsPast || isPastSlot(form.slot)}
+                  }} disabled={isBooking || !clinicOpen || !form.preferredDate || !form.slot || selectedDateIsPast || isPastSlot(form.slot) || taken.includes(form.slot)}
                     className="flex-1 bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-lg transition-all">
                     <Sparkles className="w-4 h-4" /> {isBooking ? "Saving..." : "Confirm Appointment"}
                   </button>
@@ -2620,16 +2632,17 @@ export default function LandingPage() {
           {/* Clinic Booking */}
           <motion.button
             whileHover={{ y: -6 }}
-            onClick={() => setShowClinic(true)}
-            className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 text-left group hover:shadow-xl hover:shadow-[#008080]/10 transition-shadow"
+            onClick={() => clinicOpen && setShowClinic(true)}
+            disabled={!clinicOpen}
+            className={`bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 text-left group transition-shadow ${clinicOpen ? "hover:shadow-xl hover:shadow-[#008080]/10" : "opacity-70 cursor-not-allowed"}`}
           >
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-5 shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
               <Stethoscope className="w-6 h-6 text-white" />
             </div>
             <h3 className="text-[#1B263B] mb-2">Clinic Booking</h3>
-            <p className="text-sm text-gray-400 leading-relaxed">Schedule an appointment at the Cubacub Health Center. Pick your preferred date and time slot.</p>
+            <p className="text-sm text-gray-400 leading-relaxed">{clinicOpen ? "Schedule an appointment at the Cubacub Health Center. Pick your preferred date and time slot." : "Clinic booking is currently closed by the health center."}</p>
             <div className="mt-5 flex items-center gap-2 text-sm text-[#008080] opacity-0 group-hover:opacity-100 transition-opacity">
-              Book Now <ArrowRight className="w-4 h-4" />
+              {clinicOpen ? "Book Now" : "Closed"} <ArrowRight className="w-4 h-4" />
             </div>
           </motion.button>
         </div>
@@ -2788,7 +2801,7 @@ export default function LandingPage() {
         {showDocForm && <DocumentRequestForm onClose={() => setShowDocForm(false)} />}
         {showTracker && <TrackerModal onClose={() => setShowTracker(false)} trackingId={trackingId} />}
         {showReportTracker && <ReportTrackerModal onClose={() => setShowReportTracker(false)} trackingId={reportTrackingId} />}
-        {showClinic && <ClinicBookingModal onClose={() => setShowClinic(false)} />}
+        {showClinic && <ClinicBookingModal onClose={() => setShowClinic(false)} clinicOpen={clinicOpen} />}
         {showReport && <ReportModal onClose={() => { setShowReport(false); setIsDocumentRefund(false); }} isDocumentRefund={isDocumentRefund} />}
       </AnimatePresence>
     </div>

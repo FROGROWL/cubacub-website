@@ -1268,7 +1268,7 @@ export async function getReportStatus(
 
 export async function getBookedSlots(date: string): Promise<string[]> {
   if (!date) return [];
-  return apiFetch(`/api/patients/booked-slots/?date=${encodeURIComponent(date)}`);
+  return apiFetch(`/api/patients/booked-slots/?date=${encodeURIComponent(date)}&_=${Date.now()}`);
 }
 
 export async function getDocumentSummary() {
