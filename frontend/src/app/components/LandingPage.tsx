@@ -412,12 +412,6 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
 
     setIsSubmitting(true);
     const w = window.open("", "_blank");
-    if (!w) {
-      setIsSubmitting(false);
-      showToast("Popup blocked. Please allow popups and try again.");
-      return;
-    }
-
     let tid = "";
     try {
       /* Save to services.ts so Document Handler dashboard can see this request.
@@ -449,7 +443,7 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
       }
       setSubmittedTrackingId(tid);
     } catch (err) {
-      w.close();
+      w?.close();
       showToast("Failed to submit request. Please try again.");
       setIsSubmitting(false);
       return;
@@ -473,12 +467,12 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
       ["Payment Method", paymentMethod === "gcash" ? "GCash (Paid)" : "Cash (At pickup)"],
       ["Date Filed", new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })],
     ].filter(([, value]) => value);
-    w.document.write(`<html><head><title>Claim Slip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}</style></head><body>`);
-    w.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Document Claim Slip</p><span class="badge">CIVIC-FLOW</span></div>`);
-    flds.forEach(([l, v]) => w.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
-    w.document.write(`<div class="ft">Present this slip when claiming your document. Processing takes 3–5 business days.<br/>For inquiries call (032) 345-6789.<br/><strong>We encourage you to screenshot this claim slip for your records.</strong></div></body></html>`);
-    w.document.close(); w.print();
-    showToast("Claim slip generated successfully!");
+    w?.document.write(`<html><head><title>Claim Slip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}</style></head><body>`);
+    w?.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Document Claim Slip</p><span class="badge">CIVIC-FLOW</span></div>`);
+    flds.forEach(([l, v]) => w?.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
+    w?.document.write(`<div class="ft">Present this slip when claiming your document. Processing takes 3–5 business days.<br/>For inquiries call (032) 345-6789.<br/><strong>We encourage you to screenshot this claim slip for your records.</strong></div></body></html>`);
+    w?.document.close(); w?.print();
+    showToast(w ? "Claim slip generated successfully!" : `Request submitted. Tracking number: ${tid}. Popups are blocked on this device.`);
     setIsSubmitting(false);
     onClose();
     navigate("/");
@@ -1241,11 +1235,11 @@ function ClinicBookingModal({ onClose }: { onClose: () => void }) {
       showToast("Popup blocked. Your appointment is already saved.");
       return;
     }
-    w.document.write(`<html><head><title>Appointment Confirmation</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}.warn{margin-top:16px;background:#FFF3CD;padding:12px;border-radius:8px;font-size:11px;color:#856404;text-align:center}</style></head><body>`);
-    w.document.write(`<div class="hdr"><h1>CUBACUB HEALTH CENTER</h1><p>Official Appointment Confirmation</p><span class="badge">CIVIC-FLOW</span></div>`);
-    appointmentFields.forEach(([l, v]) => w.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
-    w.document.write(`<div class="warn">Please bring this confirmation and a valid ID on your appointment date. Arrive 15 minutes early.</div>`);
-    w.document.write(`<div class="ft">Cubacub Health Center - Mon-Fri 8AM-5PM | (032) 345-6789<br/>This serves as your official proof of appointment.</div></body></html>`);
+    w?.document.write(`<html><head><title>Appointment Confirmation</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}.warn{margin-top:16px;background:#FFF3CD;padding:12px;border-radius:8px;font-size:11px;color:#856404;text-align:center}</style></head><body>`);
+    w?.document.write(`<div class="hdr"><h1>CUBACUB HEALTH CENTER</h1><p>Official Appointment Confirmation</p><span class="badge">CIVIC-FLOW</span></div>`);
+    appointmentFields.forEach(([l, v]) => w?.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
+    w?.document.write(`<div class="warn">Please bring this confirmation and a valid ID on your appointment date. Arrive 15 minutes early.</div>`);
+    w?.document.write(`<div class="ft">Cubacub Health Center - Mon-Fri 8AM-5PM | (032) 345-6789<br/>This serves as your official proof of appointment.</div></body></html>`);
     w.document.close();
     w.print();
   };
@@ -2800,5 +2794,6 @@ export default function LandingPage() {
     </div>
   );
 }
+
 
 
