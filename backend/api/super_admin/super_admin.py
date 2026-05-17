@@ -65,7 +65,7 @@ def confirm_password_reset(request):
     return Response({"success": True})
 
 class StaffAccountViewSet(viewsets.ModelViewSet):
-    queryset = StaffAccount.objects.all()
+    queryset = StaffAccount.objects.filter(is_superuser=False)
     serializer_class = StaffAccountSerializer
     permission_classes = [IsSuperAdmin]
 

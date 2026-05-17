@@ -14,17 +14,18 @@ from ..treasurer_handler.models import TreasurerSettings
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def superadmin_summary(request):
-    total_staff = StaffAccount.objects.count()
+    visible_staff = StaffAccount.objects.filter(is_superuser=False)
+    total_staff = visible_staff.count()
 
     # First reset stale users
     cutoff = now() - timedelta(minutes=15)
     StaffAccount.objects.filter(last_activity__lt=cutoff, is_online=True).update(is_online=False)
 
     # Then count online staff
-    online_staff = StaffAccount.objects.filter(is_online=True).count()
+    online_staff = visible_staff.filter(is_online=True).count()
 
     actions_today = AuditLog.objects.filter(timestamp__date=now().date()).count()
-    role_distribution = StaffAccount.objects.values("role").annotate(count=Count("id"))
+    role_distribution = visible_staff.values("role").annotate(count=Count("id"))
     audit_actions = AuditLog.objects.values("action").annotate(count=Count("id"))
     audit_status = AuditLog.objects.values("status").annotate(count=Count("id"))
 
