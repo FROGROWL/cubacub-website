@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft, DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle,
   ChevronDown, ChevronUp, Building, MapPin, Calendar, Search, Filter,
-  PieChart as PieChartIcon, BarChart2, ExternalLink, ArrowUpDown, Download
+  PieChart as PieChartIcon, BarChart2, ExternalLink, ArrowUpDown
 } from "lucide-react";
 import { ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -178,24 +178,6 @@ export default function FinancePage() {
   const categories = Array.from(new Set(projects.map((p) => p.category))).sort();
   const overspentProjects = projects.filter((p) => p.spent > p.budget).length;
 
-  const exportProjectsCsv = () => {
-    const headers = ["ID", "Name", "Status", "Category", "Budget", "Spent", "Progress", "Location", "Start Date", "End Date"];
-    const rows = filteredSorted.map((p) => [p.id, p.name, p.status, p.category, p.budget, p.spent, p.progress, p.location, p.startDate, p.endDate]);
-    const csv = [headers, ...rows]
-      .map(row => row.map(col => `"${String(col ?? "").replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `finance-projects-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   const totalBudget = projects.reduce((a, p) => a + p.budget, 0);
   const totalSpent = projects.reduce((a, p) => a + p.spent, 0);
 
@@ -262,10 +244,6 @@ export default function FinancePage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                   <input placeholder="Search projects..." className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#008080]/20" value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
-                <button onClick={exportProjectsCsv} className="px-3 py-2.5 rounded-xl border border-gray-100 bg-white text-gray-600 text-sm flex items-center gap-1.5 hover:bg-gray-50">
-                  <Download className="w-4 h-4" /> CSV
-                </button>
-                <button onClick={() => window.print()} className="px-3 py-2.5 rounded-xl border border-gray-100 bg-white text-gray-600 text-sm hover:bg-gray-50">PDF</button>
               </div>
             </div>
 
