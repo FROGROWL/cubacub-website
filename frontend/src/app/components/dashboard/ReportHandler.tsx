@@ -7,7 +7,8 @@ import {
   getCases, updateCaseStatus as apiUpdateCaseStatus, deleteCase,
   getLostFoundItems, updateLostFoundStatus, deleteLostFoundItem,
   deleteIncident, createAuditLogEntry, getCurrentUser,
-  type Incident, type CaseRecord, type LostFoundItem
+  getDocumentRequests, API_BASE_URL,
+  type Incident, type CaseRecord, type LostFoundItem, type DocRequest
 } from "../../api/services";
 
 export default function ReportHandler() {
@@ -19,6 +20,7 @@ export default function ReportHandler() {
   const [anonymousOnly, setAnonymousOnly] = useState(false);
   const [reviewReport, setReviewReport] = useState<Incident | null>(null);
   const [viewPhoto, setViewPhoto] = useState<string | null>(null);
+  const [gcashDocuments, setGcashDocuments] = useState<DocRequest[]>([]);
   const { showToast } = useToast();
 
   const [cases, setCases] = useState<CaseRecord[]>([]);
@@ -59,6 +61,7 @@ export default function ReportHandler() {
       getIncidents().then(setIncidents);
       getCases().then(setCases);
       getLostFoundItems().then(setLfItems);
+      getDocumentRequests().then(setGcashDocuments);
     };
     loadAll();
     window.addEventListener("reportHandlerUpdate", loadAll as EventListener);
@@ -88,6 +91,29 @@ export default function ReportHandler() {
       minute: "2-digit",
       second: "2-digit",
     });
+  };
+
+  const formatShortDate = (value?: string | null) => {
+    if (!value) return "Pending";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
+  };
+
+  const normalizeReceiptUrl = (value?: string) => {
+    if (!value) return "";
+    const trimmed = value.trim();
+    if (trimmed.startsWith("data:") || trimmed.startsWith("http")) return trimmed;
+    if (trimmed.startsWith("/")) return `${API_BASE_URL}${trimmed}`;
+    if (/^\/9j\//.test(trimmed)) return `data:image/jpeg;base64,${trimmed}`;
+    if (/^iVBOR/.test(trimmed)) return `data:image/png;base64,${trimmed}`;
+    if (/^R0lGOD/.test(trimmed)) return `data:image/gif;base64,${trimmed}`;
+    if (/^UklGR/.test(trimmed)) return `data:image/webp;base64,${trimmed}`;
+    return `data:image/jpeg;base64,${trimmed}`;
   };
 
   const getPriorityFilterKey = (r: Incident) => {
@@ -236,6 +262,15 @@ export default function ReportHandler() {
     post: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
     resolved: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
   };
+  const documentStatusConfig: Record<string, { bg: string; text: string; dot: string }> = {
+    pending: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400" },
+    approved: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
+    processing: { bg: "bg-violet-50", text: "text-violet-600", dot: "bg-violet-400" },
+    ready_to_pickup: { bg: "bg-[#008080]/10", text: "text-[#008080]", dot: "bg-[#008080]" },
+    claimed: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
+    unclaimed: { bg: "bg-rose-50", text: "text-rose-600", dot: "bg-rose-400" },
+    rejected: { bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-400" },
+  };
 
   const allRefundReports = incidents.filter(r =>
     r.category === "Document Refund" || (r.subcategory || "").toLowerCase().includes("refund")
@@ -251,6 +286,18 @@ export default function ReportHandler() {
   const refundPending = allRefundReports.filter(r => getEffectiveIncidentStatus(r) === "new").length;
   const refundInvestigating = allRefundReports.filter(r => getEffectiveIncidentStatus(r) === "investigating").length;
   const refundResolved = allRefundReports.filter(r => getEffectiveIncidentStatus(r) === "resolved").length;
+
+  const gcashPaidDocuments = gcashDocuments.filter((doc) => (doc.payment || "").toLowerCase() === "gcash");
+  const filteredGcashDocuments = gcashPaidDocuments.filter((doc) => {
+    const query = refundSearch.toLowerCase();
+    return [doc.id, doc.name, doc.type, doc.status, doc.date, doc.pickupDeadline]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query));
+  }).sort((a, b) => {
+    const aTime = new Date(a.date || "").getTime() || 0;
+    const bTime = new Date(b.date || "").getTime() || 0;
+    return sortDirection === "asc" ? aTime - bTime : bTime - aTime;
+  });
 
   const filteredLostFound = lfItems.filter((item) => {
     const matchSearch = [item.id, item.item_name, item.reporter_name, item.category, item.location, item.description]
@@ -524,6 +571,132 @@ export default function ReportHandler() {
                     {sortDirection === "desc" ? "Newest first" : "Oldest first"}
                   </button>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm text-[#1B263B] flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-amber-600" /> GCash-Paid Document Tracking
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Original document requests paid through GCash for refund verification.
+                    </p>
+                  </div>
+                  <span className="text-xs text-amber-700 bg-white border border-amber-100 rounded-full px-3 py-1">
+                    {filteredGcashDocuments.length} of {gcashPaidDocuments.length} shown
+                  </span>
+                </div>
+
+                <div className="hidden lg:block overflow-hidden rounded-2xl border border-amber-100 bg-white">
+                  <div className="max-h-80 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 z-10 bg-white border-b border-gray-100">
+                        <tr className="text-left text-[10px] uppercase tracking-wider text-gray-400">
+                          <th className="px-4 py-3">Tracking Code</th>
+                          <th className="px-4 py-3">Document</th>
+                          <th className="px-4 py-3">Requested</th>
+                          <th className="px-4 py-3">Pickup Deadline</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3 text-right">Receipt</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {filteredGcashDocuments.map((doc) => {
+                          const docStatus = documentStatusConfig[doc.status] || documentStatusConfig.pending;
+                          const receiptUrl = normalizeReceiptUrl(doc.gcashProof);
+                          return (
+                            <tr key={doc.id} className="hover:bg-amber-50/30">
+                              <td className="px-4 py-3">
+                                <p className="text-[#008080]" style={{ fontWeight: 600 }}>{doc.id}</p>
+                                <p className="text-xs text-gray-400">{doc.name}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <p className="text-[#1B263B]">{doc.type}</p>
+                                <p className="text-xs text-gray-400">{doc.requirementType || "Default requirements"}</p>
+                              </td>
+                              <td className="px-4 py-3 text-gray-500">{formatShortDate(doc.date)}</td>
+                              <td className="px-4 py-3 text-gray-500">{formatShortDate(doc.pickupDeadline)}</td>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${docStatus.bg} ${docStatus.text}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${docStatus.dot}`} /> {doc.status.replaceAll("_", " ")}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {receiptUrl ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewPhoto(receiptUrl)}
+                                    className="inline-flex items-center gap-1.5 text-xs bg-white text-amber-700 border border-amber-100 px-3 py-2 rounded-xl hover:bg-amber-50"
+                                  >
+                                    <ImageIcon className="w-3.5 h-3.5" /> View
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-gray-300">No receipt</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="lg:hidden space-y-3 max-h-80 overflow-y-auto pr-1">
+                  {filteredGcashDocuments.map((doc) => {
+                    const docStatus = documentStatusConfig[doc.status] || documentStatusConfig.pending;
+                    const receiptUrl = normalizeReceiptUrl(doc.gcashProof);
+                    return (
+                      <div key={doc.id} className="bg-white border border-amber-100 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm text-[#008080]" style={{ fontWeight: 600 }}>{doc.id}</p>
+                            <p className="text-xs text-gray-400">{doc.name}</p>
+                          </div>
+                          <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${docStatus.bg} ${docStatus.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${docStatus.dot}`} /> {doc.status.replaceAll("_", " ")}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <p className="text-gray-400 uppercase tracking-wider">Document</p>
+                            <p className="text-[#1B263B] mt-1">{doc.type}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 uppercase tracking-wider">Requirement Type</p>
+                            <p className="text-[#1B263B] mt-1">{doc.requirementType || "Default"}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 uppercase tracking-wider">Requested</p>
+                            <p className="text-[#1B263B] mt-1">{formatShortDate(doc.date)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 uppercase tracking-wider">Pickup Deadline</p>
+                            <p className="text-[#1B263B] mt-1">{formatShortDate(doc.pickupDeadline)}</p>
+                          </div>
+                        </div>
+                        {receiptUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setViewPhoto(receiptUrl)}
+                            className="w-full flex items-center justify-center gap-1.5 text-xs bg-amber-50 text-amber-700 px-3 py-2.5 rounded-xl"
+                          >
+                            <ImageIcon className="w-3.5 h-3.5" /> View GCash Receipt
+                          </button>
+                        ) : (
+                          <p className="text-xs text-gray-300">No receipt image attached.</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {filteredGcashDocuments.length === 0 && (
+                  <p className="text-center py-6 text-gray-300 text-xs bg-white rounded-2xl border border-amber-100">
+                    No GCash-paid document requests found.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-2">
