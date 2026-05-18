@@ -70,7 +70,7 @@ export default function Dashboard() {
   /* ── State variables ────────────────────────────────────────────────── */
   const [role, setRole] = useState<string | null>(null);       // Current user's role (from localStorage)
   const [userName, setUserName] = useState("");                  // Current user's display name
-  const [sideOpen, setSideOpen] = useState(true);                // Sidebar open/collapsed toggle
+  const [sideOpen, setSideOpen] = useState(() => typeof window === "undefined" ? true : window.innerWidth >= 768); // Sidebar open/collapsed toggle
   const [showProfile, setShowProfile] = useState(false);         // Profile dropdown menu visible
   const [roleStats, setRoleStats] = useState<RoleStat[]>([]);
 
@@ -86,6 +86,14 @@ export default function Dashboard() {
     setRole(r);
     setUserName(n || "Staff");
   }, [navigate]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) setSideOpen(true);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const loadSummary = () => {
@@ -165,12 +173,25 @@ export default function Dashboard() {
     : "grid-cols-1 sm:grid-cols-3";
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] flex">
+    <div className="min-h-screen bg-[#F5F7FA] flex overflow-x-hidden">
+      <AnimatePresence>
+        {sideOpen && (
+          <motion.button
+            type="button"
+            className="fixed inset-0 bg-black/40 z-30 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSideOpen(false)}
+            aria-label="Close sidebar"
+          />
+        )}
+      </AnimatePresence>
       {/* --- Sidebar --- */}
       <motion.aside
         animate={{ width: sideOpen ? 260 : 0, opacity: sideOpen ? 1 : 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="overflow-hidden flex-shrink-0 flex flex-col relative"
+        className="fixed md:relative inset-y-0 left-0 z-40 overflow-hidden flex-shrink-0 flex flex-col"
       >
         <div className={`absolute inset-0 bg-gradient-to-b ${config.gradient}`} />
         {/* Decorative orb */}
@@ -207,7 +228,7 @@ export default function Dashboard() {
               {config.icon}
               <span>Dashboard</span>
             </button>
-            <button onClick={() => navigate("/")} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/5 text-sm transition-all">
+            <button onClick={() => { setSideOpen(false); navigate("/"); }} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/5 text-sm transition-all">
               <Home className="w-5 h-5" />
               <span>Public Page</span>
             </button>
@@ -224,16 +245,16 @@ export default function Dashboard() {
       </motion.aside>
 
       {/* --- Main --- */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 w-full flex flex-col">
         {/* Top bar */}
-        <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center gap-4">
+        <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 px-3 sm:px-5 py-3.5 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <button onClick={() => setSideOpen(!sideOpen)} className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors">
               {sideOpen ? <PanelLeftClose className="w-4 h-4 text-gray-400" /> : <PanelLeftOpen className="w-4 h-4 text-gray-400" />}
             </button>
-            <div>
-              <h3 className="text-[#1B263B] tracking-tight" style={{ fontFamily: "Montserrat" }}>{config.label}</h3>
-              <p className="text-xs text-gray-400">{new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</p>
+            <div className="min-w-0">
+              <h3 className="text-[#1B263B] tracking-tight truncate" style={{ fontFamily: "Montserrat" }}>{config.label}</h3>
+              <p className="text-xs text-gray-400 truncate">{new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</p>
             </div>
           </div>
 
@@ -279,7 +300,7 @@ export default function Dashboard() {
         </header>
 
         {/* Content */}
-        <main className="p-4 md:p-6 flex-1" onClick={() => { setShowProfile(false); }}>
+        <main className="p-3 sm:p-4 md:p-6 flex-1 min-w-0" onClick={() => { setShowProfile(false); }}>
           {role === "report_handler" && (
             <div className="mb-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-700">
               Pending Reports only count new incidents created within the last 1 day. Older new incidents move into Investigation Reports automatically.

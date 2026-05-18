@@ -6,6 +6,7 @@ import {
   getDocumentRequests, updateDocumentStatus, deleteDocumentRequest, getDocCases,
   getCalendarEvents, createCalendarEvent, deleteCalendarEvent,
   createAuditLogEntry, getCurrentUser,
+  API_BASE_URL,
   type DocRequest, type DocCaseRecord, type CalendarEvent
 } from "../../api/services";
 
@@ -37,14 +38,25 @@ export default function DocumentHandler() {
   const [historySortDirection, setHistorySortDirection] = useState<"asc" | "desc">("desc");
   const [showHistory, setShowHistory] = useState(false);
   const [editingStatus, setEditingStatus] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<{ src: string; label: string; isPdf: boolean } | null>(null);
   const todayDate = toInputDate();
 
   const normalizeFileUrl = (value: string, fallbackMime: string) => {
     if (!value) return "";
-    if (value.startsWith("data:") || value.startsWith("http") || value.startsWith("/")) {
+    if (value.startsWith("data:") || value.startsWith("http")) {
       return value;
     }
-    return `data:${fallbackMime};base64,${value}`;
+    if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
+    const trimmed = value.trim();
+    if (/^\/9j\//.test(trimmed)) return `data:image/jpeg;base64,${trimmed}`;
+    if (/^iVBOR/.test(trimmed)) return `data:image/png;base64,${trimmed}`;
+    if (/^R0lGOD/.test(trimmed)) return `data:image/gif;base64,${trimmed}`;
+    if (/^UklGR/.test(trimmed)) return `data:image/webp;base64,${trimmed}`;
+    if (/^PHN2Zy/.test(trimmed)) return `data:image/svg+xml;base64,${trimmed}`;
+    if (/^JVBER/.test(trimmed)) {
+      return `data:application/pdf;base64,${trimmed}`;
+    }
+    return `data:${fallbackMime};base64,${trimmed}`;
   };
 
   const isImageUrl = (value: string) =>
@@ -52,6 +64,11 @@ export default function DocumentHandler() {
 
   const isPdfUrl = (value: string) =>
     value.startsWith("data:application/pdf") || /\.pdf(\?|$)/i.test(value);
+
+  const openPreview = (src: string, label: string, isPdf = false) => {
+    if (!src) return;
+    setPreviewFile({ src, label, isPdf });
+  };
 
   /* Load data from services.ts on mount */
   useEffect(() => {
@@ -736,19 +753,24 @@ export default function DocumentHandler() {
                         return (
                           <div key={label} className="rounded-xl border border-gray-200 p-2">
                             {isImg ? (
-                              <img src={fileUrl} alt={label} className="w-full h-20 object-cover rounded-lg mb-1.5" />
+                              <button type="button" onClick={() => openPreview(fileUrl, label)} className="w-full h-20 rounded-lg mb-1.5 overflow-hidden group relative">
+                                <img src={fileUrl} alt={label} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                <span className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] py-1 opacity-0 group-hover:opacity-100 transition-opacity">View image</span>
+                              </button>
                             ) : isPdf ? (
-                              <div className="w-full h-20 bg-rose-100 rounded-lg mb-1.5 flex items-center justify-center">
+                              <button type="button" onClick={() => openPreview(fileUrl, label, true)} className="w-full h-20 bg-rose-100 rounded-lg mb-1.5 flex items-center justify-center">
                                 <FileText className="w-5 h-5 text-rose-400" />
-                              </div>
+                              </button>
                             ) : (
                               <div className="w-full h-20 bg-gray-100 rounded-lg mb-1.5 flex items-center justify-center">
                                 <FileText className="w-5 h-5 text-gray-300" />
                               </div>
                             )}
                             <p className="text-xs text-gray-600 truncate" style={{ fontWeight: 600 }}>{label}</p>
-                            {isPdf && (
-                              <a href={fileUrl} target="_blank" rel="noreferrer" className="text-[10px] text-rose-500 hover:underline">Open PDF</a>
+                            {(isPdf || isImg) && (
+                              <button type="button" onClick={() => openPreview(fileUrl, label, isPdf)} className="text-[10px] text-rose-500 hover:underline">
+                                {isPdf ? "Open PDF" : "Open Image"}
+                              </button>
                             )}
                           </div>
                         );
@@ -767,7 +789,7 @@ export default function DocumentHandler() {
                         : []),
                     ].map((img) => {
                       const fileUrl = img.img
-                        ? normalizeFileUrl(img.img, img.allowPdf ? "application/pdf" : "image/jpeg")
+                        ? normalizeFileUrl(img.img, "image/jpeg")
                         : "";
                       const isPdf = img.allowPdf && fileUrl ? isPdfUrl(fileUrl) : false;
                       const isImg = fileUrl ? isImageUrl(fileUrl) : false;
@@ -775,11 +797,14 @@ export default function DocumentHandler() {
                       <div key={img.label} className="border border-gray-200 rounded-xl h-24 flex flex-col items-center justify-center gap-1 overflow-hidden">
                         {img.img ? (
                           isImg ? (
-                            <img src={fileUrl} alt={img.label} className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => openPreview(fileUrl, img.label)} className="w-full h-full group relative">
+                              <img src={fileUrl} alt={img.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                              <span className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] py-1 opacity-0 group-hover:opacity-100 transition-opacity">View</span>
+                            </button>
                           ) : isPdf ? (
                             <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                               <FileText className="w-5 h-5 text-rose-400" />
-                              <a href={fileUrl} target="_blank" rel="noreferrer" className="text-[10px] text-rose-500 hover:underline">Open PDF</a>
+                              <button type="button" onClick={() => openPreview(fileUrl, img.label, true)} className="text-[10px] text-rose-500 hover:underline">Open PDF</button>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center gap-1">
@@ -820,6 +845,31 @@ export default function DocumentHandler() {
                     <button onClick={() => deleteRequest(reviewReq.id)} className="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /> Delete</button>
                   )}
                 </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {previewFile && (
+          <div className="fixed inset-0 bg-black/75 z-[70] flex items-center justify-center p-4" onClick={() => setPreviewFile(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-white rounded-2xl overflow-hidden max-w-5xl w-full shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <p className="text-sm text-[#1B263B]" style={{ fontFamily: "Montserrat" }}>{previewFile.label}</p>
+                <button type="button" onClick={() => setPreviewFile(null)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {previewFile.isPdf ? (
+                <iframe src={previewFile.src} title={previewFile.label} className="w-full h-[75vh] bg-white" />
+              ) : (
+                <img src={previewFile.src} alt={previewFile.label} className="w-full max-h-[75vh] object-contain bg-black" />
               )}
             </motion.div>
           </div>

@@ -10,8 +10,12 @@ from ..permissions import IsTreasurerOrSuperAdmin
 @permission_classes([IsAuthenticated, IsTreasurerOrSuperAdmin])
 def treasurer_summary(request):
     settings_obj, _ = TreasurerSettings.objects.get_or_create(id=1)
+    allocated = Project.objects.aggregate(total=models.Sum("budget"))["total"] or 0
+    spent = Project.objects.aggregate(total=models.Sum("spent"))["total"] or 0
     return Response({
         "total_budget": settings_obj.annual_budget,
-        "allocated": Project.objects.aggregate(total=models.Sum("budget"))["total"] or 0,
+        "allocated": allocated,
+        "spent": spent,
+        "remaining": settings_obj.annual_budget - allocated,
         "active_projects": Project.objects.filter(status="ongoing").count(),
     })

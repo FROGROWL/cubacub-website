@@ -17,11 +17,11 @@ from .models import Project, TreasurerSettings
 def budget_summary(request):
     total_budget = Project.objects.aggregate(total=Sum("budget"))["total"] or Decimal("0")
     total_spent = Project.objects.aggregate(total=Sum("spent"))["total"] or Decimal("0")
-    available_budget = total_budget - total_spent
 
     settings_obj = TreasurerSettings.get_solo()
     annual_budget = settings_obj.annual_budget
-    utilization_rate = float((total_spent / annual_budget * 100) if annual_budget > 0 else 0)
+    available_budget = annual_budget - total_budget
+    utilization_rate = float((total_budget / annual_budget * 100) if annual_budget > 0 else 0)
 
     palette = ["#1B263B", "#008080", "#00a89d", "#FF6B6B", "#FFD93D", "#8B5CF6"]
     category_totals = defaultdict(lambda: Decimal("0"))

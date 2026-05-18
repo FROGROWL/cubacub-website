@@ -183,6 +183,7 @@ export default function FinancePage() {
 
   const totalBudget = projects.reduce((a, p) => a + p.budget, 0);
   const totalSpent = projects.reduce((a, p) => a + p.spent, 0);
+  const annualBudgetRemaining = annualBudget - totalBudget;
 
   return (
     <div className="min-h-screen bg-[#FAFBFC]">
@@ -208,7 +209,7 @@ export default function FinancePage() {
               { label: "Annual Budget", value: `PHP ${formatCurrency(annualBudget)}`, icon: <DollarSign className="w-4 h-4" /> },
               { label: "Allocated", value: `PHP ${formatCurrency(totalBudget)}`, icon: <PieChartIcon className="w-4 h-4" /> },
               { label: "Total Spent", value: `PHP ${formatCurrency(totalSpent)}`, icon: <TrendingUp className="w-4 h-4" /> },
-              { label: "Remaining", value: `PHP ${formatCurrency(totalBudget - totalSpent)}`, icon: <CheckCircle2 className="w-4 h-4" /> },
+              { label: "Remaining", value: `PHP ${formatCurrency(annualBudgetRemaining)}`, icon: <CheckCircle2 className="w-4 h-4" /> },
             ].map(s => (
               <div key={s.label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
                 <div className="flex items-center gap-1.5 text-white/50 text-xs mb-1">{s.icon}{s.label}</div>
