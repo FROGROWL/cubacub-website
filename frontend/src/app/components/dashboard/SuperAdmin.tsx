@@ -168,6 +168,7 @@ export default function SuperAdmin() {
   const [landingConfig, setLandingConfig] = useState<LandingPageConfig>(DEFAULT_LANDING_PAGE_CONFIG);
   const [landingConfigSaving, setLandingConfigSaving] = useState(false);
   const [showLandingServices, setShowLandingServices] = useState(true);
+  const [landingServiceEditor, setLandingServiceEditor] = useState<"report" | "document">("report");
   const [adminProfile, setAdminProfile] =
     useState<AdminProfile>({
       name: getCurrentUser()?.name || "Kap. Roberto",
@@ -885,7 +886,43 @@ export default function SuperAdmin() {
           </div>
         </div>
 
-        <div className="space-y-6 pt-2">
+        <div className="space-y-4 pt-2">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setLandingServiceEditor("report")}
+              className={`text-left rounded-2xl border p-4 transition ${
+                landingServiceEditor === "report"
+                  ? "border-rose-200 bg-rose-50 shadow-sm"
+                  : "border-gray-100 bg-white hover:border-rose-100 hover:bg-rose-50/40"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm text-[#1B263B]" style={{ fontWeight: 600 }}>
+                <ListChecks className="w-4 h-4 text-rose-500" /> File a Report
+              </span>
+              <span className="block text-xs text-gray-500 mt-1">
+                Edit public report categories and sub-categories.
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLandingServiceEditor("document")}
+              className={`text-left rounded-2xl border p-4 transition ${
+                landingServiceEditor === "document"
+                  ? "border-[#008080]/25 bg-[#008080]/10 shadow-sm"
+                  : "border-gray-100 bg-white hover:border-[#008080]/20 hover:bg-[#008080]/5"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm text-[#1B263B]" style={{ fontWeight: 600 }}>
+                <FileText className="w-4 h-4 text-[#008080]" /> Request Document
+              </span>
+              <span className="block text-xs text-gray-500 mt-1">
+                Edit document types, fees, and requirement groups.
+              </span>
+            </button>
+          </div>
+
+          {landingServiceEditor === "report" && (
           <div className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-4 sm:p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
@@ -903,7 +940,7 @@ export default function SuperAdmin() {
                 + Add Category
               </button>
             </div>
-            <div className="grid xl:grid-cols-2 gap-4">
+            <div className="grid xl:grid-cols-2 gap-4 max-h-[34rem] overflow-y-auto pr-2">
               {landingConfig.report_categories.map((category, index) => (
                 <div key={`${category.name}-${index}`} className="rounded-2xl border border-gray-100 bg-white p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -939,7 +976,9 @@ export default function SuperAdmin() {
               ))}
             </div>
           </div>
+          )}
 
+          {landingServiceEditor === "document" && (
           <div className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-4 sm:p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
@@ -957,7 +996,7 @@ export default function SuperAdmin() {
                 + Add Document
               </button>
             </div>
-            <div className="space-y-5">
+            <div className="space-y-5 max-h-[44rem] overflow-y-auto pr-2">
               {landingConfig.document_types.map((doc, docIndex) => (
                 <div key={`${doc.name}-${docIndex}`} className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 space-y-4">
                   <div className="grid md:grid-cols-12 gap-3 items-end">
@@ -1104,6 +1143,7 @@ export default function SuperAdmin() {
               ))}
             </div>
           </div>
+          )}
         </div>
         </motion.div>
         )}
