@@ -794,13 +794,13 @@ export default function SuperAdmin() {
       )}
 
       {/* Landing Page Service Settings */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
             <h3 className="text-[#1B263B] flex items-center gap-2">
               <Settings className="w-5 h-5 text-violet-500" /> Landing Page Services
             </h3>
-            <p className="text-xs text-gray-400 mt-1">These options update the public File a Report and Request Document forms.</p>
+            <p className="text-sm text-gray-500 mt-1 max-w-2xl">Control the choices citizens see on the public forms. Report categories affect File a Report. Document types, fees, and requirement rules affect Request Document.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -830,10 +830,31 @@ export default function SuperAdmin() {
           exit={{ height: 0, opacity: 0 }}
           className="overflow-hidden"
         >
-        <div className="grid lg:grid-cols-2 gap-5 pt-1">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm text-[#1B263B] flex items-center gap-2"><ListChecks className="w-4 h-4 text-rose-500" /> Report Categories</h4>
+        <div className="grid sm:grid-cols-3 gap-3 py-2">
+          <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4">
+            <p className="text-xs text-violet-500 uppercase tracking-wider">Report Categories</p>
+            <p className="text-2xl text-[#1B263B] mt-1" style={{ fontFamily: "Montserrat" }}>{landingConfig.report_categories.length}</p>
+            <p className="text-xs text-gray-500 mt-1">Shown in File a Report.</p>
+          </div>
+          <div className="rounded-2xl bg-[#008080]/5 border border-[#008080]/15 p-4">
+            <p className="text-xs text-[#008080] uppercase tracking-wider">Document Types</p>
+            <p className="text-2xl text-[#1B263B] mt-1" style={{ fontFamily: "Montserrat" }}>{landingConfig.document_types.length}</p>
+            <p className="text-xs text-gray-500 mt-1">Shown in Request Document.</p>
+          </div>
+          <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+            <p className="text-xs text-amber-600 uppercase tracking-wider">Requirement Types</p>
+            <p className="text-2xl text-[#1B263B] mt-1" style={{ fontFamily: "Montserrat" }}>{landingConfig.document_types.reduce((sum, doc) => sum + (doc.requirementGroups?.length || 0), 0)}</p>
+            <p className="text-xs text-gray-500 mt-1">For variants like Cedula.</p>
+          </div>
+        </div>
+
+        <div className="space-y-6 pt-2">
+          <div className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h4 className="text-[#1B263B] flex items-center gap-2"><ListChecks className="w-4 h-4 text-rose-500" /> File a Report</h4>
+                <p className="text-xs text-gray-500 mt-1 max-w-xl">Each category appears in the public report form. Put one sub-category per line so users can choose the most accurate report type.</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setLandingConfig(prev => ({
@@ -845,16 +866,19 @@ export default function SuperAdmin() {
                 + Add Category
               </button>
             </div>
-            <div className="space-y-3 max-h-[36rem] overflow-y-auto pr-1">
+            <div className="grid xl:grid-cols-2 gap-4">
               {landingConfig.report_categories.map((category, index) => (
-                <div key={`${category.name}-${index}`} className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-3 space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      className="flex-1 bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm outline-none"
-                      value={category.name}
-                      onChange={(event) => updateReportCategory(index, event.target.value)}
-                      placeholder="Category name"
-                    />
+                <div key={`${category.name}-${index}`} className="rounded-2xl border border-gray-100 bg-white p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wider block mb-1">Category Name</label>
+                      <input
+                        className="w-full bg-[#F5F7FA] border border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none"
+                        value={category.name}
+                        onChange={(event) => updateReportCategory(index, event.target.value)}
+                        placeholder="Category name"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => setLandingConfig(prev => ({
@@ -866,9 +890,10 @@ export default function SuperAdmin() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
+                  <label className="text-[10px] text-gray-400 uppercase tracking-wider block">Sub-categories</label>
                   <textarea
-                    rows={3}
-                    className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none resize-none"
+                    rows={5}
+                    className="w-full bg-[#F5F7FA] border border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none resize-y"
                     value={category.subcategories.join("\n")}
                     onChange={(event) => updateReportSubcategories(index, event.target.value)}
                     placeholder="One sub-category per line"
@@ -878,9 +903,12 @@ export default function SuperAdmin() {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm text-[#1B263B] flex items-center gap-2"><FileText className="w-4 h-4 text-[#008080]" /> Document Types</h4>
+          <div className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h4 className="text-[#1B263B] flex items-center gap-2"><FileText className="w-4 h-4 text-[#008080]" /> Request Document</h4>
+                <p className="text-xs text-gray-500 mt-1 max-w-xl">Default requirements apply to everyone. Requirement types are optional and useful when one document has variants, like Cedula Individual, Business, or Employee.</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setLandingConfig(prev => ({
@@ -892,45 +920,58 @@ export default function SuperAdmin() {
                 + Add Document
               </button>
             </div>
-            <div className="space-y-3 max-h-[36rem] overflow-y-auto pr-1">
+            <div className="space-y-5">
               {landingConfig.document_types.map((doc, docIndex) => (
-                <div key={`${doc.name}-${docIndex}`} className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-3 space-y-3">
-                  <div className="grid grid-cols-12 gap-2">
-                    <input
-                      className="col-span-7 bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm outline-none"
-                      value={doc.name}
-                      onChange={(event) => updateDocumentType(docIndex, { name: event.target.value })}
-                      placeholder="Document type"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      className="col-span-3 bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm outline-none"
-                      value={doc.price}
-                      onChange={(event) => updateDocumentType(docIndex, { price: Number(event.target.value || 0) })}
-                      placeholder="Price"
-                    />
+                <div key={`${doc.name}-${docIndex}`} className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 space-y-4">
+                  <div className="grid md:grid-cols-12 gap-3 items-end">
+                    <div className="md:col-span-7">
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wider block mb-1">Document Type</label>
+                      <input
+                        className="w-full bg-[#F5F7FA] border border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none"
+                        value={doc.name}
+                        onChange={(event) => updateDocumentType(docIndex, { name: event.target.value })}
+                        placeholder="Document type"
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wider block mb-1">Price</label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="w-full bg-[#F5F7FA] border border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none"
+                        value={doc.price}
+                        onChange={(event) => updateDocumentType(docIndex, { price: Number(event.target.value || 0) })}
+                        placeholder="Price"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => setLandingConfig(prev => ({
                         ...prev,
                         document_types: prev.document_types.filter((_, idx) => idx !== docIndex),
                       }))}
-                      className="col-span-2 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
+                      className="md:col-span-2 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase tracking-wider block mb-1">Public Description</label>
                   <textarea
-                    rows={2}
-                    className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none resize-none"
+                    rows={3}
+                    className="w-full bg-[#F5F7FA] border border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none resize-y"
                     value={doc.info}
                     onChange={(event) => updateDocumentType(docIndex, { info: event.target.value })}
                     placeholder="Public description or requirement summary"
                   />
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Default Requirements</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <p className="text-xs text-[#1B263B]" style={{ fontWeight: 600 }}>Default Requirements</p>
+                        <p className="text-[11px] text-gray-400">Used when this document does not have requirement types.</p>
+                      </div>
                       <button
                         type="button"
                         onClick={() => updateDocumentType(docIndex, { requirements: [...doc.requirements, { label: "", note: "" }] })}
@@ -940,23 +981,13 @@ export default function SuperAdmin() {
                       </button>
                     </div>
                     {doc.requirements.map((req, reqIndex) => (
-                      <div key={reqIndex} className="grid grid-cols-12 gap-2">
-                        <input
-                          className="col-span-5 bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none"
-                          value={req.label}
-                          onChange={(event) => updateDocumentRequirement(docIndex, reqIndex, { label: event.target.value })}
-                          placeholder="Requirement"
-                        />
-                        <input
-                          className="col-span-5 bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none"
-                          value={req.note}
-                          onChange={(event) => updateDocumentRequirement(docIndex, reqIndex, { note: event.target.value })}
-                          placeholder="Note"
-                        />
+                      <div key={reqIndex} className="grid md:grid-cols-12 gap-2">
+                        <input className="md:col-span-5 bg-white border border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none" value={req.label} onChange={(event) => updateDocumentRequirement(docIndex, reqIndex, { label: event.target.value })} placeholder="Requirement" />
+                        <input className="md:col-span-5 bg-white border border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none" value={req.note} onChange={(event) => updateDocumentRequirement(docIndex, reqIndex, { note: event.target.value })} placeholder="Note" />
                         <button
                           type="button"
                           onClick={() => updateDocumentType(docIndex, { requirements: doc.requirements.filter((_, idx) => idx !== reqIndex) })}
-                          className="col-span-2 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
+                          className="md:col-span-2 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -964,9 +995,13 @@ export default function SuperAdmin() {
                     ))}
                     {!doc.requirements.length && <p className="text-xs text-gray-400">No extra uploaded requirements for this document.</p>}
                   </div>
-                  <div className="space-y-2 border-t border-gray-100 pt-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Requirement Types</p>
+
+                  <div className="rounded-2xl border border-[#008080]/15 bg-[#008080]/5 p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <p className="text-xs text-[#1B263B]" style={{ fontWeight: 600 }}>Requirement Types</p>
+                        <p className="text-[11px] text-gray-500">Users choose one type, then upload only that type's requirements.</p>
+                      </div>
                       <button
                         type="button"
                         onClick={() => updateDocumentType(docIndex, { requirementGroups: [...(doc.requirementGroups || []), { name: "New Type", requirements: [] }] })}
@@ -976,10 +1011,10 @@ export default function SuperAdmin() {
                       </button>
                     </div>
                     {(doc.requirementGroups || []).map((group, groupIndex) => (
-                      <div key={`${group.name}-${groupIndex}`} className="rounded-xl bg-white border border-gray-100 p-2 space-y-2">
-                        <div className="flex gap-2">
+                      <div key={`${group.name}-${groupIndex}`} className="rounded-2xl bg-white border border-gray-100 p-3 space-y-3">
+                        <div className="flex gap-2 items-center">
                           <input
-                            className="flex-1 bg-[#F5F7FA] rounded-xl px-3 py-2 text-xs outline-none"
+                            className="flex-1 bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm outline-none"
                             value={group.name}
                             onChange={(event) => updateRequirementGroup(docIndex, groupIndex, { name: event.target.value })}
                             placeholder="Type name, e.g. Individual"
@@ -993,19 +1028,9 @@ export default function SuperAdmin() {
                           </button>
                         </div>
                         {group.requirements.map((req, reqIndex) => (
-                          <div key={reqIndex} className="grid grid-cols-12 gap-2">
-                            <input
-                              className="col-span-5 bg-[#F5F7FA] rounded-xl px-3 py-2 text-xs outline-none"
-                              value={req.label}
-                              onChange={(event) => updateGroupRequirement(docIndex, groupIndex, reqIndex, { label: event.target.value })}
-                              placeholder="Requirement"
-                            />
-                            <input
-                              className="col-span-5 bg-[#F5F7FA] rounded-xl px-3 py-2 text-xs outline-none"
-                              value={req.note}
-                              onChange={(event) => updateGroupRequirement(docIndex, groupIndex, reqIndex, { note: event.target.value })}
-                              placeholder="Note"
-                            />
+                          <div key={reqIndex} className="grid md:grid-cols-12 gap-2">
+                            <input className="md:col-span-5 bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm outline-none" value={req.label} onChange={(event) => updateGroupRequirement(docIndex, groupIndex, reqIndex, { label: event.target.value })} placeholder="Requirement" />
+                            <input className="md:col-span-5 bg-[#F5F7FA] rounded-xl px-3 py-2.5 text-sm outline-none" value={req.note} onChange={(event) => updateGroupRequirement(docIndex, groupIndex, reqIndex, { note: event.target.value })} placeholder="Note" />
                             <button
                               type="button"
                               onClick={() => {
@@ -1015,7 +1040,7 @@ export default function SuperAdmin() {
                                 } : nextGroup);
                                 updateDocumentType(docIndex, { requirementGroups: nextGroups });
                               }}
-                              className="col-span-2 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
+                              className="md:col-span-2 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
