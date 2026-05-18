@@ -31,6 +31,9 @@ export default function ReportHandler() {
 
   const [showRefundManager, setShowRefundManager] = useState(false);
   const [refundSearch, setRefundSearch] = useState("");
+  const [showGcashTracking, setShowGcashTracking] = useState(false);
+  const [gcashSearch, setGcashSearch] = useState("");
+  const [gcashStatusFilter, setGcashStatusFilter] = useState("all");
   const [nonAnonymousOnlyCase, setNonAnonymousOnlyCase] = useState(false);
   const [showLostFoundManager, setShowLostFoundManager] = useState(false);
   const [lfItems, setLfItems] = useState<LostFoundItem[]>([]);
@@ -289,10 +292,12 @@ export default function ReportHandler() {
 
   const gcashPaidDocuments = gcashDocuments.filter((doc) => (doc.payment || "").toLowerCase() === "gcash");
   const filteredGcashDocuments = gcashPaidDocuments.filter((doc) => {
-    const query = refundSearch.toLowerCase();
-    return [doc.id, doc.name, doc.type, doc.status, doc.date, doc.pickupDeadline]
+    const query = gcashSearch.toLowerCase();
+    const matchSearch = [doc.id, doc.name, doc.type, doc.status, doc.date, doc.pickupDeadline, doc.requirementType]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(query));
+    const matchStatus = gcashStatusFilter === "all" || doc.status === gcashStatusFilter;
+    return matchSearch && matchStatus;
   }).sort((a, b) => {
     const aTime = new Date(a.date || "").getTime() || 0;
     const bTime = new Date(b.date || "").getTime() || 0;
@@ -573,6 +578,27 @@ export default function ReportHandler() {
                 </div>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setShowGcashTracking(prev => !prev)}
+                className={`w-full rounded-2xl border px-4 py-3 text-left transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
+                  showGcashTracking
+                    ? "border-amber-200 bg-amber-50 text-amber-800"
+                    : "border-gray-100 bg-white text-gray-600 hover:bg-amber-50/40 hover:border-amber-100"
+                }`}
+              >
+                <span className="flex items-center gap-2 text-sm" style={{ fontWeight: 600 }}>
+                  <DollarSign className="w-4 h-4 text-amber-600" /> GCash-Paid Document Tracking
+                </span>
+                <span className="flex items-center gap-2 text-xs">
+                  {gcashPaidDocuments.length} GCash-paid document{gcashPaidDocuments.length === 1 ? "" : "s"}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showGcashTracking ? "rotate-180" : ""}`} />
+                </span>
+              </button>
+
+              <AnimatePresence initial={false}>
+              {showGcashTracking && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
               <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
@@ -586,6 +612,32 @@ export default function ReportHandler() {
                   <span className="text-xs text-amber-700 bg-white border border-amber-100 rounded-full px-3 py-1">
                     {filteredGcashDocuments.length} of {gcashPaidDocuments.length} shown
                   </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative sm:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                    <input
+                      placeholder="Search tracking code, name, document..."
+                      className="w-full pl-9 pr-3 py-2 bg-white border border-amber-100 rounded-xl text-xs outline-none"
+                      value={gcashSearch}
+                      onChange={e => setGcashSearch(e.target.value)}
+                    />
+                  </div>
+                  <select
+                    className="bg-white border border-amber-100 rounded-xl px-3 py-2 text-xs outline-none"
+                    value={gcashStatusFilter}
+                    onChange={e => setGcashStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All Document Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="processing">Processing</option>
+                    <option value="ready_to_pickup">Ready to Pick Up</option>
+                    <option value="claimed">Claimed</option>
+                    <option value="unclaimed">Unclaimed</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
                 </div>
 
                 <div className="hidden lg:block overflow-hidden rounded-2xl border border-amber-100 bg-white">
@@ -698,6 +750,9 @@ export default function ReportHandler() {
                   </p>
                 )}
               </div>
+              </motion.div>
+              )}
+              </AnimatePresence>
 
               <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-2">
                 {refundReports.filter(r => {
