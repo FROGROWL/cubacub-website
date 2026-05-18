@@ -257,6 +257,122 @@ export function getCurrentUser(): { role: string; name: string } | null {
 }
 
 // ---------------------------------------------------------------------------
+// LANDING PAGE CONFIGURATION
+// ---------------------------------------------------------------------------
+
+export interface ReportCategoryConfig {
+  name: string;
+  subcategories: string[];
+}
+
+export interface DocumentRequirementConfig {
+  label: string;
+  note: string;
+}
+
+export interface DocumentTypeConfig {
+  name: string;
+  price: number;
+  info: string;
+  requirements: DocumentRequirementConfig[];
+}
+
+export interface LandingPageConfig {
+  report_categories: ReportCategoryConfig[];
+  document_types: DocumentTypeConfig[];
+}
+
+export interface LandingPageConfigResponse {
+  config: LandingPageConfig;
+  updated_at?: string;
+}
+
+export const DEFAULT_LANDING_PAGE_CONFIG: LandingPageConfig = {
+  report_categories: [
+    { name: "Noise Complaint", subcategories: ["Karaoke / Loud Music", "Construction Noise", "Animal Noise", "Vehicle Noise", "Other"] },
+    { name: "Road Hazard", subcategories: ["Pothole", "Fallen Tree / Post", "Flooding", "Broken Signage", "Open Manhole", "Other"] },
+    { name: "Public Disturbance", subcategories: ["Loitering / Intimidation", "Street Brawl", "Vandalism", "Drunken Behavior", "Other"] },
+    { name: "Illegal Activity", subcategories: ["Gambling", "Drug-related", "Theft / Robbery", "Illegal Vending", "Other"] },
+    { name: "Domestic Dispute", subcategories: ["Verbal Abuse", "Physical Abuse", "Property Dispute", "Other"] },
+    { name: "Environmental", subcategories: ["Garbage Dumping", "Smoke / Air Pollution", "Stagnant Water / Mosquito Breeding", "Other"] },
+    { name: "Lost Item", subcategories: ["Personal Belongings", "Electronics", "Documents / IDs", "Jewelry", "Cash / Wallet", "Pets / Animals", "Other"] },
+    { name: "Found Item", subcategories: ["Personal Belongings", "Electronics", "Documents / IDs", "Jewelry", "Cash / Wallet", "Pets / Animals", "Other"] },
+    { name: "Document Refund", subcategories: ["Expired Pickup Deadline", "Other"] },
+    { name: "Other", subcategories: ["Other"] },
+  ],
+  document_types: [
+    { name: "Barangay Clearance", price: 0, info: "Requires a valid government-issued ID, 1x1 or 2x2 photo (white background), and must be a resident of the barangay. Used for employment, travel, or legal transactions.", requirements: [{ label: "1x1 or 2x2 Photo", note: "Recent, white background" }] },
+    { name: "Certificate of Residency", price: 0, info: "Requires proof of residence such as utility bill, lease contract, or land title. Must have been residing in the barangay for at least 6 months.", requirements: [{ label: "Proof of Residence", note: "Utility bill, lease contract, or land title" }] },
+    { name: "Certificate of Indigency", price: 0, info: "Requires proof of residency and supporting documents depending on purpose. Must be verified as indigent by the barangay.", requirements: [{ label: "Proof of Residency", note: "Must be a resident of the barangay" }, { label: "Supporting Documents", note: "Depending on purpose, such as medical abstract or school enrollment form" }] },
+    { name: "Business Clearance / Permit", price: 0, info: "Requires DTI registration or SEC registration, valid government ID, lease contract or land title of business location, sketch/location map, and Cedula.", requirements: [{ label: "DTI Business Name Registration", note: "For sole proprietorship" }, { label: "SEC Registration", note: "For corporations/partnerships" }, { label: "Valid Government ID", note: "Owner or authorized representative" }, { label: "Lease Contract or Land Title", note: "Proof of business location" }, { label: "Sketch or Location Map", note: "Some barangays require this" }, { label: "Cedula (Community Tax Certificate)", note: "Required for all applicants" }] },
+    { name: "First-Time Jobseeker Certification", price: 0, info: "Must be a resident for at least 6 months and a first-time job seeker. Requires proof of education and a signed Oath of Undertaking.", requirements: [{ label: "Proof of Residency", note: "Must be a resident for at least 6 months" }, { label: "Proof of Education / Training", note: "Diploma, TOR, or certificate of completion" }, { label: "Signed Oath of Undertaking", note: "Form provided at the barangay hall" }] },
+    { name: "Certificate of Good Moral Character", price: 0, info: "Requires Cedula, Barangay Clearance, and a recent photo. Commonly needed for employment, scholarship, or school applications.", requirements: [{ label: "Cedula (Community Tax Certificate)", note: "Must be current year" }, { label: "Barangay Clearance", note: "Some barangays require this first" }, { label: "1x1 or 2x2 Photo", note: "Recent, white background" }] },
+    { name: "Cedula (Community Tax Certificate)", price: 20, info: "Required documents depend on your category: employed individuals need proof of income, business owners need their business permit, and property owners need the latest real property tax receipt.", requirements: [{ label: "Proof of Income", note: "For employed individuals - payslip, ITR, or employer certificate" }, { label: "Business Permit", note: "For business owners" }, { label: "Real Property Tax Receipt", note: "For property owners" }] },
+    { name: "Barangay ID", price: 50, info: "Requires a valid government-issued ID and proof of residency. Must be a current resident of the barangay.", requirements: [] },
+    { name: "Certificate of No Income", price: 50, info: "Requires an affidavit of no income or certification from the barangay captain.", requirements: [] },
+    { name: "Certificate of Late Registration", price: 100, info: "Requires supporting documents for the late registration. Must coordinate with the local civil registrar.", requirements: [] },
+    { name: "Barangay Protection Order", price: 0, info: "Filed by a victim of domestic violence or abuse. Free of charge. Must provide a sworn statement of facts.", requirements: [] },
+  ],
+};
+
+function normalizeLandingPageConfig(payload?: Partial<LandingPageConfig> | null): LandingPageConfig {
+  const config = payload || {};
+  const reportCategories = Array.isArray(config.report_categories) && config.report_categories.length
+    ? config.report_categories
+    : DEFAULT_LANDING_PAGE_CONFIG.report_categories;
+  const documentTypes = Array.isArray(config.document_types) && config.document_types.length
+    ? config.document_types
+    : DEFAULT_LANDING_PAGE_CONFIG.document_types;
+
+  return {
+    report_categories: reportCategories.map((item) => ({
+      name: String(item?.name || "").trim(),
+      subcategories: Array.isArray(item?.subcategories)
+        ? item.subcategories.map((sub) => String(sub || "").trim()).filter(Boolean)
+        : [],
+    })).filter((item) => item.name),
+    document_types: documentTypes.map((item) => ({
+      name: String(item?.name || "").trim(),
+      price: Number(item?.price ?? 0),
+      info: String(item?.info || ""),
+      requirements: Array.isArray(item?.requirements)
+        ? item.requirements.map((req) => ({
+            label: String(req?.label || "").trim(),
+            note: String(req?.note || "").trim(),
+          })).filter((req) => req.label)
+        : [],
+    })).filter((item) => item.name),
+  };
+}
+
+export async function getPublicLandingPageConfig(): Promise<LandingPageConfigResponse> {
+  const response = await apiFetch("/api/public/landing-config/");
+  return {
+    ...response,
+    config: normalizeLandingPageConfig(response?.config),
+  };
+}
+
+export async function getLandingPageConfig(): Promise<LandingPageConfigResponse> {
+  const response = await apiFetch("/api/landing-config/");
+  return {
+    ...response,
+    config: normalizeLandingPageConfig(response?.config),
+  };
+}
+
+export async function updateLandingPageConfig(config: LandingPageConfig): Promise<LandingPageConfigResponse> {
+  const response = await apiFetch("/api/landing-config/", {
+    method: "PUT",
+    body: JSON.stringify({ config: normalizeLandingPageConfig(config) }),
+  });
+  return {
+    ...response,
+    config: normalizeLandingPageConfig(response?.config),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // DOCUMENT REQUESTS
 // ---------------------------------------------------------------------------
 

@@ -13,8 +13,8 @@ import { useToast } from "./Toast";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import {
   getCalendarEvents, getPublicProjects, getLostFoundItems, createLostFoundItem, submitPublicDocumentRequest, submitPublicReport, addPatient, getDocumentStatus, getReportStatus, getBookedSlots,
-  getPublicLandingStats, getPublicWeather,
-  type CalendarEvent, type DocumentTrackingStatus, type ReportTrackingStatus, type PublicProject, type LostFoundItem, type PublicLandingStats, type PublicWeather
+  getPublicLandingStats, getPublicWeather, getPublicLandingPageConfig, DEFAULT_LANDING_PAGE_CONFIG,
+  type CalendarEvent, type DocumentTrackingStatus, type ReportTrackingStatus, type PublicProject, type LostFoundItem, type PublicLandingStats, type PublicWeather, type LandingPageConfig
 } from "../api/services";
 
 // Small helpers / placeholders
@@ -385,20 +385,31 @@ const DOC_PRICING: Record<string, number> = {
     "Barangay Protection Order": "Filed by a victim of domestic violence or abuse. Free of charge. Must provide a sworn statement of facts. Immediate issuance within the same day.",
   };
 
-function DocumentRequestForm({ onClose }: { onClose: () => void }) {
+function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CONFIG }: { onClose: () => void; landingConfig?: LandingPageConfig }) {
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const documentTypes = landingConfig.document_types.length ? landingConfig.document_types : DEFAULT_LANDING_PAGE_CONFIG.document_types;
+  const docPricing = Object.fromEntries(documentTypes.map((doc) => [doc.name, Number(doc.price || 0)]));
+  const docRequirements = Object.fromEntries(documentTypes.map((doc) => [doc.name, doc.requirements || []]));
+  const docInfo = Object.fromEntries(documentTypes.map((doc) => [doc.name, doc.info || ""]));
+  const defaultDocType = documentTypes[0]?.name || "Barangay Clearance";
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<any>({
     lastName: "", firstName: "", middleName: "", suffix: "", birthdate: "", sex: "Male",
-    houseNo: "", street: "", sitio: "", phone: "", email: "", docType: "Barangay Clearance", numCopies: "1",
+    houseNo: "", street: "", sitio: "", phone: "", email: "", docType: defaultDocType, numCopies: "1",
     purpose: "", validIdType: "", validIdNo: "", notes: "",
   });
   const u = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   const fullName = `${form.firstName || ""} ${form.middleName ? form.middleName + " " : ""}${form.lastName || ""}`.trim();
-  const docPrice = (DOC_PRICING[form.docType] || 0) * parseInt(form.numCopies || "1");
+  const docPrice = (docPricing[form.docType] || 0) * parseInt(form.numCopies || "1");
   const emailValid = !form.email || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.email);
   const phoneValid = isValidPhilippineMobile(form.phone);
+
+  useEffect(() => {
+    if (!documentTypes.some((doc) => doc.name === form.docType)) {
+      u("docType", defaultDocType);
+    }
+  }, [defaultDocType, documentTypes, form.docType]);
   
 
   const handlePrint = async () => {
@@ -488,23 +499,12 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
   // Requirements uploads: keyed by requirement label
   const [reqUploads, setReqUploads] = useState<Record<string, string>>({});
   const setReqUpload = (label: string, val: string) => setReqUploads(prev => ({ ...prev, [label]: val }));
-  // Cedula customer type selector
-  const [cedulaType, setCedulaType] = useState<"employed" | "business" | "property">("employed");
-
   const steps = ["Personal Info", "Residence & Contact", "Document Details", "Requirements Upload", "Payment & Verification", "Review & Submit"];
   const canP1 = form.lastName && form.firstName && form.birthdate;
   const canP2 = form.street && form.sitio && phoneValid && form.phone && emailValid;
   const canP3 = form.purpose && form.validIdNo;
 
-  const CEDULA_REQ_MAP: Record<"employed" | "business" | "property", { label: string; note: string }> = {
-    employed: { label: "Proof of Income", note: "Payslip, ITR, or employer certificate" },
-    business: { label: "Business Permit", note: "Current year barangay or city business permit" },
-    property: { label: "Real Property Tax Receipt", note: "Latest official receipt for owned property" },
-  };
-  const isCedula = form.docType === "Cedula (Community Tax Certificate)";
-  const currentReqs = isCedula
-    ? [CEDULA_REQ_MAP[cedulaType]]
-    : (DOC_REQUIREMENTS[form.docType] || []);
+  const currentReqs = docRequirements[form.docType] || [];
   const canP4 = currentReqs.length === 0 || currentReqs.every(req => reqUploads[req.label]);
   const canP5 = (paymentMethod === "cash" || gcashProof) && idPhoto && selfiePhoto;
   const isPdfUpload = (val: string) => val.startsWith("data:application/pdf");
@@ -601,7 +601,7 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
               <motion.div key="s3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Select label="Document Type" required value={form.docType} onChange={e => u("docType", e.target.value)}>
-                    {Object.keys(DOC_PRICING).map(d => <option key={d}>{d}</option>)}
+                    {documentTypes.map(d => <option key={d.name}>{d.name}</option>)}
                   </Select>
                   <Select label="Number of Copies" value={form.numCopies} onChange={e => u("numCopies", e.target.value)}>
                     {["1","2","3","4","5"].map(n => <option key={n}>{n}</option>)}
@@ -609,19 +609,19 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
                 </div>
 
                 {/* Document Info */}
-                {DOC_INFO[form.docType] && (
+                {docInfo[form.docType] && (
                   <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 flex items-start gap-2">
                     <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" />
                     <div>
                       <p className="mb-0.5" style={{ fontWeight: 600 }}>Requirements for {form.docType}:</p>
-                      <p className="text-blue-600 leading-relaxed">{DOC_INFO[form.docType]}</p>
+                      <p className="text-blue-600 leading-relaxed">{docInfo[form.docType]}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Document Requirements Panel */}
                 <AnimatePresence mode="wait">
-                  {(DOC_REQUIREMENTS[form.docType] || isCedula) ? (
+                  {currentReqs.length > 0 ? (
                     <motion.div
                       key={form.docType}
                       initial={{ opacity: 0, y: -6 }}
@@ -640,28 +640,6 @@ function DocumentRequestForm({ onClose }: { onClose: () => void }) {
                         </span>
                       </div>
                       <div className="bg-[#F5F7FA] px-4 py-3 space-y-2.5">
-                        {/* Cedula type selector */}
-                        {isCedula && (
-                          <div className="pb-1">
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-2" style={{ fontWeight: 600 }}>I am a / an:</p>
-                            <div className="grid grid-cols-3 gap-2">
-                              {(["employed", "business", "property"] as const).map(type => {
-                                const labels = { employed: "Employed Individual", business: "Business Owner", property: "Property Owner" };
-                                const active = cedulaType === type;
-                                return (
-                                  <button
-                                    key={type}
-                                    onClick={() => { setCedulaType(type); setReqUploads({}); }}
-                                    className={`py-2 px-2 rounded-xl border-2 text-[10px] transition-all text-center leading-tight ${active ? "border-[#008080] bg-[#008080]/8 text-[#008080]" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
-                                    style={{ fontWeight: active ? 700 : 500 }}
-                                  >
-                                    {labels[type]}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
                         {currentReqs.map((req, i) => (
                           <div key={i} className="flex items-start gap-2.5">
                             <div className="w-5 h-5 rounded-full bg-[#008080] flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
@@ -1471,8 +1449,10 @@ function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clin
 }
 
 // --- Reports & Complaints (Multi-step) ---
-function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDocumentRefund?: boolean }) {
+function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDING_PAGE_CONFIG }: { onClose: () => void; isDocumentRefund?: boolean; landingConfig?: LandingPageConfig }) {
   const { showToast } = useToast();
+  const reportCategories = landingConfig.report_categories.length ? landingConfig.report_categories : DEFAULT_LANDING_PAGE_CONFIG.report_categories;
+  const firstReportCategory = reportCategories.find((category) => category.name !== "Document Refund")?.name || "Noise Complaint";
   const [rStep, setRStep] = useState(1);
   const [anon, setAnon] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -1499,7 +1479,7 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
       // Reporter info
       reporterName: "", reporterPhone: "", reporterAddress: "", reporterRelation: "Witness",
       // Incident info
-      category: "Noise Complaint", subcategory: "", urgency: "Medium", itemName: "",
+      category: firstReportCategory, subcategory: "", urgency: "Medium", itemName: "",
       incidentDate: "", incidentTime: "", location: "", landmark: "",
       // People involved
       suspectName: "", suspectDescription: "", victimsInvolved: "",
@@ -1533,18 +1513,11 @@ function ReportModal({ onClose, isDocumentRefund }: { onClose: () => void; isDoc
     }
   }, [isRefund, reportDraftId]);
 
-  const subcategories: Record<string, string[]> = {
-    "Noise Complaint": ["Karaoke / Loud Music", "Construction Noise", "Animal Noise", "Vehicle Noise", "Other"],
-    "Road Hazard": ["Pothole", "Fallen Tree / Post", "Flooding", "Broken Signage", "Open Manhole", "Other"],
-    "Public Disturbance": ["Loitering / Intimidation", "Street Brawl", "Vandalism", "Drunken Behavior", "Other"],
-    "Illegal Activity": ["Gambling", "Drug-related", "Theft / Robbery", "Illegal Vending", "Other"],
-    "Domestic Dispute": ["Verbal Abuse", "Physical Abuse", "Property Dispute", "Other"],
-    "Environmental": ["Garbage Dumping", "Smoke / Air Pollution", "Stagnant Water / Mosquito Breeding", "Other"],
-    "Lost Item": ["Personal Belongings", "Electronics", "Documents / IDs", "Jewelry", "Cash / Wallet", "Pets / Animals", "Other"],
-    "Found Item": ["Personal Belongings", "Electronics", "Documents / IDs", "Jewelry", "Cash / Wallet", "Pets / Animals", "Other"],
-    "Document Refund": ["Expired Pickup Deadline", "Other"],
-    "Other": ["Other"],
-  };
+  const subcategories: Record<string, string[]> = Object.fromEntries(
+    reportCategories.map((category) => [category.name, category.subcategories || []]),
+  );
+  if (!subcategories["Document Refund"]) subcategories["Document Refund"] = ["Expired Pickup Deadline", "Other"];
+  if (!subcategories.Other) subcategories.Other = ["Other"];
 
   const isRefundCategory = form.category === "Document Refund";
   const isOtherCategory = form.category === "Other";
@@ -2381,6 +2354,7 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [financeProjects, setFinanceProjects] = useState<PublicProject[]>([]);
   const [financeIndex, setFinanceIndex] = useState(0);
+  const [landingConfig, setLandingConfig] = useState<LandingPageConfig>(DEFAULT_LANDING_PAGE_CONFIG);
   const [landingStats, setLandingStats] = useState<PublicLandingStats>({
     documents: 0,
     clinic: 0,
@@ -2402,6 +2376,12 @@ export default function LandingPage() {
     getPublicProjects()
       .then((rows) => setFinanceProjects(rows || []))
       .catch(() => setFinanceProjects([]));
+  }, []);
+
+  useEffect(() => {
+    getPublicLandingPageConfig()
+      .then((response) => setLandingConfig(response.config))
+      .catch(() => setLandingConfig(DEFAULT_LANDING_PAGE_CONFIG));
   }, []);
 
   useEffect(() => {
@@ -2800,11 +2780,11 @@ export default function LandingPage() {
 
       {/* --- Modals --- */}
       <AnimatePresence>
-        {showDocForm && <DocumentRequestForm onClose={() => setShowDocForm(false)} />}
+        {showDocForm && <DocumentRequestForm onClose={() => setShowDocForm(false)} landingConfig={landingConfig} />}
         {showTracker && <TrackerModal onClose={() => setShowTracker(false)} trackingId={trackingId} />}
         {showReportTracker && <ReportTrackerModal onClose={() => setShowReportTracker(false)} trackingId={reportTrackingId} />}
         {showClinic && <ClinicBookingModal onClose={() => setShowClinic(false)} clinicOpen={clinicOpen} />}
-        {showReport && <ReportModal onClose={() => { setShowReport(false); setIsDocumentRefund(false); }} isDocumentRefund={isDocumentRefund} />}
+        {showReport && <ReportModal onClose={() => { setShowReport(false); setIsDocumentRefund(false); }} isDocumentRefund={isDocumentRefund} landingConfig={landingConfig} />}
       </AnimatePresence>
     </div>
   );

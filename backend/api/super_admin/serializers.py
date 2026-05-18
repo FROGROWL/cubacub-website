@@ -1,7 +1,7 @@
 # serializers.py
 
 from rest_framework import serializers
-from .models import StaffAccount, AuditLog
+from .models import StaffAccount, AuditLog, LandingPageConfig
 
 class StaffAccountSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -47,3 +47,35 @@ class AuditLogSerializer(serializers.ModelSerializer):
         name = obj.user.name or obj.user.username
         role = obj.user.role.replace("_", " ").title() if obj.user.role else "Staff"
         return f"{name} (@{obj.user.username}, {role})"
+
+
+class LandingPageConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LandingPageConfig
+        fields = ["config", "updated_at"]
+        read_only_fields = ["updated_at"]
+
+    def validate_config(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Configuration must be an object.")
+
+        report_categories = value.get("report_categories", [])
+        document_types = value.get("document_types", [])
+        if not isinstance(report_categories, list) or not isinstance(document_types, list):
+            raise serializers.ValidationError("Report categories and document types must be lists.")
+
+        for item in report_categories:
+            if not isinstance(item, dict) or not str(item.get("name", "")).strip():
+                raise serializers.ValidationError("Each report category needs a name.")
+            if not isinstance(item.get("subcategories", []), list):
+                raise serializers.ValidationError("Report subcategories must be a list.")
+
+        for item in document_types:
+            if not isinstance(item, dict) or not str(item.get("name", "")).strip():
+                raise serializers.ValidationError("Each document type needs a name.")
+            if float(item.get("price", 0) or 0) < 0:
+                raise serializers.ValidationError("Document prices cannot be negative.")
+            if not isinstance(item.get("requirements", []), list):
+                raise serializers.ValidationError("Document requirements must be a list.")
+
+        return value

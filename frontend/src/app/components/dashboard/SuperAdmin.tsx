@@ -16,6 +16,9 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  ListChecks,
+  Save,
 } from "lucide-react";
 // Analytics use simple SVG charts - easy to connect to database later
 // Just replace the mock data arrays with your DB query results
@@ -40,6 +43,9 @@ import {
   createCalendarEvent,
   deleteCalendarEvent,
   pingActivity,
+  getLandingPageConfig,
+  updateLandingPageConfig,
+  DEFAULT_LANDING_PAGE_CONFIG,
   type StaffAccount,
   type AuditLogEntry,
   type AnalyticsSummary,
@@ -48,6 +54,7 @@ import {
   type Incident,
   type Project,
   type CalendarEvent,
+  type LandingPageConfig,
 } from "../../api/services";
 
 const COLORS = [
@@ -155,6 +162,8 @@ export default function SuperAdmin() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [showAddCalendarEvent, setShowAddCalendarEvent] = useState(false);
   const [newCalendarEvent, setNewCalendarEvent] = useState({ date: "", title: "", color: "bg-violet-500" });
+  const [landingConfig, setLandingConfig] = useState<LandingPageConfig>(DEFAULT_LANDING_PAGE_CONFIG);
+  const [landingConfigSaving, setLandingConfigSaving] = useState(false);
   const [adminProfile, setAdminProfile] =
     useState<AdminProfile>({
       name: getCurrentUser()?.name || "Kap. Roberto",
@@ -173,6 +182,7 @@ export default function SuperAdmin() {
     getIncidents().then(setIncidents);
     getProjects().then(setProjects);
     getAdminProfile().then(setAdminProfile);
+    getLandingPageConfig().then(response => setLandingConfig(response.config)).catch(() => setLandingConfig(DEFAULT_LANDING_PAGE_CONFIG));
   }, []);
 
   useEffect(() => {
@@ -381,6 +391,81 @@ export default function SuperAdmin() {
     }).catch(() => {
       showToast("Failed to delete calendar event.", "error");
     });
+  };
+
+  const saveLandingConfig = () => {
+    const cleaned: LandingPageConfig = {
+      report_categories: landingConfig.report_categories
+        .map(category => ({
+          name: category.name.trim(),
+          subcategories: category.subcategories.map(sub => sub.trim()).filter(Boolean),
+        }))
+        .filter(category => category.name),
+      document_types: landingConfig.document_types
+        .map(doc => ({
+          name: doc.name.trim(),
+          price: Number(doc.price || 0),
+          info: doc.info.trim(),
+          requirements: doc.requirements
+            .map(req => ({ label: req.label.trim(), note: req.note.trim() }))
+            .filter(req => req.label),
+        }))
+        .filter(doc => doc.name),
+    };
+
+    if (!cleaned.report_categories.length || !cleaned.document_types.length) {
+      showToast("Keep at least one report category and one document type.", "error");
+      return;
+    }
+
+    setLandingConfigSaving(true);
+    updateLandingPageConfig(cleaned)
+      .then(response => {
+        setLandingConfig(response.config);
+        createAuditLogEntry({
+          time: new Date().toLocaleString("en-PH"),
+          user: adminAuditUser,
+          action: `Updated landing page service configuration; report categories: ${response.config.report_categories.length}; document types: ${response.config.document_types.length}`,
+          type: "info",
+        }).then(refreshAuditTrail).catch(() => {});
+        showToast("Landing page settings saved.");
+      })
+      .catch(() => showToast("Failed to save landing page settings.", "error"))
+      .finally(() => setLandingConfigSaving(false));
+  };
+
+  const updateReportCategory = (index: number, value: string) => {
+    setLandingConfig(prev => ({
+      ...prev,
+      report_categories: prev.report_categories.map((category, idx) => idx === index ? { ...category, name: value } : category),
+    }));
+  };
+
+  const updateReportSubcategories = (index: number, value: string) => {
+    setLandingConfig(prev => ({
+      ...prev,
+      report_categories: prev.report_categories.map((category, idx) => idx === index ? {
+        ...category,
+        subcategories: value.split("\n").map(item => item.trim()).filter(Boolean),
+      } : category),
+    }));
+  };
+
+  const updateDocumentType = (index: number, patch: Partial<LandingPageConfig["document_types"][number]>) => {
+    setLandingConfig(prev => ({
+      ...prev,
+      document_types: prev.document_types.map((doc, idx) => idx === index ? { ...doc, ...patch } : doc),
+    }));
+  };
+
+  const updateDocumentRequirement = (docIndex: number, reqIndex: number, patch: { label?: string; note?: string }) => {
+    setLandingConfig(prev => ({
+      ...prev,
+      document_types: prev.document_types.map((doc, idx) => idx === docIndex ? {
+        ...doc,
+        requirements: doc.requirements.map((req, rIdx) => rIdx === reqIndex ? { ...req, ...patch } : req),
+      } : doc),
+    }));
   };
 
   useEffect(() => {
@@ -673,6 +758,166 @@ export default function SuperAdmin() {
           </div>
         </div>
       )}
+
+      {/* Landing Page Service Settings */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-[#1B263B] flex items-center gap-2">
+              <Settings className="w-5 h-5 text-violet-500" /> Landing Page Services
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">These options update the public File a Report and Request Document forms.</p>
+          </div>
+          <button
+            type="button"
+            onClick={saveLandingConfig}
+            disabled={landingConfigSaving}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" /> {landingConfigSaving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm text-[#1B263B] flex items-center gap-2"><ListChecks className="w-4 h-4 text-rose-500" /> Report Categories</h4>
+              <button
+                type="button"
+                onClick={() => setLandingConfig(prev => ({
+                  ...prev,
+                  report_categories: [...prev.report_categories, { name: "New Category", subcategories: ["Other"] }],
+                }))}
+                className="text-xs px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600"
+              >
+                + Add Category
+              </button>
+            </div>
+            <div className="space-y-3 max-h-[36rem] overflow-y-auto pr-1">
+              {landingConfig.report_categories.map((category, index) => (
+                <div key={`${category.name}-${index}`} className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-3 space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      className="flex-1 bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm outline-none"
+                      value={category.name}
+                      onChange={(event) => updateReportCategory(index, event.target.value)}
+                      placeholder="Category name"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setLandingConfig(prev => ({
+                        ...prev,
+                        report_categories: prev.report_categories.filter((_, idx) => idx !== index),
+                      }))}
+                      className="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <textarea
+                    rows={3}
+                    className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none resize-none"
+                    value={category.subcategories.join("\n")}
+                    onChange={(event) => updateReportSubcategories(index, event.target.value)}
+                    placeholder="One sub-category per line"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm text-[#1B263B] flex items-center gap-2"><FileText className="w-4 h-4 text-[#008080]" /> Document Types</h4>
+              <button
+                type="button"
+                onClick={() => setLandingConfig(prev => ({
+                  ...prev,
+                  document_types: [...prev.document_types, { name: "New Document", price: 0, info: "", requirements: [] }],
+                }))}
+                className="text-xs px-3 py-1.5 rounded-xl bg-[#008080]/10 text-[#008080]"
+              >
+                + Add Document
+              </button>
+            </div>
+            <div className="space-y-3 max-h-[36rem] overflow-y-auto pr-1">
+              {landingConfig.document_types.map((doc, docIndex) => (
+                <div key={`${doc.name}-${docIndex}`} className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-3 space-y-3">
+                  <div className="grid grid-cols-12 gap-2">
+                    <input
+                      className="col-span-7 bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm outline-none"
+                      value={doc.name}
+                      onChange={(event) => updateDocumentType(docIndex, { name: event.target.value })}
+                      placeholder="Document type"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      className="col-span-3 bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm outline-none"
+                      value={doc.price}
+                      onChange={(event) => updateDocumentType(docIndex, { price: Number(event.target.value || 0) })}
+                      placeholder="Price"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setLandingConfig(prev => ({
+                        ...prev,
+                        document_types: prev.document_types.filter((_, idx) => idx !== docIndex),
+                      }))}
+                      className="col-span-2 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <textarea
+                    rows={2}
+                    className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none resize-none"
+                    value={doc.info}
+                    onChange={(event) => updateDocumentType(docIndex, { info: event.target.value })}
+                    placeholder="Public description or requirement summary"
+                  />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Requirements</p>
+                      <button
+                        type="button"
+                        onClick={() => updateDocumentType(docIndex, { requirements: [...doc.requirements, { label: "", note: "" }] })}
+                        className="text-[10px] px-2 py-1 rounded-lg bg-white border border-gray-100 text-gray-500"
+                      >
+                        + Add Requirement
+                      </button>
+                    </div>
+                    {doc.requirements.map((req, reqIndex) => (
+                      <div key={reqIndex} className="grid grid-cols-12 gap-2">
+                        <input
+                          className="col-span-5 bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none"
+                          value={req.label}
+                          onChange={(event) => updateDocumentRequirement(docIndex, reqIndex, { label: event.target.value })}
+                          placeholder="Requirement"
+                        />
+                        <input
+                          className="col-span-5 bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none"
+                          value={req.note}
+                          onChange={(event) => updateDocumentRequirement(docIndex, reqIndex, { note: event.target.value })}
+                          placeholder="Note"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => updateDocumentType(docIndex, { requirements: doc.requirements.filter((_, idx) => idx !== reqIndex) })}
+                          className="col-span-2 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {!doc.requirements.length && <p className="text-xs text-gray-400">No extra uploaded requirements for this document.</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Add/Edit Account Modal */}
       <AnimatePresence>
