@@ -164,9 +164,10 @@ export default function SuperAdmin() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [showAddCalendarEvent, setShowAddCalendarEvent] = useState(false);
   const [newCalendarEvent, setNewCalendarEvent] = useState({ date: "", title: "", color: "bg-violet-500" });
+  const [adminSection, setAdminSection] = useState<"staff" | "services" | "calendar" | "audit" | "analytics">("staff");
   const [landingConfig, setLandingConfig] = useState<LandingPageConfig>(DEFAULT_LANDING_PAGE_CONFIG);
   const [landingConfigSaving, setLandingConfigSaving] = useState(false);
-  const [showLandingServices, setShowLandingServices] = useState(false);
+  const [showLandingServices, setShowLandingServices] = useState(true);
   const [adminProfile, setAdminProfile] =
     useState<AdminProfile>({
       name: getCurrentUser()?.name || "Kap. Roberto",
@@ -628,6 +629,38 @@ export default function SuperAdmin() {
 
   return (
     <div className="space-y-6">
+      <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-3">
+        {[
+          { id: "staff", label: "Staff", desc: `${accounts.length} accounts`, icon: <UserPlus className="w-4 h-4" />, color: "from-violet-500 to-purple-600" },
+          { id: "services", label: "Landing Services", desc: "Public form options", icon: <Settings className="w-4 h-4" />, color: "from-[#008080] to-[#00a89d]" },
+          { id: "calendar", label: "Calendar", desc: `${calendarEvents.length} events`, icon: <Calendar className="w-4 h-4" />, color: "from-sky-500 to-blue-600" },
+          { id: "audit", label: "Audit Trail", desc: `${auditLog.length} active logs`, icon: <Clock className="w-4 h-4" />, color: "from-amber-500 to-orange-500" },
+          { id: "analytics", label: "Analytics", desc: "Service overview", icon: <ArrowUpDown className="w-4 h-4" />, color: "from-emerald-500 to-teal-600" },
+        ].map(section => {
+          const active = adminSection === section.id;
+          return (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => setAdminSection(section.id as typeof adminSection)}
+              className={`rounded-2xl border p-4 text-left transition-all ${active ? "bg-white border-transparent shadow-lg shadow-black/5" : "bg-white/70 border-gray-100 hover:bg-white hover:shadow-sm"}`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${section.color} text-white flex items-center justify-center shadow-sm`}>
+                  {section.icon}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm text-[#1B263B]" style={{ fontWeight: active ? 700 : 500 }}>{section.label}</span>
+                  <span className="block text-xs text-gray-400 truncate">{section.desc}</span>
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {adminSection === "staff" && (
+      <>
       {/* Account Management Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h2 className="text-[#1B263B]">Staff Accounts</h2>
@@ -792,7 +825,11 @@ export default function SuperAdmin() {
           </div>
         </div>
       )}
+      </>
+      )}
 
+      {adminSection === "services" && (
+      <>
       {/* Landing Page Service Settings */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 space-y-5">
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -1072,6 +1109,8 @@ export default function SuperAdmin() {
         )}
         </AnimatePresence>
       </div>
+      </>
+      )}
 
       {/* Add/Edit Account Modal */}
       <AnimatePresence>
@@ -1402,6 +1441,8 @@ export default function SuperAdmin() {
         )}
       </AnimatePresence>
 
+      {adminSection === "calendar" && (
+      <>
       {/* Admin Calendar */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
@@ -1590,7 +1631,11 @@ export default function SuperAdmin() {
           </div>
         )}
       </AnimatePresence>
+      </>
+      )}
 
+      {adminSection === "audit" && (
+      <>
       {/* Audit Trail */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-5">
@@ -1751,7 +1796,11 @@ export default function SuperAdmin() {
           )}
         </div>
       </div>
+      </>
+      )}
 
+      {adminSection === "analytics" && (
+      <>
       {/* Analytics */}
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
@@ -1918,6 +1967,8 @@ export default function SuperAdmin() {
           </div>
         </div>
       </section>
+      </>
+      )}
     </div>
   );
 }
