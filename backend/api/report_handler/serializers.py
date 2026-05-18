@@ -8,6 +8,20 @@ class IncidentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Date of incident cannot be in the future.")
         return value
 
+    def validate(self, attrs):
+        status_value = attrs.get("status", getattr(self.instance, "status", None))
+        rejection_reason = attrs.get("rejectionReason", getattr(self.instance, "rejectionReason", ""))
+
+        if status_value == "rejected" and not rejection_reason:
+            raise serializers.ValidationError({
+                "rejectionReason": "Rejection reason is required when status is rejected."
+            })
+
+        if status_value != "rejected" and "status" in attrs:
+            attrs["rejectionReason"] = None
+
+        return attrs
+
     class Meta:
         model = Incident
         fields = "__all__"

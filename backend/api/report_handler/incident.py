@@ -136,6 +136,7 @@ def report_track(request):
         "new": 0,
         "investigating": 1,
         "resolved": 2,
+        "rejected": -1,
     }
 
     return Response({
@@ -150,4 +151,5 @@ def report_track(request):
         "urgency": incident.urgency,
         "step": status_map.get(incident.status, 0),
         "statusUpdatedAt": incident.updated_at,
+        "rejectionReason": incident.rejectionReason,
     })

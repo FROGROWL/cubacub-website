@@ -19,6 +19,8 @@ export default function ReportHandler() {
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
   const [anonymousOnly, setAnonymousOnly] = useState(false);
   const [reviewReport, setReviewReport] = useState<Incident | null>(null);
+  const [rejectReport, setRejectReport] = useState<Incident | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const [viewPhoto, setViewPhoto] = useState<string | null>(null);
   const [gcashDocuments, setGcashDocuments] = useState<DocRequest[]>([]);
   const { showToast } = useToast();
@@ -184,17 +186,35 @@ export default function ReportHandler() {
     }).catch(() => {});
   };
 
-  const updateStatus = (id: string, status: "new" | "investigating" | "resolved") => {
+  const updateStatus = (id: string, status: "new" | "investigating" | "resolved" | "rejected", rejectionReason?: string) => {
     const target = incidents.find(r => r.id === id);
-    updateIncidentStatus(id, status).then(() => {
-      setIncidents(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    updateIncidentStatus(id, status, rejectionReason).then(() => {
+      setIncidents(prev => prev.map(r => r.id === id ? { ...r, status, rejectionReason: status === "rejected" ? rejectionReason : null } : r));
       logAudit(
         `Updated report ${id}${target ? ` (${target.category}${target.subcategory ? ` - ${target.subcategory}` : ""}) from ${target.reporter_name || "Unknown reporter"}` : ""} from ${target ? getEffectiveIncidentStatus(target) : "unknown"} to ${status}`,
-        status === "resolved" ? "success" : status === "investigating" ? "warning" : "info",
+        status === "resolved" ? "success" : status === "rejected" ? "error" : status === "investigating" ? "warning" : "info",
       );
       showToast(`Case ${id} marked as ${status}!`);
       window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
     });
+  };
+
+  const openRejectReport = (report: Incident) => {
+    setRejectReport(report);
+    setRejectReason(report.rejectionReason || "");
+  };
+
+  const submitRejectReport = () => {
+    if (!rejectReport) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      showToast("Rejection reason is required.");
+      return;
+    }
+    updateStatus(rejectReport.id, "rejected", reason);
+    setRejectReport(null);
+    setRejectReason("");
+    setReviewReport(null);
   };
 
   const updateCaseStatus = (id: string, status: CaseRecord["status"]) => {
@@ -241,12 +261,14 @@ export default function ReportHandler() {
     new: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
     investigating: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400" },
     resolved: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
+    rejected: { bg: "bg-rose-50", text: "text-rose-600", dot: "bg-rose-400" },
   };
   const statusFilterOptions = [
     { key: "all", label: "All", count: incidents.length },
     { key: "pending", label: "Pending", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "new").length },
     { key: "investigating", label: "Investigating", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "investigating").length },
     { key: "resolved", label: "Resolved", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "resolved").length },
+    { key: "rejected", label: "Rejected", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "rejected").length },
   ];
   const priorityConfig: Record<string, string> = {
     critical: "text-red-600 bg-red-50",
@@ -395,6 +417,7 @@ export default function ReportHandler() {
                     <option value="pending">Pending</option>
                     <option value="investigating">Investigating</option>
                     <option value="resolved">Resolved</option>
+                    <option value="rejected">Rejected</option>
                   </select>
                   <select className="bg-gray-50 rounded-xl px-3 py-2 text-xs outline-none" value={caseUrgencyFilter} onChange={e => setCaseUrgencyFilter(e.target.value)}>
                     <option value="all">All Urgency</option>
@@ -453,7 +476,10 @@ export default function ReportHandler() {
                             {reportStatus === "new" && (
                               <button onClick={() => updateStatus(r.id, "investigating")} className="text-xs bg-amber-50 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors">Investigate</button>
                             )}
-                            {reportStatus !== "resolved" && (
+                            {reportStatus === "new" && (
+                              <button onClick={() => openRejectReport(r)} className="text-xs bg-rose-50 text-rose-600 px-4 py-2 rounded-xl hover:bg-rose-100 transition-colors">Reject</button>
+                            )}
+                            {reportStatus !== "resolved" && reportStatus !== "rejected" && (
                               <button onClick={() => updateStatus(r.id, "resolved")} className="text-xs bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5">
                                 Resolve <ArrowRight className="w-3.5 h-3.5" />
                               </button>
@@ -570,6 +596,7 @@ export default function ReportHandler() {
                     <option value="pending">Pending</option>
                     <option value="investigating">Investigating</option>
                     <option value="resolved">Resolved</option>
+                    <option value="rejected">Rejected</option>
                   </select>
                   <button onClick={() => setSortDirection(prev => prev === "desc" ? "asc" : "desc")}
                     className="text-xs bg-white text-gray-500 border border-gray-100 px-3 py-2 rounded-xl hover:bg-gray-50 transition-all">
@@ -793,7 +820,10 @@ export default function ReportHandler() {
                           {reportStatus === "new" && (
                             <button onClick={() => updateStatus(r.id, "investigating")} className="text-xs bg-amber-50 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors">Investigate</button>
                           )}
-                          {reportStatus !== "resolved" && (
+                          {reportStatus === "new" && (
+                            <button onClick={() => openRejectReport(r)} className="text-xs bg-rose-50 text-rose-600 px-4 py-2 rounded-xl hover:bg-rose-100 transition-colors">Reject</button>
+                          )}
+                          {reportStatus !== "resolved" && reportStatus !== "rejected" && (
                             <button onClick={() => updateStatus(r.id, "resolved")} className="text-xs bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5">
                               Resolve <ArrowRight className="w-3.5 h-3.5" />
                             </button>
@@ -954,6 +984,12 @@ export default function ReportHandler() {
                   ))}
                   <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Narrative</p>
                   <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{reviewReport.details}</p>
+                  {reviewReport.status === "rejected" && (
+                    <>
+                      <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Rejection Reason</p>
+                      <p className="text-xs text-rose-700 leading-relaxed whitespace-pre-wrap bg-rose-50 border border-rose-100 rounded-xl p-3">{reviewReport.rejectionReason || "No reason provided."}</p>
+                    </>
+                  )}
                 </div>
 
                 {((reviewReport.evidence_photos && reviewReport.evidence_photos.length > 0) || reviewReport.evidence_photo_count) && (
@@ -969,10 +1005,13 @@ export default function ReportHandler() {
                   </div>
                 )}
               </div>
-              {getEffectiveIncidentStatus(reviewReport) !== "resolved" && (
+              {getEffectiveIncidentStatus(reviewReport) !== "resolved" && getEffectiveIncidentStatus(reviewReport) !== "rejected" && (
                 <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50" onClick={e => e.stopPropagation()}>
                   {getEffectiveIncidentStatus(reviewReport) === "new" && (
-                    <button onClick={() => { updateStatus(reviewReport.id, "investigating"); setReviewReport(null); }} className="flex-1 bg-amber-50 text-amber-600 py-3 rounded-xl hover:bg-amber-100 transition-colors text-sm flex items-center justify-center gap-2"><Eye className="w-4 h-4" /> Investigate</button>
+                    <>
+                      <button onClick={() => { updateStatus(reviewReport.id, "investigating"); setReviewReport(null); }} className="flex-1 bg-amber-50 text-amber-600 py-3 rounded-xl hover:bg-amber-100 transition-colors text-sm flex items-center justify-center gap-2"><Eye className="w-4 h-4" /> Investigate</button>
+                      <button onClick={() => openRejectReport(reviewReport)} className="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><X className="w-4 h-4" /> Reject</button>
+                    </>
                   )}
                   <button onClick={() => { updateStatus(reviewReport.id, "resolved"); setReviewReport(null); }} className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Resolve</button>
                 </div>
@@ -1037,6 +1076,45 @@ export default function ReportHandler() {
                 {reviewLF.status !== "post" && (
                   <button onClick={() => { updateLostFound(reviewLF.id, "post"); setReviewLF(null); }} className="flex-1 bg-amber-50 text-amber-600 py-3 rounded-xl hover:bg-amber-100 transition-colors text-sm flex items-center justify-center gap-2">Post</button>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Reject Report Modal */}
+      <AnimatePresence>
+        {rejectReport && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setRejectReport(null); setRejectReason(""); }}>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="bg-gradient-to-r from-rose-600 to-orange-500 px-6 py-5">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-white" style={{ fontFamily: "Montserrat" }}>Reject Pending Report</h3>
+                    <p className="text-white/60 text-xs mt-0.5">{rejectReport.id} - {rejectReport.category}</p>
+                  </div>
+                  <button onClick={() => { setRejectReport(null); setRejectReason(""); }} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-3 text-xs text-rose-700">
+                  This will mark the report as rejected and show the reason in the public report tracker.
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1.5 block">Reason for rejection</label>
+                  <textarea
+                    rows={5}
+                    value={rejectReason}
+                    onChange={e => setRejectReason(e.target.value)}
+                    placeholder="Explain why this pending report cannot be accepted."
+                    className="w-full bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm outline-none resize-none border border-gray-100"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => { setRejectReport(null); setRejectReason(""); }} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm">Cancel</button>
+                  <button onClick={submitRejectReport} className="flex-1 bg-gradient-to-r from-rose-600 to-orange-500 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm">Reject Report</button>
+                </div>
               </div>
             </motion.div>
           </div>

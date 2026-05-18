@@ -516,7 +516,7 @@ export interface Incident {
   subcategory?: string;
   details: string;
   incident_date: string;
-  status: "new" | "investigating" | "resolved";
+  status: "new" | "investigating" | "resolved" | "rejected";
   location: string;
   priority: "low" | "medium" | "high";
   incident_time?: string;
@@ -553,11 +553,17 @@ export async function createIncident(
 /** DJANGO: PATCH /api/incidents/<id>/ */
 export async function updateIncidentStatus(
   id: string,
-  status: string
+  status: string,
+  rejectionReason?: string
 ): Promise<void> {
+  const payload: Partial<Incident> = { status: status as Incident["status"] };
+  if (status === "rejected") {
+    payload.rejectionReason = rejectionReason || "";
+  }
+
   await apiFetch(`/api/incidents/${id}/`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -1422,12 +1428,14 @@ export interface ReportTrackingStatus {
   type: "Incident Report" | "Request Refund";
   category: string;
   subcategory?: string | null;
-  status: "new" | "investigating" | "resolved";
+  status: "new" | "investigating" | "resolved" | "rejected";
+  rejectionReason?: string | null;
   date: string;
   location?: string | null;
   urgency?: string | null;
   step: number;
   statusUpdatedAt?: string | null;
+  rejectionReason?: string | null;
 }
 
 /** DJANGO: GET /api/incidents/track/?id=RPT-001 or RDF-001 (public, no auth)

@@ -69,6 +69,7 @@ class Incident(models.Model):
         ('new', 'New'),
         ('investigating', 'Investigating'),
         ('resolved', 'Resolved'),
+        ('rejected', 'Rejected'),
     ]
     
     PRIORITY_CHOICES = [
@@ -102,6 +103,7 @@ class Incident(models.Model):
     details = models.TextField()
     incident_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=30, choices=INCIDENT_STATUS, default='new')
+    rejectionReason = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=200, blank=True, null=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     incident_time = models.CharField(max_length=20, blank=True, null=True)

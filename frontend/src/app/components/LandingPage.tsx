@@ -1170,8 +1170,13 @@ function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trac
                   {reportStatus.statusUpdatedAt && (
                     <div className="flex justify-between"><span className="text-gray-400">Status Updated</span><span className="text-[#1B263B] text-right max-w-[60%]">{new Date(reportStatus.statusUpdatedAt).toLocaleString("en-PH", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div>
                   )}
-                  <div className="flex justify-between"><span className="text-gray-400">Status</span><span className="capitalize text-rose-500">{reportStatus.status}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Status</span><span className={`capitalize ${reportStatus.status === "rejected" ? "text-rose-600" : reportStatus.status === "resolved" ? "text-emerald-600" : "text-rose-500"}`}>{reportStatus.status}</span></div>
                 </div>
+                {reportStatus.status === "rejected" && (
+                  <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-700">
+                    <strong>Report Rejected.</strong> {reportStatus.rejectionReason || "Your report was not accepted by the barangay staff."}
+                  </div>
+                )}
                 {statuses.map((s, i) => (
                   <div key={s.label} className="flex gap-4">
                     <div className="flex flex-col items-center">
@@ -1179,16 +1184,21 @@ function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trac
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: i * 0.15 }}
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${i < currentStep ? "bg-rose-500 border-rose-500" : i === currentStep ? "border-rose-500 bg-white" : "border-gray-200 bg-white"}`}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          reportStatus.status === "rejected" && i === 0 ? "bg-rose-600 border-rose-600" :
+                          i < currentStep ? "bg-rose-500 border-rose-500" :
+                          i === currentStep ? "border-rose-500 bg-white" :
+                          "border-gray-200 bg-white"
+                        }`}
                       >
-                        {i < currentStep && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-2 h-2 rounded-full bg-white" />}
-                        {i === currentStep && <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
+                        {(i < currentStep || (reportStatus.status === "rejected" && i === 0)) && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-2 h-2 rounded-full bg-white" />}
+                        {i === currentStep && reportStatus.status !== "rejected" && <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                       </motion.div>
-                      {i < 2 && <div className={`w-0.5 h-10 ${i < currentStep ? "bg-rose-500" : "bg-gray-200"}`} />}
+                      {i < 2 && <div className={`w-0.5 h-10 ${reportStatus.status !== "rejected" && i < currentStep ? "bg-rose-500" : "bg-gray-200"}`} />}
                     </div>
                     <div className="pb-6">
-                      <p className={`text-sm ${i <= currentStep ? "text-[#1B263B]" : "text-gray-300"}`}>{s.label}</p>
-                      <p className={`text-xs mt-0.5 ${i <= currentStep ? "text-gray-400" : "text-gray-200"}`}>{s.desc}</p>
+                      <p className={`text-sm ${reportStatus.status === "rejected" && i === 0 ? "text-rose-600" : i <= currentStep ? "text-[#1B263B]" : "text-gray-300"}`}>{s.label}</p>
+                      <p className={`text-xs mt-0.5 ${reportStatus.status === "rejected" && i === 0 ? "text-rose-400" : i <= currentStep ? "text-gray-400" : "text-gray-200"}`}>{s.desc}</p>
                     </div>
                   </div>
                 ))}
