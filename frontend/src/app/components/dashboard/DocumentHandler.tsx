@@ -729,6 +729,12 @@ export default function DocumentHandler() {
                   {[["Document Type", reviewReq.type], ["Copies", reviewReq.copies || "1"], ["Purpose", reviewReq.purpose || "—"], ["Additional Notes", reviewReq.notes || "—"], ["Valid ID", `${reviewReq.validId || "—"} — ${reviewReq.validIdNo || "—"}`], ["Payment", reviewReq.payment === "gcash" ? "GCash (Digital)" : "Cash (At pickup)"]].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
+                  {reviewReq.requirementType && (
+                    <div className="flex justify-between py-1 border-b border-gray-50">
+                      <span className="text-gray-400">Requirement Type</span>
+                      <span className="text-[#1B263B]">{reviewReq.requirementType}</span>
+                    </div>
+                  )}
                   {reviewReq.pickupDeadline && (
                     <div className="flex justify-between py-1 border-b border-gray-50">
                       <span className="text-gray-400">Pickup Deadline</span>
@@ -744,7 +750,7 @@ export default function DocumentHandler() {
                 {/* Requirements & verification images */}
                 {reviewReq.requirements && Object.keys(reviewReq.requirements).length > 0 && (
                   <div>
-                    <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Requirement Uploads</p>
+                    <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Requirement Uploads{reviewReq.requirementType ? ` - ${reviewReq.requirementType}` : ""}</p>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(reviewReq.requirements).map(([label, value]) => {
                         const fileUrl = normalizeFileUrl(value, "application/pdf");

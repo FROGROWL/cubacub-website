@@ -77,5 +77,12 @@ class LandingPageConfigSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Document prices cannot be negative.")
             if not isinstance(item.get("requirements", []), list):
                 raise serializers.ValidationError("Document requirements must be a list.")
+            if not isinstance(item.get("requirementGroups", []), list):
+                raise serializers.ValidationError("Document requirement groups must be a list.")
+            for group in item.get("requirementGroups", []):
+                if not isinstance(group, dict) or not str(group.get("name", "")).strip():
+                    raise serializers.ValidationError("Each requirement group needs a name.")
+                if not isinstance(group.get("requirements", []), list):
+                    raise serializers.ValidationError("Requirement group requirements must be a list.")
 
         return value

@@ -390,7 +390,6 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
   const navigate = useNavigate();
   const documentTypes = landingConfig.document_types.length ? landingConfig.document_types : DEFAULT_LANDING_PAGE_CONFIG.document_types;
   const docPricing = Object.fromEntries(documentTypes.map((doc) => [doc.name, Number(doc.price || 0)]));
-  const docRequirements = Object.fromEntries(documentTypes.map((doc) => [doc.name, doc.requirements || []]));
   const docInfo = Object.fromEntries(documentTypes.map((doc) => [doc.name, doc.info || ""]));
   const defaultDocType = documentTypes[0]?.name || "Barangay Clearance";
   const [step, setStep] = useState(1);
@@ -447,6 +446,7 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
         selfiePhoto: selfiePhoto || undefined,
         gcashProof: gcashProof || undefined,
         requirements: reqUploads,
+        requirementType: activeRequirementType || undefined,
       });
       tid = result?.trackingId || "";
       if (!tid) {
@@ -470,6 +470,7 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
       ["Phone", form.phone],
       ["Email", form.email || ""],
       ["Document Type", form.docType],
+      ["Requirement Type", activeRequirementType],
       ["No. of Copies", form.numCopies],
       ["Purpose", form.purpose],
       ["Additional Notes", form.notes || ""],
@@ -498,18 +499,29 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
   const [selfiePhoto, setSelfiePhoto] = useState("");
   // Requirements uploads: keyed by requirement label
   const [reqUploads, setReqUploads] = useState<Record<string, string>>({});
+  const [requirementType, setRequirementType] = useState("");
   const setReqUpload = (label: string, val: string) => setReqUploads(prev => ({ ...prev, [label]: val }));
   const steps = ["Personal Info", "Residence & Contact", "Document Details", "Requirements Upload", "Payment & Verification", "Review & Submit"];
   const canP1 = form.lastName && form.firstName && form.birthdate;
   const canP2 = form.street && form.sitio && phoneValid && form.phone && emailValid;
   const canP3 = form.purpose && form.validIdNo;
 
-  const currentReqs = docRequirements[form.docType] || [];
+  const selectedDocumentType = documentTypes.find((doc) => doc.name === form.docType) || documentTypes[0];
+  const requirementGroups = selectedDocumentType?.requirementGroups || [];
+  const activeRequirementType = requirementGroups.length ? (requirementType || requirementGroups[0]?.name || "") : "";
+  const activeRequirementGroup = requirementGroups.find((group) => group.name === activeRequirementType) || requirementGroups[0];
+  const currentReqs = requirementGroups.length ? (activeRequirementGroup?.requirements || []) : (selectedDocumentType?.requirements || []);
   const canP4 = currentReqs.length === 0 || currentReqs.every(req => reqUploads[req.label]);
   const canP5 = (paymentMethod === "cash" || gcashProof) && idPhoto && selfiePhoto;
   const isPdfUpload = (val: string) => val.startsWith("data:application/pdf");
   const hasPdfInReview = Object.values(reqUploads).some(isPdfUpload)
     || [idPhoto, selfiePhoto, gcashProof].some(val => Boolean(val) && isPdfUpload(val));
+
+  useEffect(() => {
+    const doc = documentTypes.find((item) => item.name === form.docType);
+    setRequirementType(doc?.requirementGroups?.[0]?.name || "");
+    setReqUploads({});
+  }, [documentTypes, form.docType]);
 
   return (
     <AnimatePresence>
@@ -619,11 +631,36 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
                   </div>
                 )}
 
+                {requirementGroups.length > 0 && (
+                  <div>
+                    <label className="text-xs tracking-wide text-gray-500 uppercase mb-2 block">Requirement Type<span className="text-rose-400 ml-0.5">*</span></label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {requirementGroups.map((group) => {
+                        const active = activeRequirementType === group.name;
+                        return (
+                          <button
+                            key={group.name}
+                            type="button"
+                            onClick={() => {
+                              setRequirementType(group.name);
+                              setReqUploads({});
+                            }}
+                            className={`py-2 px-2 rounded-xl border-2 text-[10px] transition-all text-center leading-tight ${active ? "border-[#008080] bg-[#008080]/10 text-[#008080]" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
+                            style={{ fontWeight: active ? 700 : 500 }}
+                          >
+                            {group.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Document Requirements Panel */}
                 <AnimatePresence mode="wait">
                   {currentReqs.length > 0 ? (
                     <motion.div
-                      key={form.docType}
+                      key={`${form.docType}-${activeRequirementType || "default"}`}
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
@@ -634,6 +671,7 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
                         <ListChecks className="w-3.5 h-3.5 text-[#008080] shrink-0" />
                         <span className="text-xs text-[#008080]" style={{ fontFamily: "Montserrat", fontWeight: 600 }}>
                           Required Documents to Bring
+                          {activeRequirementType ? ` - ${activeRequirementType}` : ""}
                         </span>
                         <span className="ml-auto text-[10px] text-[#008080]/50 bg-[#008080]/10 px-2 py-0.5 rounded-full">
                           {currentReqs.length} item{currentReqs.length !== 1 ? "s" : ""}
@@ -858,7 +896,7 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
                   ))}
                   <div className="border-t border-gray-200 my-2" />
                   <p className="text-xs text-[#008080] uppercase tracking-wider mb-1">Document & Payment</p>
-                  {[["Document", form.docType],["Copies", form.numCopies],["Purpose", form.purpose],["Valid ID", `${form.validIdType} – ${form.validIdNo}`],["Fee", docPrice === 0 ? "FREE" : `PHP ${docPrice.toLocaleString()}.00`],["Payment", paymentMethod === "gcash" ? "GCash (Paid)" : "Cash (At pickup)"],["Tracking #", submittedTrackingId || "Will be generated on submit"]].map(([l, v]) => (
+                  {[["Document", form.docType],["Requirement Type", activeRequirementType],["Copies", form.numCopies],["Purpose", form.purpose],["Valid ID", `${form.validIdType} – ${form.validIdNo}`],["Fee", docPrice === 0 ? "FREE" : `PHP ${docPrice.toLocaleString()}.00`],["Payment", paymentMethod === "gcash" ? "GCash (Paid)" : "Cash (At pickup)"],["Tracking #", submittedTrackingId || "Will be generated on submit"]].filter(([, v]) => v).map(([l, v]) => (
                     <div key={l} className="flex justify-between"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
                   ))}
                 </div>

@@ -38,6 +38,7 @@ class DocumentRequest(models.Model):
     selfiePhoto = models.TextField(blank=True, null=True)
     gcashProof = models.TextField(blank=True, null=True)
     requirements = models.JSONField(default=dict, blank=True)
+    requirementType = models.CharField(max_length=100, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if self.pk:

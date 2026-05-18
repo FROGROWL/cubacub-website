@@ -128,11 +128,12 @@ def default_landing_page_config():
             {
                 "name": "Cedula (Community Tax Certificate)",
                 "price": 20,
-                "info": "Required documents depend on your category: employed individuals need proof of income, business owners need their business permit, and property owners need the latest real property tax receipt.",
-                "requirements": [
-                    {"label": "Proof of Income", "note": "For employed individuals - payslip, ITR, or employer certificate"},
-                    {"label": "Business Permit", "note": "For business owners"},
-                    {"label": "Real Property Tax Receipt", "note": "For property owners"},
+                "info": "Choose the Cedula type that applies to you. Only the requirements for that selected type must be uploaded.",
+                "requirements": [],
+                "requirementGroups": [
+                    {"name": "Individual", "requirements": [{"label": "Valid Government ID", "note": "For unemployed or non-business individual applicants"}]},
+                    {"name": "Business", "requirements": [{"label": "Business Permit", "note": "Current year barangay or city business permit"}]},
+                    {"name": "Employee", "requirements": [{"label": "Proof of Income", "note": "Payslip, ITR, or employer certificate"}]},
                 ],
             },
             {"name": "Barangay ID", "price": 50, "info": "Requires a valid government-issued ID and proof of residency. Must be a current resident of the barangay.", "requirements": []},

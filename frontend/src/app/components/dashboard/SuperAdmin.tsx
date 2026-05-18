@@ -16,6 +16,8 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   FileText,
   ListChecks,
   Save,
@@ -164,6 +166,7 @@ export default function SuperAdmin() {
   const [newCalendarEvent, setNewCalendarEvent] = useState({ date: "", title: "", color: "bg-violet-500" });
   const [landingConfig, setLandingConfig] = useState<LandingPageConfig>(DEFAULT_LANDING_PAGE_CONFIG);
   const [landingConfigSaving, setLandingConfigSaving] = useState(false);
+  const [showLandingServices, setShowLandingServices] = useState(false);
   const [adminProfile, setAdminProfile] =
     useState<AdminProfile>({
       name: getCurrentUser()?.name || "Kap. Roberto",
@@ -409,6 +412,14 @@ export default function SuperAdmin() {
           requirements: doc.requirements
             .map(req => ({ label: req.label.trim(), note: req.note.trim() }))
             .filter(req => req.label),
+          requirementGroups: (doc.requirementGroups || [])
+            .map(group => ({
+              name: group.name.trim(),
+              requirements: group.requirements
+                .map(req => ({ label: req.label.trim(), note: req.note.trim() }))
+                .filter(req => req.label),
+            }))
+            .filter(group => group.name),
         }))
         .filter(doc => doc.name),
     };
@@ -464,6 +475,29 @@ export default function SuperAdmin() {
       document_types: prev.document_types.map((doc, idx) => idx === docIndex ? {
         ...doc,
         requirements: doc.requirements.map((req, rIdx) => rIdx === reqIndex ? { ...req, ...patch } : req),
+      } : doc),
+    }));
+  };
+
+  const updateRequirementGroup = (docIndex: number, groupIndex: number, patch: { name?: string }) => {
+    setLandingConfig(prev => ({
+      ...prev,
+      document_types: prev.document_types.map((doc, idx) => idx === docIndex ? {
+        ...doc,
+        requirementGroups: (doc.requirementGroups || []).map((group, gIdx) => gIdx === groupIndex ? { ...group, ...patch } : group),
+      } : doc),
+    }));
+  };
+
+  const updateGroupRequirement = (docIndex: number, groupIndex: number, reqIndex: number, patch: { label?: string; note?: string }) => {
+    setLandingConfig(prev => ({
+      ...prev,
+      document_types: prev.document_types.map((doc, idx) => idx === docIndex ? {
+        ...doc,
+        requirementGroups: (doc.requirementGroups || []).map((group, gIdx) => gIdx === groupIndex ? {
+          ...group,
+          requirements: group.requirements.map((req, rIdx) => rIdx === reqIndex ? { ...req, ...patch } : req),
+        } : group),
       } : doc),
     }));
   };
@@ -768,17 +802,35 @@ export default function SuperAdmin() {
             </h3>
             <p className="text-xs text-gray-400 mt-1">These options update the public File a Report and Request Document forms.</p>
           </div>
-          <button
-            type="button"
-            onClick={saveLandingConfig}
-            disabled={landingConfigSaving}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" /> {landingConfigSaving ? "Saving..." : "Save Changes"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowLandingServices(prev => !prev)}
+              className="px-4 py-2.5 rounded-xl bg-white border border-gray-100 text-gray-600 text-sm flex items-center justify-center gap-1.5 hover:bg-gray-50"
+            >
+              {showLandingServices ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showLandingServices ? "Close" : "Open"}
+            </button>
+            <button
+              type="button"
+              onClick={saveLandingConfig}
+              disabled={landingConfigSaving}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" /> {landingConfigSaving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-5">
+        <AnimatePresence initial={false}>
+        {showLandingServices && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="overflow-hidden"
+        >
+        <div className="grid lg:grid-cols-2 gap-5 pt-1">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-sm text-[#1B263B] flex items-center gap-2"><ListChecks className="w-4 h-4 text-rose-500" /> Report Categories</h4>
@@ -878,7 +930,7 @@ export default function SuperAdmin() {
                   />
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Requirements</p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Default Requirements</p>
                       <button
                         type="button"
                         onClick={() => updateDocumentType(docIndex, { requirements: [...doc.requirements, { label: "", note: "" }] })}
@@ -912,11 +964,88 @@ export default function SuperAdmin() {
                     ))}
                     {!doc.requirements.length && <p className="text-xs text-gray-400">No extra uploaded requirements for this document.</p>}
                   </div>
+                  <div className="space-y-2 border-t border-gray-100 pt-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Requirement Types</p>
+                      <button
+                        type="button"
+                        onClick={() => updateDocumentType(docIndex, { requirementGroups: [...(doc.requirementGroups || []), { name: "New Type", requirements: [] }] })}
+                        className="text-[10px] px-2 py-1 rounded-lg bg-white border border-gray-100 text-gray-500"
+                      >
+                        + Add Type
+                      </button>
+                    </div>
+                    {(doc.requirementGroups || []).map((group, groupIndex) => (
+                      <div key={`${group.name}-${groupIndex}`} className="rounded-xl bg-white border border-gray-100 p-2 space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            className="flex-1 bg-[#F5F7FA] rounded-xl px-3 py-2 text-xs outline-none"
+                            value={group.name}
+                            onChange={(event) => updateRequirementGroup(docIndex, groupIndex, { name: event.target.value })}
+                            placeholder="Type name, e.g. Individual"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateDocumentType(docIndex, { requirementGroups: (doc.requirementGroups || []).filter((_, idx) => idx !== groupIndex) })}
+                            className="w-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {group.requirements.map((req, reqIndex) => (
+                          <div key={reqIndex} className="grid grid-cols-12 gap-2">
+                            <input
+                              className="col-span-5 bg-[#F5F7FA] rounded-xl px-3 py-2 text-xs outline-none"
+                              value={req.label}
+                              onChange={(event) => updateGroupRequirement(docIndex, groupIndex, reqIndex, { label: event.target.value })}
+                              placeholder="Requirement"
+                            />
+                            <input
+                              className="col-span-5 bg-[#F5F7FA] rounded-xl px-3 py-2 text-xs outline-none"
+                              value={req.note}
+                              onChange={(event) => updateGroupRequirement(docIndex, groupIndex, reqIndex, { note: event.target.value })}
+                              placeholder="Note"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextGroups = (doc.requirementGroups || []).map((nextGroup, idx) => idx === groupIndex ? {
+                                  ...nextGroup,
+                                  requirements: nextGroup.requirements.filter((_, rIdx) => rIdx !== reqIndex),
+                                } : nextGroup);
+                                updateDocumentType(docIndex, { requirementGroups: nextGroups });
+                              }}
+                              className="col-span-2 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextGroups = (doc.requirementGroups || []).map((nextGroup, idx) => idx === groupIndex ? {
+                              ...nextGroup,
+                              requirements: [...nextGroup.requirements, { label: "", note: "" }],
+                            } : nextGroup);
+                            updateDocumentType(docIndex, { requirementGroups: nextGroups });
+                          }}
+                          className="text-[10px] px-2 py-1 rounded-lg bg-[#008080]/10 text-[#008080]"
+                        >
+                          + Add Type Requirement
+                        </button>
+                      </div>
+                    ))}
+                    {!(doc.requirementGroups || []).length && <p className="text-xs text-gray-400">Use requirement types when a document has variants, like Cedula Individual, Business, or Employee.</p>}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+        </motion.div>
+        )}
+        </AnimatePresence>
       </div>
 
       {/* Add/Edit Account Modal */}

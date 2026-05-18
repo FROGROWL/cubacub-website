@@ -270,11 +270,17 @@ export interface DocumentRequirementConfig {
   note: string;
 }
 
+export interface DocumentRequirementGroupConfig {
+  name: string;
+  requirements: DocumentRequirementConfig[];
+}
+
 export interface DocumentTypeConfig {
   name: string;
   price: number;
   info: string;
   requirements: DocumentRequirementConfig[];
+  requirementGroups?: DocumentRequirementGroupConfig[];
 }
 
 export interface LandingPageConfig {
@@ -307,7 +313,17 @@ export const DEFAULT_LANDING_PAGE_CONFIG: LandingPageConfig = {
     { name: "Business Clearance / Permit", price: 0, info: "Requires DTI registration or SEC registration, valid government ID, lease contract or land title of business location, sketch/location map, and Cedula.", requirements: [{ label: "DTI Business Name Registration", note: "For sole proprietorship" }, { label: "SEC Registration", note: "For corporations/partnerships" }, { label: "Valid Government ID", note: "Owner or authorized representative" }, { label: "Lease Contract or Land Title", note: "Proof of business location" }, { label: "Sketch or Location Map", note: "Some barangays require this" }, { label: "Cedula (Community Tax Certificate)", note: "Required for all applicants" }] },
     { name: "First-Time Jobseeker Certification", price: 0, info: "Must be a resident for at least 6 months and a first-time job seeker. Requires proof of education and a signed Oath of Undertaking.", requirements: [{ label: "Proof of Residency", note: "Must be a resident for at least 6 months" }, { label: "Proof of Education / Training", note: "Diploma, TOR, or certificate of completion" }, { label: "Signed Oath of Undertaking", note: "Form provided at the barangay hall" }] },
     { name: "Certificate of Good Moral Character", price: 0, info: "Requires Cedula, Barangay Clearance, and a recent photo. Commonly needed for employment, scholarship, or school applications.", requirements: [{ label: "Cedula (Community Tax Certificate)", note: "Must be current year" }, { label: "Barangay Clearance", note: "Some barangays require this first" }, { label: "1x1 or 2x2 Photo", note: "Recent, white background" }] },
-    { name: "Cedula (Community Tax Certificate)", price: 20, info: "Required documents depend on your category: employed individuals need proof of income, business owners need their business permit, and property owners need the latest real property tax receipt.", requirements: [{ label: "Proof of Income", note: "For employed individuals - payslip, ITR, or employer certificate" }, { label: "Business Permit", note: "For business owners" }, { label: "Real Property Tax Receipt", note: "For property owners" }] },
+    {
+      name: "Cedula (Community Tax Certificate)",
+      price: 20,
+      info: "Choose the Cedula type that applies to you. Only the requirements for that selected type must be uploaded.",
+      requirements: [],
+      requirementGroups: [
+        { name: "Individual", requirements: [{ label: "Valid Government ID", note: "For unemployed or non-business individual applicants" }] },
+        { name: "Business", requirements: [{ label: "Business Permit", note: "Current year barangay or city business permit" }] },
+        { name: "Employee", requirements: [{ label: "Proof of Income", note: "Payslip, ITR, or employer certificate" }] },
+      ],
+    },
     { name: "Barangay ID", price: 50, info: "Requires a valid government-issued ID and proof of residency. Must be a current resident of the barangay.", requirements: [] },
     { name: "Certificate of No Income", price: 50, info: "Requires an affidavit of no income or certification from the barangay captain.", requirements: [] },
     { name: "Certificate of Late Registration", price: 100, info: "Requires supporting documents for the late registration. Must coordinate with the local civil registrar.", requirements: [] },
@@ -324,14 +340,14 @@ function normalizeLandingPageConfig(payload?: Partial<LandingPageConfig> | null)
     ? config.document_types
     : DEFAULT_LANDING_PAGE_CONFIG.document_types;
 
-  return {
-    report_categories: reportCategories.map((item) => ({
-      name: String(item?.name || "").trim(),
-      subcategories: Array.isArray(item?.subcategories)
-        ? item.subcategories.map((sub) => String(sub || "").trim()).filter(Boolean)
-        : [],
-    })).filter((item) => item.name),
-    document_types: documentTypes.map((item) => ({
+  const normalizedDocuments = documentTypes.map((item) => {
+    const fallback = DEFAULT_LANDING_PAGE_CONFIG.document_types.find((doc) => doc.name === item?.name);
+    const requirementGroups = Array.isArray(item?.requirementGroups)
+      ? item.requirementGroups
+      : Array.isArray((item as any)?.requirement_groups)
+        ? (item as any).requirement_groups
+        : fallback?.requirementGroups || [];
+    return {
       name: String(item?.name || "").trim(),
       price: Number(item?.price ?? 0),
       info: String(item?.info || ""),
@@ -341,7 +357,26 @@ function normalizeLandingPageConfig(payload?: Partial<LandingPageConfig> | null)
             note: String(req?.note || "").trim(),
           })).filter((req) => req.label)
         : [],
+      requirementGroups: requirementGroups.map((group: any) => ({
+        name: String(group?.name || "").trim(),
+        requirements: Array.isArray(group?.requirements)
+          ? group.requirements.map((req: any) => ({
+              label: String(req?.label || "").trim(),
+              note: String(req?.note || "").trim(),
+            })).filter((req: DocumentRequirementConfig) => req.label)
+          : [],
+      })).filter((group: DocumentRequirementGroupConfig) => group.name),
+    };
+  }).filter((item) => item.name);
+
+  return {
+    report_categories: reportCategories.map((item) => ({
+      name: String(item?.name || "").trim(),
+      subcategories: Array.isArray(item?.subcategories)
+        ? item.subcategories.map((sub) => String(sub || "").trim()).filter(Boolean)
+        : [],
     })).filter((item) => item.name),
+    document_types: normalizedDocuments,
   };
 }
 
@@ -401,6 +436,7 @@ export interface DocRequest {
   rejectionReason?: string;
   statusUpdatedAt?: string | null;
   requirements?: Record<string, string>;
+  requirementType?: string;
   copies?: string;
   pickupDeadline?: string;
 }
@@ -1132,6 +1168,7 @@ export async function submitPublicDocumentRequest(data: {
   selfiePhoto?: string;
   gcashProof?: string;
   requirements?: Record<string, string>;
+  requirementType?: string;
   notes?: string;
 }): Promise<{ success: boolean; trackingId: string }> {
   return apiFetch("/api/documents/public-request/", {
