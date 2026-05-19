@@ -264,7 +264,7 @@ export default function ReportHandler() {
     rejected: { bg: "bg-rose-50", text: "text-rose-600", dot: "bg-rose-400" },
   };
   const incidentStatusOptions: Array<Incident["status"]> = ["new", "investigating", "resolved", "rejected"];
-  const incidentStatusLabel = (status: Incident["status"]) => status === "new" ? "pending" : status;
+  const isTerminalIncidentStatus = (status: Incident["status"]) => status === "resolved" || status === "rejected";
   const statusFilterOptions = [
     { key: "all", label: "All", count: incidents.length },
     { key: "pending", label: "Pending", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "new").length },
@@ -475,7 +475,7 @@ export default function ReportHandler() {
                           </div>
                           <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setReviewReport(r)} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Review</button>
-                            {incidentStatusOptions
+                            {!isTerminalIncidentStatus(reportStatus) && incidentStatusOptions
                               .filter(status => status !== r.status)
                               .map(status => {
                                 const cfg = statusConfig[status] || statusConfig.new;
@@ -830,7 +830,7 @@ export default function ReportHandler() {
                         </div>
                         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setReviewReport(r)} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Review</button>
-                          {incidentStatusOptions
+                          {!isTerminalIncidentStatus(reportStatus) && incidentStatusOptions
                             .filter(status => status !== r.status)
                             .map(status => {
                               const cfg = statusConfig[status] || statusConfig.new;
@@ -1030,7 +1030,7 @@ export default function ReportHandler() {
                 )}
               </div>
               <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50 flex-wrap" onClick={e => e.stopPropagation()}>
-                {incidentStatusOptions
+                {!isTerminalIncidentStatus(reviewReport.status) && incidentStatusOptions
                   .filter(status => status !== reviewReport.status)
                   .map(status => {
                     const cfg = statusConfig[status] || statusConfig.new;
@@ -1061,6 +1061,11 @@ export default function ReportHandler() {
                       </button>
                     );
                   })}
+                {isTerminalIncidentStatus(reviewReport.status) && (
+                  <p className="w-full text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
+                    This report is in a final status and can no longer be changed.
+                  </p>
+                )}
               </div>
             </motion.div>
           </div>
