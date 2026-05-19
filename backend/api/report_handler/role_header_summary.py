@@ -1,8 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.utils.timezone import now
-from datetime import timedelta
-from .models import CaseRecord, CasePriorOffense, Incident, LostFoundItem
+from .models import CaseRecord, Incident, LostFoundItem
 from .cleanup import cleanup_expired_reports
 
 @api_view(["GET"])
@@ -35,5 +34,5 @@ def report_summary(request):
         "lost_found_total": lost_found_total,
         "open_cases": CaseRecord.objects.filter(status="open").count(),
         "resolved_today": CaseRecord.objects.filter(status="resolved", date_resolved=today).count(),
-        "recidivists": CaseRecord.objects.filter(caseprioroffense__isnull=False).distinct().count(),
+        "recidivists": 0,
     })

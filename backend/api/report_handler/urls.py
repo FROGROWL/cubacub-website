@@ -22,10 +22,6 @@ from .role_header_summary import report_summary
 #
 # /cases/ - Case management
 # /cases/<pk>/ - Case detail
-# /cases/<case_id>/link-report/<incident_id>/ - Link report to case
-# /cases/<case_id>/unlink-report/<incident_id>/ - Unlink report from case
-# /cases/<case_id>/prior-offenses/ - Prior offenses list
-# /cases/<case_id>/prior-offenses/<offense_id>/ - Prior offense detail
 # /cases/<pk>/update-status/ - Case status update
 #
 # /lost-found/ - Lost & found items
@@ -54,13 +50,6 @@ urlpatterns = [
     # - Filter endpoints (status, category, priority)
     # - IncidentStatusUpdateView
     # - IncidentAssignView
-    
-    # TODO: Implement case linking endpoints
-    # - LinkReportToCaseView
-    # - UnlinkReportFromCaseView
-    # - PriorOffenseListCreateView
-    # - PriorOffenseDetailView
-    # - CaseStatusUpdateView
     
     # TODO: Implement lost & found filter endpoints
     # - LostFoundByTypeView

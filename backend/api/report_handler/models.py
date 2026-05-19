@@ -203,40 +203,6 @@ class CaseRecord(models.Model):
         return f"{self.id} - {self.subject_name} - {self.status}"
 
 
-class CaseLinkedReport(models.Model):
-    """
-    Many-to-many relationship between cases and incidents.
-    Matches case_linked_reports table.
-    """
-    
-    case = models.ForeignKey(CaseRecord, on_delete=models.CASCADE)
-    incident = models.ForeignKey(Incident, on_delete=models.CASCADE)
-    
-    class Meta:
-        db_table = 'case_linked_reports'
-        unique_together = ['case', 'incident']
-    
-    def __str__(self):
-        return f"Case {self.case.id} ↔ Report {self.incident.id}"
-
-
-class CasePriorOffense(models.Model):
-    """
-    Prior offense history for cases.
-    Matches case_prior_offenses table.
-    """
-    
-    case = models.ForeignKey(CaseRecord, on_delete=models.CASCADE)
-    description = models.TextField()
-    offense_date = models.DateField(blank=True, null=True)
-    
-    class Meta:
-        db_table = 'case_prior_offenses'
-    
-    def __str__(self):
-        return f"Prior offense for {self.case.id}"
-
-
 class LostFoundItem(models.Model):
     """
     Lost & Found items model.
