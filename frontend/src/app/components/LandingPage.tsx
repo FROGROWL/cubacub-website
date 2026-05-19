@@ -1544,7 +1544,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                         </div>
                         <Input label="Address (optional)" placeholder="Your address in Cubacub" value={form.reporterAddress} onChange={e => ru("reporterAddress", e.target.value)} />
                         <Select label="Your Relation to the Incident" value={form.reporterRelation} onChange={e => ru("reporterRelation", e.target.value)}>
-                          {["Witness", "Victim", "Concerned Neighbor", "Barangay Official", "Other"].map(r => <option key={r}>{r}</option>)}
+                          {["Witness", "Victim", "Concerned Neighbor", "Barangay Official"].map(r => <option key={r}>{r}</option>)}
                         </Select>
                       </motion.div>
                     </AnimatePresence>
