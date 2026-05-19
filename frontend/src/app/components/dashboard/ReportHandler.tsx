@@ -48,7 +48,7 @@ export default function ReportHandler() {
   const [reviewLF, setReviewLF] = useState<LostFoundItem | null>(null);
   // Keep backend status values, but display 'pending' instead of 'new' in the UI.
   const getEffectiveIncidentStatus = (incident: Incident) => {
-    return incident.status;
+    return incident.status === "new" ? "pending" : incident.status;
   };
 
   const displayStatusKey = (status: Incident["status"]) => {
@@ -149,7 +149,7 @@ export default function ReportHandler() {
       r.category.toLowerCase().includes(search.toLowerCase()) ||
       r.id.toLowerCase().includes(search.toLowerCase()) ||
       r.details.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || (statusFilter === "pending" ? effectiveStatus === "new" : effectiveStatus === statusFilter);
+    const matchStatus = statusFilter === "all" || effectiveStatus === statusFilter;
     const priorityFilterKey = getPriorityFilterKey(r);
     const matchPriority = priorityFilter === "all" || priorityFilterKey === priorityFilter;
     const matchAnon = !anonymousOnly || r.is_anonymous;
@@ -164,7 +164,7 @@ export default function ReportHandler() {
       r.category.toLowerCase().includes(search.toLowerCase()) ||
       r.id.toLowerCase().includes(search.toLowerCase()) ||
       r.details.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || (statusFilter === "pending" ? effectiveStatus === "new" : effectiveStatus === statusFilter);
+    const matchStatus = statusFilter === "all" || effectiveStatus === statusFilter;
     const priorityFilterKey = getPriorityFilterKey(r);
     const matchPriority = priorityFilter === "all" || priorityFilterKey === priorityFilter;
     const urgencyKey = getPriorityKey(r.urgency || r.priority);
@@ -203,7 +203,7 @@ export default function ReportHandler() {
     }).catch(() => {});
   };
 
-  const updateStatus = (id: string, status: "new" | "investigating" | "resolved" | "rejected", rejectionReason?: string) => {
+  const updateStatus = (id: string, status: "pending" | "investigating" | "resolved" | "rejected", rejectionReason?: string) => {
     const target = incidents.find(r => r.id === id);
       updateIncidentStatus(id, status, rejectionReason).then(() => {
       setIncidents(prev => prev.map(r => r.id === id ? { ...r, status, rejectionReason: status === "rejected" ? rejectionReason : null } : r));
@@ -275,16 +275,18 @@ export default function ReportHandler() {
   };
 
   const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
+    pending: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
     new: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
     investigating: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400" },
     resolved: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
     rejected: { bg: "bg-rose-50", text: "text-rose-600", dot: "bg-rose-400" },
   };
-  const incidentStatusOptions: Array<Incident["status"]> = ["new", "investigating", "resolved", "rejected"];
-  const isTerminalIncidentStatus = (status: Incident["status"]) => status === "rejected";
+  const incidentStatusOptions: Array<Incident["status"]> = ["pending", "investigating", "resolved", "rejected"];
+  const isTerminalIncidentStatus = (status: Incident["status"]) => status === "resolved" || status === "rejected";
+  const isTerminalLostFoundStatus = (status: LostFoundItem["status"]) => status === "resolved" || status === "solved";
   const statusFilterOptions = [
     { key: "all", label: "All", count: incidents.length },
-    { key: "pending", label: "Pending", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "new").length },
+    { key: "pending", label: "Pending", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "pending").length },
     { key: "investigating", label: "Investigating", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "investigating").length },
     { key: "resolved", label: "Resolved", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "resolved").length },
     { key: "rejected", label: "Rejected", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "rejected").length },
@@ -322,12 +324,12 @@ export default function ReportHandler() {
   const allCaseMgmtReports = incidents.filter(r => !allRefundReports.includes(r));
 
   const caseMgmtTotal = allCaseMgmtReports.length;
-  const caseMgmtPending = allCaseMgmtReports.filter(r => getEffectiveIncidentStatus(r) === "new").length;
+  const caseMgmtPending = allCaseMgmtReports.filter(r => getEffectiveIncidentStatus(r) === "pending").length;
   const caseMgmtInvestigating = allCaseMgmtReports.filter(r => getEffectiveIncidentStatus(r) === "investigating").length;
   const caseMgmtResolved = allCaseMgmtReports.filter(r => getEffectiveIncidentStatus(r) === "resolved").length;
 
   const refundTotal = allRefundReports.length;
-  const refundPending = allRefundReports.filter(r => getEffectiveIncidentStatus(r) === "new").length;
+  const refundPending = allRefundReports.filter(r => getEffectiveIncidentStatus(r) === "pending").length;
   const refundInvestigating = allRefundReports.filter(r => getEffectiveIncidentStatus(r) === "investigating").length;
   const refundResolved = allRefundReports.filter(r => getEffectiveIncidentStatus(r) === "resolved").length;
 
@@ -494,10 +496,10 @@ export default function ReportHandler() {
                           <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setReviewReport(r)} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Review</button>
                             {!isTerminalIncidentStatus(reportStatus) && incidentStatusOptions
-                              .filter(status => status !== r.status)
+                              .filter(status => status !== reportStatus)
                               .map(status => {
                                 const cfg = statusConfig[status] || statusConfig.new;
-                                const actionLabel = status === "new"
+                                const actionLabel = status === "pending"
                                   ? "Set Pending"
                                   : status === "investigating"
                                     ? "Investigate"
@@ -819,7 +821,7 @@ export default function ReportHandler() {
                     r.id.toLowerCase().includes(refundSearch.toLowerCase()) ||
                     r.details.toLowerCase().includes(refundSearch.toLowerCase());
                   const reportStatus = getEffectiveIncidentStatus(r);
-                  const matchStatus = statusFilter === "all" || (statusFilter === "pending" ? reportStatus === "new" : reportStatus === statusFilter);
+                  const matchStatus = statusFilter === "all" || reportStatus === statusFilter;
                   const matchAnon = !anonymousOnly || r.is_anonymous;
                   return matchSearch && matchStatus && matchAnon;
                 }).map((r, i) => {
@@ -849,10 +851,10 @@ export default function ReportHandler() {
                         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setReviewReport(r)} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Review</button>
                           {!isTerminalIncidentStatus(reportStatus) && incidentStatusOptions
-                            .filter(status => status !== r.status)
+                            .filter(status => status !== reportStatus)
                             .map(status => {
                               const cfg = statusConfig[status] || statusConfig.new;
-                              const actionLabel = status === "new"
+                              const actionLabel = status === "pending"
                                 ? "Set Pending"
                                 : status === "investigating"
                                   ? "Investigate"
@@ -892,7 +894,8 @@ export default function ReportHandler() {
                     r.category.toLowerCase().includes(refundSearch.toLowerCase()) ||
                     r.id.toLowerCase().includes(refundSearch.toLowerCase()) ||
                     r.details.toLowerCase().includes(refundSearch.toLowerCase());
-                  const matchStatus = statusFilter === "all" || (statusFilter === "pending" ? r.status === "new" : r.status === statusFilter);
+                  const reportStatus = getEffectiveIncidentStatus(r);
+                  const matchStatus = statusFilter === "all" || reportStatus === statusFilter;
                   const matchAnon = !anonymousOnly || r.is_anonymous;
                   return matchSearch && matchStatus && matchAnon;
                 }).length === 0 && <p className="text-center py-6 text-gray-300 text-xs">No refund reports found.</p>}
@@ -965,13 +968,13 @@ export default function ReportHandler() {
                         </div>
                         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setReviewLF(item)} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Review</button>
-                          {itemStatus !== "pending" && (
+                          {!isTerminalLostFoundStatus(item.status) && itemStatus !== "pending" && (
                             <button onClick={() => updateLostFound(item.id, "pending")} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5">Set Pending</button>
                           )}
-                          {itemStatus !== "resolved" && (
+                          {!isTerminalLostFoundStatus(item.status) && itemStatus !== "resolved" && (
                             <button onClick={() => updateLostFound(item.id, "resolved")} className="text-xs bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5">Resolve <ArrowRight className="w-3.5 h-3.5" /></button>
                           )}
-                          {itemStatus !== "post" && (
+                          {!isTerminalLostFoundStatus(item.status) && itemStatus !== "post" && (
                             <button onClick={() => updateLostFound(item.id, "post")} className="text-xs bg-amber-50 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors">Post</button>
                           )}
                           <button onClick={() => deleteLostFound(item.id)} className="text-xs bg-rose-50 text-rose-600 px-4 py-2 rounded-xl hover:bg-rose-100 transition-colors">Delete</button>
@@ -1051,7 +1054,7 @@ export default function ReportHandler() {
               </div>
               <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50 flex-wrap" onClick={e => e.stopPropagation()}>
                 {!isTerminalIncidentStatus(reviewReport.status) && incidentStatusOptions
-                  .filter(status => status !== reviewReport.status)
+                  .filter(status => status !== getEffectiveIncidentStatus(reviewReport))
                   .map(status => {
                     const cfg = statusConfig[status] || statusConfig.new;
                     const label = status === "investigating"
@@ -1157,13 +1160,13 @@ export default function ReportHandler() {
               </div>
               <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50">
                 <button onClick={() => setReviewLF(null)} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2">Close</button>
-                {reviewLF.status !== "resolved" && reviewLF.status !== "solved" && (
+                {!isTerminalLostFoundStatus(reviewLF.status) && reviewLF.status !== "resolved" && reviewLF.status !== "solved" && (
                   <button onClick={() => { updateLostFound(reviewLF.id, "resolved"); setReviewLF(null); }} className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Resolve</button>
                 )}
-                {reviewLF.status !== "post" && (
+                {!isTerminalLostFoundStatus(reviewLF.status) && reviewLF.status !== "post" && (
                   <button onClick={() => { updateLostFound(reviewLF.id, "post"); setReviewLF(null); }} className="flex-1 bg-amber-50 text-amber-600 py-3 rounded-xl hover:bg-amber-100 transition-colors text-sm flex items-center justify-center gap-2">Post</button>
                 )}
-                {reviewLF.status !== "pending" && (
+                {!isTerminalLostFoundStatus(reviewLF.status) && reviewLF.status !== "pending" && (
                   <button onClick={() => { updateLostFound(reviewLF.id, "pending"); setReviewLF(null); }} className="flex-1 bg-blue-50 text-blue-600 py-3 rounded-xl hover:bg-blue-100 transition-colors text-sm flex items-center justify-center gap-2">Set Pending</button>
                 )}
               </div>

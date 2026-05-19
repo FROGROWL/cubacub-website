@@ -517,7 +517,7 @@ export interface Incident {
   subcategory?: string;
   details: string;
   incident_date: string;
-  status: "new" | "investigating" | "resolved" | "rejected";
+  status: "pending" | "new" | "investigating" | "resolved" | "rejected";
   location: string;
   priority: "low" | "medium" | "high";
   incident_time?: string;
