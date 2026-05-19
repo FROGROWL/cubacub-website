@@ -1948,7 +1948,6 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                     }
 
                     submitPublicReport({
-                        id: reportDraftId,
                         category: form.category,
                         subcategory: refundReason || "",
                         details: isRefund ? `Document refund request for tracking ID ${refundForm.trackingId}. Reason: ${refundReason}.` : form.details,
