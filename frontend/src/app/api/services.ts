@@ -531,6 +531,7 @@ export interface Incident {
   reporter_relation?: "Victim" | "Witness" | "Concerned Neighbor";
   source?: "staff" | "public";
   handled_by?: string;
+  rejectionReason?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -1430,12 +1431,12 @@ export interface ReportTrackingStatus {
   subcategory?: string | null;
   status: "new" | "investigating" | "resolved" | "rejected";
   rejectionReason?: string | null;
+  rejection_reason?: string | null;
   date: string;
   location?: string | null;
   urgency?: string | null;
   step: number;
   statusUpdatedAt?: string | null;
-  rejectionReason?: string | null;
 }
 
 /** DJANGO: GET /api/incidents/track/?id=RPT-001 or RDF-001 (public, no auth)

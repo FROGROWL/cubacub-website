@@ -1120,6 +1120,7 @@ function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trac
   }, [trackingId]);
 
   const currentStep = reportStatus?.step ?? 0;
+  const rejectionReason = (reportStatus?.rejectionReason || reportStatus?.rejection_reason || "").trim();
   const statuses = [
     { label: "Report Filed", desc: "Your report has been submitted" },
     { label: "Under Investigation", desc: "Barangay staff is reviewing the report" },
@@ -1174,7 +1175,7 @@ function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trac
                 </div>
                 {reportStatus.status === "rejected" && (
                   <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-700">
-                    <strong>Report Rejected.</strong> {reportStatus.rejectionReason || "Your report was not accepted by the barangay staff."}
+                    <strong>Report Rejected.</strong> {rejectionReason || "Your report was not accepted by the barangay staff."}
                   </div>
                 )}
                 {statuses.map((s, i) => (

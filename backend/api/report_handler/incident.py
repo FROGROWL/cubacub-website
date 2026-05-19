@@ -139,6 +139,8 @@ def report_track(request):
         "rejected": -1,
     }
 
+    rejection_reason = (incident.rejectionReason or "").strip()
+
     return Response({
         "found": True,
         "id": incident.id,
@@ -151,5 +153,6 @@ def report_track(request):
         "urgency": incident.urgency,
         "step": status_map.get(incident.status, 0),
         "statusUpdatedAt": incident.updated_at,
-        "rejectionReason": incident.rejectionReason,
+        "rejectionReason": rejection_reason or None,
+        "rejection_reason": rejection_reason or None,
     })

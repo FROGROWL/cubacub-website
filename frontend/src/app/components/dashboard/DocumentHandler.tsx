@@ -39,6 +39,8 @@ export default function DocumentHandler() {
   const [showHistory, setShowHistory] = useState(false);
   const [editingStatus, setEditingStatus] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<{ src: string; label: string; isPdf: boolean } | null>(null);
+  const [rejectRequest, setRejectRequest] = useState<DocRequest | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const todayDate = toInputDate();
 
   const normalizeFileUrl = (value: string, fallbackMime: string) => {
@@ -180,14 +182,12 @@ export default function DocumentHandler() {
   };
 
   const updateStatus = async (id: string, status: string, rejectionReason?: string) => {
-    let reason = rejectionReason;
     const target = requests.find(r => r.id === id);
+    const reason = rejectionReason?.trim() || "";
+
     if (status === "rejected" && !reason) {
-      reason = window.prompt("Reason for rejection:")?.trim() || "";
-      if (!reason) {
-        showToast("Rejection reason is required.");
-        return false;
-      }
+      showToast("Rejection reason is required.");
+      return false;
     }
 
     try {
@@ -206,8 +206,40 @@ export default function DocumentHandler() {
       return false;
     }
   };
+
+  const openRejectRequest = (request: DocRequest) => {
+    setRejectRequest(request);
+    setRejectReason(request.rejectionReason || "");
+    setEditingStatus(null);
+  };
+
+  const submitRejectRequest = async () => {
+    if (!rejectRequest) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      showToast("Rejection reason is required.");
+      return;
+    }
+
+    const ok = await updateStatus(rejectRequest.id, "rejected", reason);
+    if (!ok) return;
+
+    setRejectRequest(null);
+    setRejectReason("");
+    if (reviewReq?.id === rejectRequest.id) {
+      setReviewReq(null);
+    }
+  };
+
   const approve = (id: string) => updateStatus(id, "approved");
-  const reject = (id: string) => updateStatus(id, "rejected");
+  const reject = (id: string) => {
+    const target = requests.find(r => r.id === id);
+    if (!target) {
+      showToast("Request not found.");
+      return;
+    }
+    openRejectRequest(target);
+  };
   const canDeleteRequest = (status: string) => ["rejected", "ready_to_pickup", "claimed", "unclaimed"].includes(status);
   const deleteRequest = (id: string) => {
     if (!window.confirm(`Delete request ${id}? This cannot be undone.`)) return;
@@ -482,7 +514,7 @@ export default function DocumentHandler() {
                                         <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
                                           className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-20 min-w-[160px]">
                                           {Object.entries(statusConfig).filter(([k]) => k !== r.status).map(([key, cfg]) => (
-                                            <button key={key} onClick={() => updateStatus(r.id, key)}
+                                            <button key={key} onClick={() => key === "rejected" ? openRejectRequest(r) : updateStatus(r.id, key)}
                                               className="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors">
                                               <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                                               {cfg.label}
@@ -556,7 +588,7 @@ export default function DocumentHandler() {
                               <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
                                 className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-20 min-w-[160px]">
                                 {Object.entries(statusConfig).filter(([k]) => k !== r.status).map(([key, cfg]) => (
-                                  <button key={key} onClick={() => updateStatus(r.id, key)}
+                                  <button key={key} onClick={() => key === "rejected" ? openRejectRequest(r) : updateStatus(r.id, key)}
                                     className="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors">
                                     <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                                     {cfg.label}
@@ -708,7 +740,13 @@ export default function DocumentHandler() {
                   <span className="text-xs text-gray-400">Current Status:</span>
                   <div className="flex gap-1.5 flex-wrap">
                     {Object.entries(statusConfig).map(([key, cfg]) => (
-                      <button key={key} onClick={() => { updateStatus(reviewReq.id, key).then(ok => { if (ok) setReviewReq({ ...reviewReq, status: key }); }); }}
+                      <button key={key} onClick={() => {
+                        if (key === "rejected") {
+                          openRejectRequest(reviewReq);
+                          return;
+                        }
+                        updateStatus(reviewReq.id, key).then(ok => { if (ok) setReviewReq({ ...reviewReq, status: key }); });
+                      }}
                         className={`text-xs px-2.5 py-1 rounded-full transition-all ${reviewReq.status === key ? `${cfg.bg} ${cfg.text} ring-2 ring-offset-1 ring-current` : `${cfg.bg} ${cfg.text} opacity-50 hover:opacity-100`}`}>
                         {cfg.label}
                       </button>
@@ -843,7 +881,7 @@ export default function DocumentHandler() {
                 <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50">
                   {reviewReq.status === "pending" && (
                     <>
-                      <button onClick={() => { reject(reviewReq.id); setReviewReq(null); }} className="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><X className="w-4 h-4" /> Reject</button>
+                      <button onClick={() => openRejectRequest(reviewReq)} className="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><X className="w-4 h-4" /> Reject</button>
                       <button onClick={() => { approve(reviewReq.id); setReviewReq(null); }} className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Approve</button>
                     </>
                   )}
@@ -852,6 +890,43 @@ export default function DocumentHandler() {
                   )}
                 </div>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {rejectRequest && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setRejectRequest(null); setRejectReason(""); }}>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="bg-gradient-to-r from-rose-600 to-orange-500 px-6 py-5">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-white" style={{ fontFamily: "Montserrat" }}>Reject Pending Request</h3>
+                    <p className="text-white/60 text-xs mt-0.5">{rejectRequest.id} - {rejectRequest.type}</p>
+                  </div>
+                  <button onClick={() => { setRejectRequest(null); setRejectReason(""); }} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-3 text-xs text-rose-700">
+                  This will mark the request as rejected and show the reason in the public document tracker.
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1.5 block">Reason for rejection</label>
+                  <textarea
+                    rows={5}
+                    value={rejectReason}
+                    onChange={e => setRejectReason(e.target.value)}
+                    placeholder="Explain why this pending document request cannot be accepted."
+                    className="w-full bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm outline-none resize-none border border-gray-100"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => { setRejectRequest(null); setRejectReason(""); }} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm">Cancel</button>
+                  <button onClick={submitRejectRequest} className="flex-1 bg-gradient-to-r from-rose-600 to-orange-500 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm">Reject Request</button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
