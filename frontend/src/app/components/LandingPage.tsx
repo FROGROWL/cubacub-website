@@ -203,64 +203,37 @@ function RequirementFileUploader({
     reader.readAsDataURL(f);
   };
   const isPdfValue = Boolean(value && value.startsWith?.("data:application/pdf"));
-
   return (
-    <div>
-      <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">{reqLabel}{index >= 0 ? <span className="text-rose-400 ml-0.5">*</span> : null}</label>
-      <div className="text-[10px] text-gray-400 mb-1">{reqNote}</div>
-      <input ref={fileRef} type="file" accept="image/*,application/pdf" className="sr-only" onChange={handleFile} />
-
-      {value ? (
-        <div className="relative rounded-xl overflow-hidden border-2 border-[#008080]/30 bg-[#F5F7FA]">
-          {isPdfValue ? (
-            <div className="w-full h-32 flex flex-col items-center justify-center gap-2">
-              <FileText className="w-6 h-6 text-rose-400" />
-              <a href={value} target="_blank" rel="noreferrer" className="text-[10px] text-rose-500 hover:underline">Open PDF</a>
+    <div className="rounded-2xl border border-gray-100 p-3 flex items-center gap-3">
+      <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFile} />
+      <div className="flex-1">
+        <div className="text-xs text-gray-500">{reqLabel}</div>
+        <div className="text-[11px] text-gray-400">{reqNote}</div>
+      </div>
+      <div className="w-36 flex items-center justify-end gap-2">
+        {value ? (
+          isPdfValue ? (
+            <div className="flex items-center gap-2">
+              <div className="text-xs text-gray-600">PDF</div>
+              <a href={value} target="_blank" rel="noreferrer" className="text-xs text-[#008080]">View</a>
+              <button onClick={() => onChange("")} className="ml-2 text-sm text-gray-500">Remove</button>
             </div>
           ) : (
-            <img src={value} alt={reqLabel} className="w-full h-32 object-cover" />
-          )}
-          <button onClick={() => onChange("")} className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ) : (
-        <button type="button" onClick={() => fileRef.current?.click()} className="w-full border-2 border-dashed border-gray-200 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-[#008080]/50 hover:bg-[#008080]/5 transition-all group">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gray-100 group-hover:bg-[#008080]/10 flex items-center justify-center transition-colors">
-              <Camera className="w-4 h-4 text-gray-400 group-hover:text-[#008080] transition-colors" />
+            <div className="w-20 h-12 rounded-xl overflow-hidden">
+              <img src={value} className="w-full h-full object-cover" alt={reqLabel} />
             </div>
-            <div className="w-9 h-9 rounded-xl bg-gray-100 group-hover:bg-[#008080]/10 flex items-center justify-center transition-colors">
-              <FileText className="w-4 h-4 text-gray-400 group-hover:text-[#008080] transition-colors" />
-            </div>
-          </div>
-          <span className="text-xs text-gray-500 group-hover:text-[#008080] transition-colors">Tap to upload photo or PDF</span>
-          <span className="text-[10px] text-gray-300">JPG · PNG · PDF accepted</span>
-        </button>
-      )}
+          )
+        ) : (
+          <button onClick={() => fileRef.current?.click()} className="bg-[#F5F7FA] px-3 py-2 rounded-lg text-sm">Upload</button>
+        )}
+      </div>
     </div>
   );
 }
 
-const DOC_PRICING: Record<string, number> = {
-    "First-Time Jobseeker Certification": 0,
-    "Cedula (Community Tax Certificate)": 20,
-    "Barangay ID": 50,
-    "Certificate of No Income": 50,
-    "Certificate of Late Registration": 100,
-    "Barangay Protection Order": 0,
-  };
-
-  const DOC_REQUIREMENTS: Record<string, { label: string; note: string }[]> = {
+const DOC_REQUIREMENTS: Record<string, { label: string; note: string }[]> = {
     "Barangay Clearance": [
       { label: "1×1 or 2×2 Photo", note: "Recent, white background" },
-    ],
-    "Certificate of Residency": [
-      { label: "Proof of Residence", note: "Utility bill, lease contract, or land title" },
-    ],
-    "Certificate of Indigency": [
-      { label: "Proof of Residency", note: "Must be a resident of the barangay" },
-      { label: "Supporting Documents", note: "Depending on purpose — medical abstract, school enrollment form, etc." },
     ],
     "Business Clearance / Permit": [
       { label: "DTI Business Name Registration", note: "For sole proprietorship" },
