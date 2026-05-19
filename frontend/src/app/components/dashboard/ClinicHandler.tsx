@@ -11,23 +11,6 @@ import {
   type Patient, type CalendarEvent, type ClinicUnavailableSlot
 } from "../../api/services";
 
-// small animated counter used in summary cards
-function AnimCounter({ target, suffix = "" }: { target: number; suffix?: string }) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    let start = 0;
-    const dur = 1000;
-    const step = target / (dur / 16);
-    const id = setInterval(() => {
-      start += step;
-      if (start >= target) { setVal(target); clearInterval(id); }
-      else setVal(Math.floor(start));
-    }, 16);
-    return () => clearInterval(id);
-  }, [target]);
-  return <span>{val.toLocaleString()}{suffix}</span>;
-}
-
 const toInputDate = (date = new Date()) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -260,25 +243,6 @@ export default function ClinicHandler() {
 
   return (
     <div className="space-y-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-400">Total Patients</p>
-          <h3 className="text-2xl font-semibold mt-2"><AnimCounter target={queue.length} /></h3>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-400">Waiting</p>
-          <h3 className="text-2xl font-semibold mt-2"><AnimCounter target={queue.filter(q => q.status === "waiting").length} /></h3>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-400">In Progress</p>
-          <h3 className="text-2xl font-semibold mt-2"><AnimCounter target={queue.filter(q => q.status === "in-progress").length} /></h3>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-400">Completed</p>
-          <h3 className="text-2xl font-semibold mt-2"><AnimCounter target={queue.filter(q => q.status === "completed").length} /></h3>
-        </div>
-      </div>
       {/* Clinic Status */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2 flex-wrap">

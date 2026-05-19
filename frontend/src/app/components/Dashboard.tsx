@@ -12,8 +12,8 @@ import ClinicHandler from "./dashboard/ClinicHandler";
 import SuperAdmin from "./dashboard/SuperAdmin";
 import TreasurerHandler from "./dashboard/TreasurerHandler";
 import { 
-  getDocumentSummary, getReportSummary, getClinicSummary, 
-  getSuperAdminSummary, getProjects, getSystemSettings
+  getDocumentSummary, getReportSummary, getSuperAdminSummary,
+  getPatientQueue, getProjects, getSystemSettings
 } from "../api/services";
 
 const ROLE_CONFIG: Record<string, { label: string; shortLabel: string; gradient: string; iconBg: string; icon: React.ReactNode; accentColor: string }> = {
@@ -115,11 +115,12 @@ export default function Dashboard() {
           ]);
         });
       } else if (role === "clinic_handler") {
-        getClinicSummary().then(summary => {
+        getPatientQueue().then(queue => {
           setRoleStats([
-            { label: "In Queue", value: summary.in_queue.toString(), change: "", icon: <Users /> },
-            { label: "Served Today", value: summary.served_today.toString(), change: "", icon: <Heart /> },
-            { label: "Next Vaccination", value: summary.next_vaccination || "-", change: "", icon: <Clock /> },
+            { label: "Total Patients", value: queue.length.toString(), change: "", icon: <Users /> },
+            { label: "Waiting", value: queue.filter(q => q.status === "waiting").length.toString(), change: "", icon: <Clock /> },
+            { label: "In Progress", value: queue.filter(q => q.status === "in-progress").length.toString(), change: "", icon: <Heart /> },
+            { label: "Completed", value: queue.filter(q => q.status === "completed").length.toString(), change: "", icon: <TrendingUp /> },
           ]);
         });
       } else if (role === "treasurer") {
@@ -147,9 +148,11 @@ export default function Dashboard() {
 
     loadSummary();
     window.addEventListener("reportHandlerUpdate", loadSummary as EventListener);
+    window.addEventListener("clinicUpdate", loadSummary as EventListener);
     window.addEventListener("treasurerDashboardUpdate", loadSummary as EventListener);
     return () => {
       window.removeEventListener("reportHandlerUpdate", loadSummary as EventListener);
+      window.removeEventListener("clinicUpdate", loadSummary as EventListener);
       window.removeEventListener("treasurerDashboardUpdate", loadSummary as EventListener);
     };
   }, [role]);
