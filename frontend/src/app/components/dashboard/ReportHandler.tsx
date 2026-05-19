@@ -1125,12 +1125,14 @@ export default function ReportHandler() {
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
                   <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Item</p>
-                  {[ ["Item Name", reviewLF.item_name || "—"], ["Category", `${reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"}${reviewLF.category ? ` - ${reviewLF.category}` : ""}`], ["Description", reviewLF.item_description || reviewLF.description || "—"] ].map(([l, v]) => (
+                  {[ ["Item Name", reviewLF.item_name || "—"], ["Category", `${reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"}${reviewLF.category ? ` - ${reviewLF.category}` : ""}`] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
                   ))}
                   {[ ["Date", formatDateOnly(reviewLF.created_at || reviewLF.date_reported)], ["Time", formatTimeOnly(reviewLF.created_at || reviewLF.date_reported)], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
                   ))}
+                  <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Description</p>
+                  <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{reviewLF.item_description || "—"}</p>
                   <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Narrative</p>
                   <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{reviewLF.description || "—"}</p>
                 </div>
