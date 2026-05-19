@@ -124,20 +124,27 @@ export default function ClinicHandler() {
     return dateBookedSort === "newest" ? bTime - aTime : aTime - bTime;
   });
 
-  const updateStatus = (id: number, status: string) => {
+  const updateStatus = async (id: number, status: Patient["status"]) => {
+    const previousQueue = queue;
     setQueue(prev => prev.map(p => p.id === id ? { ...p, status } : p));
-    updatePatientStatus(id, status);
     const user = getCurrentUser();
     const patient = queue.find(p => p.id === id);
-    if (patient) {
-      createAuditLogEntry({
-        time: new Date().toLocaleString("en-PH"),
-        user: user?.name || "Clinic Handler",
-        action: status === "completed" ? `Completed patient ${patient.name}` : `Started serving ${patient.name}`,
-        type: status === "completed" ? "success" : "info",
-      });
+    try {
+      await updatePatientStatus(id, status);
+      if (patient) {
+        createAuditLogEntry({
+          time: new Date().toLocaleString("en-PH"),
+          user: user?.name || "Clinic Handler",
+          action: status === "completed" ? `Completed patient ${patient.name}` : `Started serving ${patient.name}`,
+          type: status === "completed" ? "success" : "info",
+        });
+      }
+      showToast(status === "completed" ? "Patient completed!" : "Now serving patient");
+      window.dispatchEvent(new CustomEvent("clinicUpdate"));
+    } catch {
+      setQueue(previousQueue);
+      showToast("Failed to update patient status. Please check your account permission.", "error");
     }
-    showToast(status === "completed" ? "Patient completed!" : "Now serving patient");
   };
 
   const handleDeletePatient = async (p: Patient) => {

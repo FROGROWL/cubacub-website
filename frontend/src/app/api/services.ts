@@ -643,7 +643,7 @@ export interface Patient {
   name: string;
   time: string;
   reason: string;
-  status: string;
+  status: "waiting" | "in-progress" | "completed" | "canceled";
   appointmentId?: string;
   appointment_id?: string;
   dateBooked?: string;
@@ -678,7 +678,7 @@ export async function addPatient(
 /** DJANGO: PATCH /api/patients/<id>/ */
 export async function updatePatientStatus(
   id: number,
-  status: string
+  status: Patient["status"]
 ): Promise<void> {
   await apiFetch(`/api/patients/${id}/`, {
     method: "PATCH",

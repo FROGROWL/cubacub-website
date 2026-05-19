@@ -3,7 +3,8 @@ from django.db import models
 class Patient(models.Model):
     STATUS_CHOICES = [
         ("waiting", "Waiting"),
-        ("served", "Served"),
+        ("in-progress", "In Progress"),
+        ("completed", "Completed"),
         ("canceled", "Canceled"),
     ]
 

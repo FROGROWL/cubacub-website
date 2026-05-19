@@ -11,6 +11,10 @@ class PatientSerializer(serializers.ModelSerializer):
             if TreasurerSettings.get_solo().clinic_status != "open":
                 raise serializers.ValidationError({"clinic_status": "Clinic booking is currently closed."})
 
+        appointment_fields_changed = self.instance is None or "queueDate" in attrs or "time" in attrs
+        if not appointment_fields_changed:
+            return attrs
+
         queue_date = attrs.get("queueDate", getattr(self.instance, "queueDate", None))
         slot = attrs.get("time", getattr(self.instance, "time", None))
 
