@@ -301,11 +301,7 @@ export default function Dashboard() {
 
         {/* Content */}
         <main className="p-3 sm:p-4 md:p-6 flex-1 min-w-0" onClick={() => { setShowProfile(false); }}>
-          {role === "report_handler" && (
-            <div className="mb-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-              Pending Reports only count new incidents created within the last 1 day. Older new incidents move into Investigation Reports automatically.
-            </div>
-          )}
+          {/* Note removed: no automatic 1-day promotion applied anymore */}
 
           {/* Stat cards */}
           <div className="mb-6">
