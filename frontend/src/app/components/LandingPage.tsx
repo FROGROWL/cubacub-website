@@ -1771,7 +1771,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                         ["Location", form.location],
                         ["Landmark", form.landmark || "—"],
                         ["Suspect", form.suspectName || "Unknown"],
-                        ["Description", form.suspectDescription || "—"],
+                        ["Description", isLostFoundCategory ? ((form as any).itemDescription || "—") : (form.suspectDescription || "—")],
                         ["Victims", form.victimsInvolved || "—"]
                       ].map(([l, v]) => (
                         <div key={l} className="flex justify-between"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
