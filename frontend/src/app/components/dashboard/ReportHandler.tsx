@@ -966,9 +966,8 @@ export default function ReportHandler() {
       {/* Review Report Modal */}
       <AnimatePresence>
         {reviewReport && (
-                  {[ ["Name", reviewReport.reporter_name], ["Phone", reviewReport.reporter_phone || "—"], ["Relation", reviewReport.reporter_relation || "—"], ["Urgency", reviewReport.urgency || reviewReport.priority || "—"], ["Filed On", formatExactTimestamp(reviewReport.created_at)] ].map(([l, v]) => (
-            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setReviewReport(null)}>
+          <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
               <div className="bg-gradient-to-r from-rose-600 to-orange-500 px-6 py-5 shrink-0">
                 <div className="flex justify-between items-center">
                   <div>
