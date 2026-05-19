@@ -2661,7 +2661,7 @@ export default function LandingPage() {
             <h3 className="text-[#1B263B] mb-2">Track Document</h3>
             <p className="text-sm text-gray-400 mb-4">Real-time status updates on your document request.</p>
             <div className="flex gap-2">
-              <input placeholder="e.g. BRG-001234" className="flex-1 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/30 border-0" value={trackerInput} onChange={e => setTrackerInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && trackerInput) { setTrackingId(trackerInput); setShowTracker(true); }}} />
+              <input placeholder="e.g. BRG-001" className="flex-1 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/30 border-0" value={trackerInput} onChange={e => setTrackerInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && trackerInput) { setTrackingId(trackerInput); setShowTracker(true); }}} />
               <button onClick={() => { if (trackerInput) { setTrackingId(trackerInput); setShowTracker(true); } }} className="bg-gradient-to-r from-[#008080] to-[#00a89d] text-white px-4 py-2.5 rounded-xl text-sm hover:shadow-md transition-all">
                 <Search className="w-4 h-4" />
               </button>
