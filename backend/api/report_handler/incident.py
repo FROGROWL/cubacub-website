@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .models import Incident
+from .models import Incident, generate_document_refund_id, generate_incident_id
 from .serializers import IncidentSerializer
 from .cleanup import cleanup_expired_reports
 
@@ -98,7 +98,13 @@ def public_report_view(request):
     data.setdefault('status', 'pending')
     data.setdefault('priority', 'medium')
 
-    if data.get('id') and Incident.objects.filter(id=data['id']).exists():
+    if not data.get('id'):
+        if data.get('category') == 'Document Refund':
+            data['id'] = generate_document_refund_id()
+        else:
+            data['id'] = generate_incident_id()
+
+    if Incident.objects.filter(id=data['id']).exists():
         return Response({"id": ["ID already exists."]}, status=status.HTTP_409_CONFLICT)
 
     serializer = IncidentSerializer(data=data)
