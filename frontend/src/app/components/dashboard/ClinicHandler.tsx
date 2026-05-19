@@ -407,7 +407,6 @@ export default function ClinicHandler() {
                     <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} /> {sc.label}
                   </span>
                   <button onClick={() => setReviewPatient(p)} className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition-colors" title="Review"><Eye className="w-4 h-4" /></button>
-                  <button onClick={() => handleDeletePatient(p)} className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 hover:bg-rose-100 transition-colors" title="Delete appointment"><Trash2 className="w-4 h-4" /></button>
                   {p.status !== "completed" && (
                     <div className="flex gap-1.5">
                       {p.status === "waiting" && (
@@ -422,6 +421,7 @@ export default function ClinicHandler() {
                       </motion.button>
                     </div>
                   )}
+                  <button onClick={() => handleDeletePatient(p)} className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 hover:bg-rose-100 transition-colors" title="Delete appointment"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </motion.div>
             );
@@ -580,7 +580,6 @@ export default function ClinicHandler() {
                 </div>
               </div>
               <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50" onClick={e => e.stopPropagation()}>
-                <button onClick={() => handleDeletePatient(reviewPatient)} className="bg-rose-50 text-rose-600 py-3 px-4 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /> Delete</button>
                 {reviewPatient.status !== "completed" && (
                   <>
                     {reviewPatient.status === "waiting" && (
@@ -589,6 +588,7 @@ export default function ClinicHandler() {
                     <button onClick={() => { updateStatus(reviewPatient.id, "completed"); setReviewPatient(null); }} className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4" /> Mark Complete</button>
                   </>
                 )}
+                <button onClick={() => handleDeletePatient(reviewPatient)} className="bg-rose-50 text-rose-600 py-3 px-4 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /> Delete</button>
               </div>
             </motion.div>
           </div>
