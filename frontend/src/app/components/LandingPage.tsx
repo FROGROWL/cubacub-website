@@ -1533,7 +1533,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                       <span><strong>Important:</strong> You must provide proof of payment (screenshot or receipt) and the claim slip / invoice in Step 3. <strong>Refund requests without valid evidence will be rejected immediately.</strong> Only 60% of the original payment will be refunded.</span>
                     </div>
-                    <Input label="Document Tracking ID" required placeholder="e.g. BRG-001234" value={refundForm.trackingId} onChange={e => setRefundForm({ ...refundForm, trackingId: e.target.value })} />
+                    <Input label="Document Tracking ID" required placeholder="e.g. BRG-001" value={refundForm.trackingId} onChange={e => setRefundForm({ ...refundForm, trackingId: e.target.value })} />
                     <p className="text-xs text-gray-500 uppercase tracking-wider">Payment Information (Required for Refund)</p>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -2025,10 +2025,16 @@ function CommunityCalendar() {
     const d = new Date(e.date);
     return d.getMonth() === month && d.getFullYear() === year;
   });
+  const sortedMonthEvents = [...monthEvents].sort((a, b) => a.date.localeCompare(b.date));
+  const eventsByDate = sortedMonthEvents.reduce<Record<string, CalendarEvent[]>>((groups, event) => {
+    groups[event.date] = groups[event.date] || [];
+    groups[event.date].push(event);
+    return groups;
+  }, {});
 
-  const getEventForDay = (day: number) => {
+  const getEventsForDay = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return monthEvents.find(e => e.date === dateStr);
+    return eventsByDate[dateStr] || [];
   };
 
   return (
@@ -2045,21 +2051,32 @@ function CommunityCalendar() {
         {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1;
-          const ev = getEventForDay(day);
+          const dayEvents = getEventsForDay(day);
+          const ev = dayEvents[0];
+          const hasEvents = dayEvents.length > 0;
           const today = day === new Date().getDate() && month === new Date().getMonth();
           const eventClass = ev?.color ? `${ev.color} text-white shadow-md` : "";
           return (
             <div key={day}
-              onMouseEnter={() => ev && setHovered(day)}
+              onMouseEnter={() => hasEvents && setHovered(day)}
               onMouseLeave={() => setHovered(null)}
-              className={`relative text-center py-2 rounded-xl text-sm cursor-default transition-all duration-200 ${
-                ev ? eventClass : today ? "ring-2 ring-[#008080] bg-[#008080]/5" : "hover:bg-gray-50"
+              className={`relative min-h-10 text-center py-2 rounded-xl text-sm cursor-default transition-all duration-200 ${
+                hasEvents ? eventClass : today ? "ring-2 ring-[#008080] bg-[#008080]/5" : "hover:bg-gray-50"
               }`}
             >
               {day}
-              {hovered === day && ev && (
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1B263B] text-white text-xs px-2.5 py-1 rounded-lg whitespace-nowrap z-10 shadow-lg">
-                  {ev.title}
+              {dayEvents.length > 1 && (
+                <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-white text-[10px] leading-5 text-[#1B263B] shadow-sm border border-gray-100">
+                  {dayEvents.length}
+                </span>
+              )}
+              {hovered === day && hasEvents && (
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full w-48 max-h-36 overflow-y-auto bg-[#1B263B] text-white text-xs px-3 py-2 rounded-xl z-10 shadow-lg text-left">
+                  <div className="space-y-1">
+                    {dayEvents.map(event => (
+                      <div key={event.id} className="truncate">{event.title}</div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -2071,13 +2088,13 @@ function CommunityCalendar() {
         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-md bg-gradient-to-br from-[#008080] to-[#00a89d]" /> Health</span>
         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-md ring-2 ring-[#008080]" /> Today</span>
       </div>
-      {monthEvents.length > 0 && (
-        <div className="mt-3 space-y-1">
-          {monthEvents.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4).map(e => (
-            <div key={e.id} className="flex items-center gap-2 text-xs">
+      {sortedMonthEvents.length > 0 && (
+        <div className="mt-3 max-h-40 overflow-y-auto pr-1 space-y-1">
+          {sortedMonthEvents.map(e => (
+            <div key={e.id} className="flex items-center gap-2 text-xs min-w-0">
               <span className={`w-2 h-2 rounded-full ${e.color} shrink-0`} />
-              <span className="text-gray-400">{monthNames[month]} {new Date(e.date).getDate()}</span>
-              <span className="text-gray-600">{e.title}</span>
+              <span className="text-gray-400 shrink-0">{monthNames[month]} {new Date(e.date).getDate()}</span>
+              <span className="text-gray-600 truncate">{e.title}</span>
             </div>
           ))}
         </div>
