@@ -46,17 +46,11 @@ def generate_case_id():
 
 
 def generate_lf_id():
-    """Generate sequential lost & found ID like LF-001, LF-002, etc."""
-    last_lf = LostFoundItem.objects.all().order_by('-id').first()
-    if last_lf:
-        try:
-            last_num = int(last_lf.id.split('-')[-1])
-            next_num = last_num + 1
-        except (ValueError, IndexError):
-            next_num = 1
-    else:
-        next_num = 1
-    return f"LF-{next_num:03d}"
+    """Generate random lost & found ID like LF-639271 and ensure uniqueness."""
+    while True:
+        candidate = f"LF-{random.randint(100000, 999999)}"
+        if not LostFoundItem.objects.filter(id=candidate).exists():
+            return candidate
 
 
 class Incident(models.Model):
