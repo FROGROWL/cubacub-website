@@ -244,6 +244,12 @@ export default function ClinicHandler() {
     const d = new Date(e.date);
     return d.getMonth() === month && d.getFullYear() === year;
   });
+  const sortedMonthEvents = [...monthEvents].sort((a, b) => a.date.localeCompare(b.date));
+  const eventsByDate = sortedMonthEvents.reduce<Record<string, CalendarEvent[]>>((groups, event) => {
+    groups[event.date] = groups[event.date] || [];
+    groups[event.date].push(event);
+    return groups;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -435,35 +441,52 @@ export default function ClinicHandler() {
             <button onClick={() => setMonth(m => Math.min(11, m + 1))} className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"><ChevronRight className="w-4 h-4 text-gray-400" /></button>
           </div>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
-          {["S","M","T","W","T","F","S"].map((d,i) => <div key={i} className="text-gray-300 py-1">{d}</div>)}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:items-start">
+          <div>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+              {["S","M","T","W","T","F","S"].map((d,i) => <div key={i} className="text-gray-300 py-1">{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: startDay }).map((_, i) => <div key={`e${i}`} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
             const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-            const ev = monthEvents.find(e => e.date === dateStr);
+            const dayEvents = eventsByDate[dateStr] || [];
+            const ev = dayEvents[0];
             return (
-              <div key={day} className={`text-center py-1.5 rounded-xl text-xs transition-all ${ev ? ev.type === "closure" ? "bg-rose-500 text-white shadow-sm" : "bg-gradient-to-br from-[#008080] to-[#00a89d] text-white shadow-sm" : "hover:bg-gray-50"}`} title={ev?.title}>
+              <div key={day} className={`relative min-h-12 text-center py-3 rounded-xl text-xs transition-all ${ev ? ev.type === "closure" ? "bg-rose-500 text-white shadow-sm" : "bg-gradient-to-br from-[#008080] to-[#00a89d] text-white shadow-sm" : "hover:bg-gray-50"}`} title={dayEvents.map(item => item.title).join(", ")}>
                 {day}
+                {dayEvents.length > 1 && (
+                  <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-white text-[10px] leading-5 text-[#1B263B] shadow-sm border border-gray-100">
+                    {dayEvents.length}
+                  </span>
+                )}
               </div>
             );
           })}
+            </div>
         </div>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {monthEvents.sort((a, b) => a.date.localeCompare(b.date)).map(e => (
-            <div key={e.id} className={`flex items-center justify-between ${e.type === "closure" ? "bg-rose-50" : "bg-[#FAFBFC]"} rounded-xl p-3`}>
-              <div className="flex items-center gap-3">
+          <div className="rounded-2xl bg-[#FAFBFC] border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs uppercase tracking-wider text-gray-400">Health Events</p>
+              <span className="text-xs text-[#008080]">{sortedMonthEvents.length}</span>
+            </div>
+            <div className="max-h-72 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2">
+          {sortedMonthEvents.map(e => (
+            <div key={e.id} className={`flex items-center justify-between ${e.type === "closure" ? "bg-rose-50" : "bg-white"} rounded-xl p-3 min-w-0`}>
+              <div className="flex items-center gap-3 min-w-0">
                 <span className="text-lg">{e.icon || "📅"}</span>
-                <div>
-                  <p className={`text-xs ${e.type === "closure" ? "text-rose-600" : "text-[#1B263B]"}`}>{e.title}</p>
+                <div className="min-w-0">
+                  <p className={`text-xs truncate ${e.type === "closure" ? "text-rose-600" : "text-[#1B263B]"}`}>{e.title}</p>
                   <p className="text-xs text-gray-400">{monthNames[month]} {new Date(e.date).getDate()}, {year}</p>
                 </div>
               </div>
-              <button type="button" onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors" title="Delete health calendar event" aria-label={`Delete ${e.title}`}><X className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors shrink-0" title="Delete health calendar event" aria-label={`Delete ${e.title}`}><X className="w-3.5 h-3.5" /></button>
             </div>
           ))}
+            </div>
+            {sortedMonthEvents.length === 0 && <div className="py-10 text-center text-sm text-gray-300">No health events this month.</div>}
+          </div>
         </div>
       </div>
 

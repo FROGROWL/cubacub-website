@@ -331,6 +331,12 @@ export default function DocumentHandler() {
     const d = new Date(e.date);
     return d.getMonth() === month && d.getFullYear() === year;
   });
+  const sortedMonthEvents = [...monthEvents].sort((a, b) => a.date.localeCompare(b.date));
+  const eventsByDate = sortedMonthEvents.reduce<Record<string, CalendarEvent[]>>((groups, event) => {
+    groups[event.date] = groups[event.date] || [];
+    groups[event.date].push(event);
+    return groups;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -642,34 +648,51 @@ export default function DocumentHandler() {
             <button onClick={() => setMonth(m => Math.min(11, m + 1))} className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors"><ChevronRight className="w-4 h-4 text-gray-400" /></button>
           </div>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
-          {["S","M","T","W","T","F","S"].map((d,i) => <div key={i} className="text-gray-300 py-1">{d}</div>)}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:items-start">
+          <div>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+              {["S","M","T","W","T","F","S"].map((d,i) => <div key={i} className="text-gray-300 py-1">{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: startDay }).map((_, i) => <div key={`e${i}`} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
             const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-            const ev = monthEvents.find(e => e.date === dateStr);
+            const dayEvents = eventsByDate[dateStr] || [];
+            const ev = dayEvents[0];
             return (
-              <div key={day} className={`text-center py-1.5 rounded-xl text-xs transition-all ${ev ? `${ev.color} text-white shadow-sm` : "hover:bg-gray-50"}`} title={ev?.title}>
+              <div key={day} className={`relative min-h-12 text-center py-3 rounded-xl text-xs transition-all ${ev ? `${ev.color} text-white shadow-sm` : "hover:bg-gray-50"}`} title={dayEvents.map(item => item.title).join(", ")}>
                 {day}
+                {dayEvents.length > 1 && (
+                  <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-white text-[10px] leading-5 text-[#1B263B] shadow-sm border border-gray-100">
+                    {dayEvents.length}
+                  </span>
+                )}
               </div>
             );
           })}
+            </div>
         </div>
-        <div className="mt-4 space-y-2">
-          {monthEvents.sort((a, b) => a.date.localeCompare(b.date)).map(e => (
-            <div key={e.id} className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
+          <div className="rounded-2xl bg-[#FAFBFC] border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs uppercase tracking-wider text-gray-400">Document Events</p>
+              <span className="text-xs text-[#008080]">{sortedMonthEvents.length}</span>
+            </div>
+            <div className="max-h-72 overflow-y-auto pr-1 space-y-2">
+          {sortedMonthEvents.map(e => (
+            <div key={e.id} className="flex items-center justify-between text-xs bg-white rounded-xl px-3 py-2 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <span className={`w-2 h-2 rounded-full ${e.color} shrink-0`} />
-                <span className="text-gray-400">{monthNames[month]} {new Date(e.date).getDate()}</span>
-                <span className="text-gray-600">{e.title}</span>
-                <span className="text-[10px] text-gray-300">({e.source.replace("_", " ")})</span>
+                <span className="text-gray-400 shrink-0">{monthNames[month]} {new Date(e.date).getDate()}</span>
+                <span className="text-gray-600 truncate">{e.title}</span>
+                <span className="text-[10px] text-gray-300 shrink-0">({e.source.replace("_", " ")})</span>
               </div>
-              <button type="button" onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors" title="Delete calendar event" aria-label={`Delete ${e.title}`}><X className="w-3 h-3" /></button>
+              <button type="button" onClick={() => handleRemoveEvent(e.id)} className="text-gray-300 hover:text-rose-500 transition-colors shrink-0" title="Delete calendar event" aria-label={`Delete ${e.title}`}><X className="w-3 h-3" /></button>
             </div>
           ))}
+            </div>
+            {sortedMonthEvents.length === 0 && <div className="py-10 text-center text-sm text-gray-300">No document events this month.</div>}
+          </div>
         </div>
       </div>
 

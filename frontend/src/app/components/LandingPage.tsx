@@ -2044,61 +2044,73 @@ function CommunityCalendar() {
         <h3 className="text-[#1B263B]">{monthNames[month]} {year}</h3>
         <button onClick={() => setMonth(m => Math.min(11, m + 1))} className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"><ChevronRight className="w-4 h-4" /></button>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
-        {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} className="text-gray-300 py-1">{d}</div>)}
-      </div>
-      <div className="grid grid-cols-7 gap-1 relative">
-        {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const dayEvents = getEventsForDay(day);
-          const ev = dayEvents[0];
-          const hasEvents = dayEvents.length > 0;
-          const today = day === new Date().getDate() && month === new Date().getMonth();
-          const eventClass = ev?.color ? `${ev.color} text-white shadow-md` : "";
-          return (
-            <div key={day}
-              onMouseEnter={() => hasEvents && setHovered(day)}
-              onMouseLeave={() => setHovered(null)}
-              className={`relative min-h-10 text-center py-2 rounded-xl text-sm cursor-default transition-all duration-200 ${
-                hasEvents ? eventClass : today ? "ring-2 ring-[#008080] bg-[#008080]/5" : "hover:bg-gray-50"
-              }`}
-            >
-              {day}
-              {dayEvents.length > 1 && (
-                <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-white text-[10px] leading-5 text-[#1B263B] shadow-sm border border-gray-100">
-                  {dayEvents.length}
-                </span>
-              )}
-              {hovered === day && hasEvents && (
-                <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full w-48 max-h-36 overflow-y-auto bg-[#1B263B] text-white text-xs px-3 py-2 rounded-xl z-10 shadow-lg text-left">
-                  <div className="space-y-1">
-                    {dayEvents.map(event => (
-                      <div key={event.id} className="truncate">{event.title}</div>
-                    ))}
-                  </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)] lg:items-start">
+        <div>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+            {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} className="text-gray-300 py-1">{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1 relative">
+            {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const dayEvents = getEventsForDay(day);
+              const ev = dayEvents[0];
+              const hasEvents = dayEvents.length > 0;
+              const today = day === new Date().getDate() && month === new Date().getMonth();
+              const eventClass = ev?.color ? `${ev.color} text-white shadow-md` : "";
+              return (
+                <div key={day}
+                  onMouseEnter={() => hasEvents && setHovered(day)}
+                  onMouseLeave={() => setHovered(null)}
+                  className={`relative min-h-12 text-center py-3 rounded-xl text-sm cursor-default transition-all duration-200 ${
+                    hasEvents ? eventClass : today ? "ring-2 ring-[#008080] bg-[#008080]/5" : "hover:bg-gray-50"
+                  }`}
+                >
+                  {day}
+                  {dayEvents.length > 1 && (
+                    <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-white text-[10px] leading-5 text-[#1B263B] shadow-sm border border-gray-100">
+                      {dayEvents.length}
+                    </span>
+                  )}
+                  {hovered === day && hasEvents && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full w-48 max-h-36 overflow-y-auto bg-[#1B263B] text-white text-xs px-3 py-2 rounded-xl z-10 shadow-lg text-left">
+                      <div className="space-y-1">
+                        {dayEvents.map(event => (
+                          <div key={event.id} className="truncate">{event.title}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex gap-4 mt-4 text-xs">
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-md bg-gradient-to-br from-[#1B263B] to-[#2d4a6e]" /> General</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-md bg-gradient-to-br from-[#008080] to-[#00a89d]" /> Health</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-md ring-2 ring-[#008080]" /> Today</span>
-      </div>
-      {sortedMonthEvents.length > 0 && (
-        <div className="mt-3 max-h-40 overflow-y-auto pr-1 space-y-1">
-          {sortedMonthEvents.map(e => (
-            <div key={e.id} className="flex items-center gap-2 text-xs min-w-0">
-              <span className={`w-2 h-2 rounded-full ${e.color} shrink-0`} />
-              <span className="text-gray-400 shrink-0">{monthNames[month]} {new Date(e.date).getDate()}</span>
-              <span className="text-gray-600 truncate">{e.title}</span>
-            </div>
-          ))}
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap gap-4 mt-4 text-xs">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-md bg-gradient-to-br from-[#1B263B] to-[#2d4a6e]" /> General</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-md bg-gradient-to-br from-[#008080] to-[#00a89d]" /> Health</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-md ring-2 ring-[#008080]" /> Today</span>
+          </div>
         </div>
-      )}
+        <div className="rounded-2xl bg-[#FAFBFC] border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs uppercase tracking-wider text-gray-400">Monthly Events</p>
+            <span className="text-xs text-[#008080]">{sortedMonthEvents.length}</span>
+          </div>
+          {sortedMonthEvents.length > 0 ? (
+            <div className="max-h-72 overflow-y-auto pr-1 space-y-2">
+              {sortedMonthEvents.map(e => (
+                <div key={e.id} className="flex items-center gap-2 text-xs min-w-0 rounded-xl bg-white px-3 py-2">
+                  <span className={`w-2 h-2 rounded-full ${e.color} shrink-0`} />
+                  <span className="text-gray-400 shrink-0">{monthNames[month]} {new Date(e.date).getDate()}</span>
+                  <span className="text-gray-600 truncate">{e.title}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-300 py-8 text-center">No events this month.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -2700,7 +2712,7 @@ export default function LandingPage() {
             <h2 className="text-[#1B263B] text-3xl mt-4" style={{ fontFamily: "Montserrat" }}>Community Engagement</h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Finance Transparency */}
             <motion.div whileHover={{ y: -6 }} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 overflow-hidden group cursor-pointer" onClick={() => navigate("/finance")}>
               <div className="relative h-36 overflow-hidden">
@@ -2775,8 +2787,8 @@ export default function LandingPage() {
                 File Report <ArrowRight className="w-4 h-4" />
               </div>
             </motion.button>
-
-            {/* Calendar */}
+          </div>
+          <div className="mt-6">
             <CommunityCalendar />
           </div>
         </div>
