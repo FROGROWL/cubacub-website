@@ -55,6 +55,28 @@ const formatExactTimestamp = (timestamp?: string | null) => {
   });
 };
 
+const formatDateOnly = (timestamp?: string | null) => {
+  if (!timestamp) return "-";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return timestamp;
+  return date.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+};
+
+const formatTimeOnly = (timestamp?: string | null) => {
+  if (!timestamp) return "-";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return timestamp;
+  return date.toLocaleTimeString("en-PH", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
 // --- Animated Counter ---
 function AnimCounter({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [val, setVal] = useState(0);
@@ -1754,6 +1776,52 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                       ))}
                       <p className="text-xs text-gray-400 mt-2">Report ID: <strong>{reportDraftId}</strong></p>
                     </>
+                  ) : isLostFoundCategory ? (
+                    <>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">pending</span>
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                          {`${form.category}${resolvedSubcategory ? " - " + resolvedSubcategory : ""}`}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2.5 text-sm">
+                        <p className="text-xs text-rose-500 uppercase tracking-wider">Reporter</p>
+                        {[
+                          ["Name", anon ? "Anonymous" : form.reporterName || "-"],
+                          ["Phone", anon ? "Hidden" : form.reporterPhone || "-"],
+                          ["Address", anon ? "Hidden" : form.reporterAddress || "-"],
+                          ["Relation", anon ? "Hidden" : form.reporterRelation || "-"],
+                        ].map(([l, v]) => (
+                          <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
+                        ))}
+                        {anon && <p className="text-xs text-[#0F6D6D] uppercase tracking-wider mt-2">Anonymous to the public, credentials retained for barangay processing</p>}
+
+                        <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Item</p>
+                        {[
+                          ["Item Name", form.itemName || "-"],
+                          ["Category", `${form.category}${resolvedSubcategory ? " - " + resolvedSubcategory : ""}`],
+                          ["Date", formatDateOnly(form.reportCreatedAt)],
+                          ["Time", formatTimeOnly(form.reportCreatedAt)],
+                          ["Location", form.location || "-"],
+                          ["Landmark", form.landmark || "-"],
+                          ["Person Involved", form.suspectName || "-"],
+                          ["Victims", form.victimsInvolved || "-"],
+                        ].map(([l, v]) => (
+                          <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
+                        ))}
+                        <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Description</p>
+                        <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{(form as any).itemDescription || "-"}</p>
+                        <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Narrative</p>
+                        <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{form.details || "-"}</p>
+                        <p className="text-xs text-gray-400 mt-2">Report ID: <strong>{reportDraftId}</strong></p>
+                      </div>
+
+                      <div className="bg-[#FFF8E7] border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
+                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>This item will be submitted as <strong>pending</strong> for barangay review.</span>
+                      </div>
+                    </>
                   ) : (
                     <>
                       <p className="text-xs text-rose-500 uppercase tracking-wider mb-1">Reporter</p>
@@ -1790,7 +1858,9 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                 {/* Evidence photos in review */}
                 {evidencePhotos.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Attached Evidence ({evidencePhotos.length} photo{evidencePhotos.length > 1 ? "s" : ""})</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">
+                      {isLostFoundCategory ? "Evidence Photos" : "Attached Evidence"} ({evidencePhotos.length} photo{evidencePhotos.length > 1 ? "s" : ""})
+                    </p>
                     <div className="grid grid-cols-5 gap-2">
                       {evidencePhotos.map((p, i) => (
                         <img key={i} src={p} alt={`Evidence ${i+1}`} className="w-full h-16 object-cover rounded-lg border border-gray-200" />
