@@ -342,6 +342,7 @@ export default function ReportHandler() {
   const lfPending = lfItems.filter((item) => item.status === "pending").length;
   const lfPosted = lfItems.filter((item) => item.status === "post").length;
   const lfResolved = lfItems.filter((item) => item.status === "resolved").length;
+  const lfReviewStatus = reviewLF?.status === "solved" ? "resolved" : reviewLF?.status;
 
   return (
     <div className="space-y-6">
@@ -1085,22 +1086,36 @@ export default function ReportHandler() {
                 </div>
               </div>
               <div className="p-6 overflow-y-auto flex-1 space-y-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-xs px-2.5 py-1 rounded-full ${lfStatusConfig[lfReviewStatus || "pending"]?.bg} ${lfStatusConfig[lfReviewStatus || "pending"]?.text}`}>
+                    {lfReviewStatus || "pending"}
+                  </span>
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                    {reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"}
+                  </span>
+                  {reviewLF.category && (
+                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                      {reviewLF.category}
+                    </span>
+                  )}
+                </div>
+
                 <div className="space-y-2.5 text-sm">
-                  <p className="text-xs text-blue-500 uppercase tracking-wider">Reporter</p>
-                  {[ ["Name", reviewLF.reporter_name || "—"], ["Phone", reviewLF.reporter_phone || "—"], ["Address", reviewLF.reporter_address || "—"], ["Relation", reviewLF.reporter_relation || "—"], ["Filed On", formatExactTimestamp(reviewLF.created_at)] ].map(([l, v]) => (
+                  <p className="text-xs text-rose-500 uppercase tracking-wider">Reporter</p>
+                  {[ ["Name", reviewLF.reporter_name || "—"], ["Phone", reviewLF.reporter_phone || "—"], ["Address", reviewLF.reporter_address || "—"], ["Relation", reviewLF.reporter_relation || "—"] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
-                  <p className="text-xs text-blue-500 uppercase tracking-wider mt-3">Item</p>
-                  {[ ["Item Name", reviewLF.item_name || "—"], ["Type", reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"], ["Category", reviewLF.category || "—"], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
+                  <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Item</p>
+                  {[ ["Item Name", reviewLF.item_name || "—"], ["Type", reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"], ["Category", reviewLF.category || "—"], ["Date", formatExactTimestamp(reviewLF.date_of_incident || reviewLF.date_reported)], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
                   ))}
-                  <p className="text-xs text-blue-500 uppercase tracking-wider mt-3">Narrative</p>
+                  <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Narrative</p>
                   <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{reviewLF.description || "—"}</p>
                 </div>
 
                 {((reviewLF.image_urls && reviewLF.image_urls.length > 0) || reviewLF.image_url) && (
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Evidence ({reviewLF.image_urls?.length || 1})</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Evidence Photos ({reviewLF.image_urls?.length || 1})</p>
                     <div className="grid grid-cols-2 gap-2">
                       {(reviewLF.image_urls?.length ? reviewLF.image_urls : [reviewLF.image_url]).filter(Boolean).map((photo, i) => (
                         <button key={i} onClick={() => setViewPhoto(photo || null)} className="w-full h-32 rounded-xl border border-gray-200 overflow-hidden hover:opacity-80 transition-opacity">
@@ -1113,7 +1128,7 @@ export default function ReportHandler() {
 
                 <div className="bg-[#FFF8E7] border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
                   <span>ℹ️</span>
-                  <span>This item is currently <strong>{reviewLF.status === "solved" ? "resolved" : reviewLF.status}</strong>.</span>
+                  <span>This item is currently <strong>{lfReviewStatus || "pending"}</strong>.</span>
                 </div>
               </div>
               <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50">
