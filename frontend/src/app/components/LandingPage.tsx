@@ -1417,6 +1417,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
       reporterName: "", reporterPhone: "", reporterAddress: "", reporterRelation: "Witness",
       // Incident info
       category: firstReportCategory, subcategory: "", urgency: "Medium", itemName: "",
+      itemDescription: "",
       incidentDate: "", incidentTime: "", location: "", landmark: "",
       // People involved
       suspectName: "", suspectDescription: "", victimsInvolved: "",
@@ -1612,13 +1613,22 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                       )}
                     </div>
                     {isLostFoundCategory && (
-                      <Input
-                        label="Item Name"
-                        required
-                        placeholder={form.category === "Lost Item" ? "e.g. Black wallet, school ID, phone" : "e.g. Keys, wallet, pet collar"}
-                        value={form.itemName}
-                        onChange={e => ru("itemName", e.target.value)}
-                      />
+                      <>
+                        <Input
+                          label="Item Name"
+                          required
+                          placeholder={form.category === "Lost Item" ? "e.g. Black wallet, school ID, phone" : "e.g. Keys, wallet, pet collar"}
+                          value={form.itemName}
+                          onChange={e => ru("itemName", e.target.value)}
+                        />
+                        <Textarea
+                          label="Description (optional)"
+                          rows={3}
+                          placeholder="Describe the item itself, distinguishing marks, color, brand, or condition"
+                          value={(form as any).itemDescription || ""}
+                          onChange={e => ru("itemDescription", e.target.value)}
+                        />
+                      </>
                     )}
                     <div className={`grid ${isLostFoundCategory ? "grid-cols-2" : "grid-cols-3"} gap-4`}>
                       {!isLostFoundCategory && (
@@ -1630,6 +1640,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                       )}
                       <div>
                         <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Date of Incident<span className="text-rose-400 ml-0.5">*</span></label>
+                        ...(isLostFoundCategory ? [["Description", (form as any).itemDescription || "—"]] : []),
                         <input type="date" max={reportToday} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-300 outline-none" value={form.incidentDate} onChange={e => ru("incidentDate", e.target.value)} />
                         {incidentDateIsFuture && <p className="text-xs text-rose-400 mt-1">Date of incident cannot be in the future.</p>}
                       </div>
@@ -1810,6 +1821,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                         reporter_id: lostFoundDraftId,
                         is_anonymous: anon,
                         item_name: form.itemName,
+                        item_description: (form as any).itemDescription || "",
                         description: form.details,
                         category: resolvedSubcategory || undefined,
                         location: form.location,

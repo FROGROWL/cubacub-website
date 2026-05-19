@@ -1112,12 +1112,9 @@ export default function ReportHandler() {
                   <span className={`text-xs px-2.5 py-1 rounded-full ${lfStatusConfig[lfReviewStatus || "pending"]?.bg} ${lfStatusConfig[lfReviewStatus || "pending"]?.text}`}>
                     {lfReviewStatus || "pending"}
                   </span>
-                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                    {reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"}
-                  </span>
                   {reviewLF.category && (
                     <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                      {reviewLF.category}
+                      {`${reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"}${reviewLF.category ? ` - ${reviewLF.category}` : ""}`}
                     </span>
                   )}
                 </div>
@@ -1128,7 +1125,12 @@ export default function ReportHandler() {
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
                   <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Item</p>
-                  {[ ["Item Name", reviewLF.item_name || "—"], ["Category", `${reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"}${reviewLF.category ? ` - ${reviewLF.category}` : ""}`], ["Description", reviewLF.description || "—"], ["Date", formatDateOnly(reviewLF.created_at || reviewLF.date_reported)], ["Time", formatTimeOnly(reviewLF.created_at || reviewLF.date_reported)], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
+                  {[ ["Item Name", reviewLF.item_name || "—"], ["Category", `${reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"}${reviewLF.category ? ` - ${reviewLF.category}` : ""}`], ["Description", reviewLF.item_description || reviewLF.description || "—"] ].map(([l, v]) => (
+                    <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
+                  ))}
+                  <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Narrative</p>
+                  <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{reviewLF.description || "—"}</p>
+                  {[ ["Date", formatDateOnly(reviewLF.created_at || reviewLF.date_reported)], ["Time", formatTimeOnly(reviewLF.created_at || reviewLF.date_reported)], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
                   ))}
                 </div>

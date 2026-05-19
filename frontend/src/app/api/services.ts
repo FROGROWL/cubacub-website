@@ -943,6 +943,7 @@ export interface LostFoundItem {
   reporter_id: string;
   is_anonymous: boolean;
   item_name: string;
+  item_description?: string;
   description?: string;
   category?: string;
   location?: string;
