@@ -1640,7 +1640,6 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                       )}
                       <div>
                         <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">Date of Incident<span className="text-rose-400 ml-0.5">*</span></label>
-                        ...(isLostFoundCategory ? [["Description", (form as any).itemDescription || "—"]] : []),
                         <input type="date" max={reportToday} className="w-full border-0 bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-300 outline-none" value={form.incidentDate} onChange={e => ru("incidentDate", e.target.value)} />
                         {incidentDateIsFuture && <p className="text-xs text-rose-400 mt-1">Date of incident cannot be in the future.</p>}
                       </div>
@@ -1654,10 +1653,31 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                       <Input label="Nearest Landmark" placeholder="e.g. Near Cubacub Chapel" value={form.landmark} onChange={e => ru("landmark", e.target.value)} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <Input label="Suspect / Person Involved (optional)" placeholder="Name if known" value={form.suspectName} onChange={e => ru("suspectName", e.target.value)} />
-                      <Input label="Description (optional)" placeholder="e.g. Male, tall, wearing red shirt" value={form.suspectDescription} onChange={e => ru("suspectDescription", e.target.value)} />
+                      <Input
+                        label="Suspect / Person Involved (optional)"
+                        placeholder="Name if known"
+                        value={form.suspectName}
+                        onChange={e => ru("suspectName", e.target.value)}
+                        readOnly={isLostFoundCategory}
+                        disabled={isLostFoundCategory}
+                      />
+                      <Input
+                        label="Description (optional)"
+                        placeholder="e.g. Male, tall, wearing red shirt"
+                        value={form.suspectDescription}
+                        onChange={e => ru("suspectDescription", e.target.value)}
+                        readOnly={isLostFoundCategory}
+                        disabled={isLostFoundCategory}
+                      />
                     </div>
-                    <Input label="No. of Victims / People Affected (optional)" placeholder="e.g. 3 households" value={form.victimsInvolved} onChange={e => ru("victimsInvolved", e.target.value)} />
+                    <Input
+                      label="No. of Victims / People Affected (optional)"
+                      placeholder="e.g. 3 households"
+                      value={form.victimsInvolved}
+                      onChange={e => ru("victimsInvolved", e.target.value)}
+                      readOnly={isLostFoundCategory}
+                      disabled={isLostFoundCategory}
+                    />
                     <AnimatePresence>
                       {needsOtherSpecification && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
