@@ -1579,7 +1579,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
   const reporterPhoneValid = isValidPhilippineMobile(form.reporterPhone);
   const canR1 = isRefund
     ? (refundPhoneValid && refundForm.gcashName && refundForm.trackingId)
-    : (anon || (form.reporterName && reporterPhoneValid));
+    : (form.reporterName && reporterPhoneValid);
   const canR2 = isRefund
     ? (form.subcategory && form.subcategory !== "" && (form.subcategory !== "Other" || form.otherSubcategory.trim().length > 0))
     : (form.category && form.incidentDate && !incidentDateIsFuture && form.location && (!isLostFoundCategory || form.itemName.trim().length > 0) && (!needsOtherSpecification || form.otherSubcategory.trim().length > 0));
@@ -1634,34 +1634,32 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                 ) : (
                   <>
                     <div className="flex items-center justify-between bg-[#F5F7FA] rounded-xl px-4 py-3">
-                      <span className="text-sm flex items-center gap-2 text-gray-600"><Shield className="w-4 h-4 text-[#008080]" /> Submit Anonymously</span>
+                      <span className="text-sm flex items-center gap-2 text-gray-600"><Shield className="w-4 h-4 text-[#008080]" /> Anonymous filing</span>
                       <button onClick={() => setAnon(!anon)} className={`w-12 h-6 rounded-full transition-all ${anon ? "bg-[#008080]" : "bg-gray-300"} relative`}>
                         <motion.div animate={{ x: anon ? 24 : 2 }} className="w-5 h-5 bg-white rounded-full shadow-md absolute top-0.5" />
                       </button>
                     </div>
-                    <AnimatePresence>
-                      {!anon && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-4 overflow-hidden">
-                          <div className="grid grid-cols-2 gap-4">
-                            <Input label="Full Name" required placeholder="Your full name" value={form.reporterName} onChange={e => ru("reporterName", e.target.value)} />
-                            <div>
-                              <Input label="Phone Number" required type="tel" placeholder="09XXXXXXXXX" value={form.reporterPhone} onChange={e => ru("reporterPhone", normalizePhoneInput(e.target.value))} inputMode="numeric" maxLength={11} pattern="09[0-9]{9}" />
-                              {form.reporterPhone && !reporterPhoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
-                            </div>
-                          </div>
-                          <Input label="Address (optional)" placeholder="Your address in Cubacub" value={form.reporterAddress} onChange={e => ru("reporterAddress", e.target.value)} />
-                          <Select label="Your Relation to the Incident" value={form.reporterRelation} onChange={e => ru("reporterRelation", e.target.value)}>
-                            {["Witness", "Victim", "Concerned Neighbor", "Barangay Official", "Other"].map(r => <option key={r}>{r}</option>)}
-                          </Select>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                     {anon && (
-                      <div className="bg-emerald-50 rounded-xl p-3 text-xs text-emerald-600 flex items-start gap-2">
+                      <div className="bg-[#E8F7F7] rounded-xl p-3 text-xs text-[#0F6D6D] flex items-start gap-2">
                         <Shield className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>Your identity will be completely hidden. The barangay will not be able to contact you for follow-up.</span>
+                        <span>Your report will be handled by the barangay. Your identity will not be contacted, but credentials are still required for filing.</span>
                       </div>
                     )}
+                    <AnimatePresence>
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-4 overflow-hidden">
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input label="Full Name" required placeholder="Your full name" value={form.reporterName} onChange={e => ru("reporterName", e.target.value)} />
+                          <div>
+                            <Input label="Phone Number" required type="tel" placeholder="09XXXXXXXXX" value={form.reporterPhone} onChange={e => ru("reporterPhone", normalizePhoneInput(e.target.value))} inputMode="numeric" maxLength={11} pattern="09[0-9]{9}" />
+                            {form.reporterPhone && !reporterPhoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
+                          </div>
+                        </div>
+                        <Input label="Address (optional)" placeholder="Your address in Cubacub" value={form.reporterAddress} onChange={e => ru("reporterAddress", e.target.value)} />
+                        <Select label="Your Relation to the Incident" value={form.reporterRelation} onChange={e => ru("reporterRelation", e.target.value)}>
+                          {["Witness", "Victim", "Concerned Neighbor", "Barangay Official", "Other"].map(r => <option key={r}>{r}</option>)}
+                        </Select>
+                      </motion.div>
+                    </AnimatePresence>
                   </>
                 )}
                 <button onClick={() => { if (isRefund) { ru("category", "Document Refund"); } setRStep(2); }} disabled={!canR1} className="w-full bg-gradient-to-r from-rose-600 to-orange-500 text-white py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-lg transition-all">
@@ -1856,9 +1854,10 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                   ) : (
                     <>
                       <p className="text-xs text-rose-500 uppercase tracking-wider mb-1">Reporter</p>
-                      {[["Name", anon ? "Anonymous" : form.reporterName],["Phone", anon ? "Hidden" : form.reporterPhone],["Relation", anon ? "—" : form.reporterRelation]].map(([l, v]) => (
+                      {[ ["Name", form.reporterName],["Phone", form.reporterPhone],["Relation", form.reporterRelation]].map(([l, v]) => (
                         <div key={l} className="flex justify-between"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                       ))}
+                      {anon && <p className="text-xs text-[#0F6D6D] uppercase tracking-wider mt-2">Anonymous to the public, credentials retained for barangay processing</p>}
                       <div className="border-t border-gray-200 my-2" />
                       <p className="text-xs text-rose-500 uppercase tracking-wider mb-1">{isLostFoundCategory ? "Item Report" : "Incident"}</p>
                       {[
@@ -1915,8 +1914,8 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                       const lostFoundDraftId = reportDraftId.startsWith("LF-") ? reportDraftId : `LF-${Math.floor(100000 + Math.random() * 900000)}`;
                       createLostFoundItem({
                         item_type: form.category === "Lost Item" ? "lost" : "found",
-                        reporter_name: anon ? "Anonymous" : form.reporterName,
-                        reporter_phone: anon ? "" : form.reporterPhone,
+                        reporter_name: form.reporterName,
+                        reporter_phone: form.reporterPhone,
                         reporter_id: lostFoundDraftId,
                         is_anonymous: anon,
                         item_name: form.itemName,
@@ -1956,8 +1955,8 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                         incidentDate: form.incidentDate,
                         incidentTime: form.incidentTime,
                         urgency: form.urgency,
-                        reporter: isRefund ? refundForm.gcashName || "Anonymous" : (anon ? "Anonymous" : form.reporterName),
-                      reporterPhone: isRefund ? refundForm.gcashNumber : (anon ? "" : form.reporterPhone),
+                        reporter: isRefund ? refundForm.gcashName || "Anonymous" : form.reporterName,
+                      reporterPhone: isRefund ? refundForm.gcashNumber : form.reporterPhone,
                         reporterRelation: isRefund ? "" : form.reporterRelation,
                         isAnonymous: isRefund ? false : anon,
                         landmark: form.landmark,

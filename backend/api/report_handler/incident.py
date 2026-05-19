@@ -85,13 +85,13 @@ def public_report_view(request):
         }
         data['priority'] = priority_map.get(urgency_key, 'medium')
 
-    # If anonymous, ensure reporter_name/phone are set appropriately
+    # Anonymous filings still keep credentials on file; only the public-facing
+    # presentation should hide them.
     is_anon = data.get('is_anonymous')
     if isinstance(is_anon, str):
         is_anon = is_anon.lower() in ('true', '1')
     if is_anon:
         data['reporter_name'] = data.get('reporter_name') or 'Anonymous'
-        data['reporter_phone'] = ''
 
     # Ensure sensible defaults for missing required fields
     data.setdefault('source', 'public')

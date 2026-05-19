@@ -29,6 +29,13 @@ class IncidentSerializer(serializers.ModelSerializer):
 class LostFoundSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        request = self.context.get("request") if hasattr(self, "context") else None
+
+        if instance.is_anonymous and not (getattr(request, "user", None) and request.user.is_authenticated):
+            data["reporter_name"] = "Anonymous"
+            data["reporter_phone"] = ""
+            data["reporter_relation"] = None
+
         if data.get("status") == "solved":
             data["status"] = "resolved"
         return data
