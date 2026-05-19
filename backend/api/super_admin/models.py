@@ -141,6 +141,18 @@ def default_landing_page_config():
             {"name": "Certificate of Late Registration", "price": 100, "info": "Requires supporting documents for the late registration. Must coordinate with the local civil registrar.", "requirements": []},
             {"name": "Barangay Protection Order", "price": 0, "info": "Filed by a victim of domestic violence or abuse. Free of charge. Must provide a sworn statement of facts.", "requirements": []},
         ],
+        "clinic_consultation_types": [
+            "General Checkup",
+            "Prenatal Checkup",
+            "Vaccination",
+            "Blood Pressure Monitoring",
+            "Dental Checkup",
+            "Flu / Fever Consultation",
+            "Child Immunization",
+            "Family Planning",
+            "TB-DOTS Follow-up",
+            "Wound Dressing / Minor Surgery",
+        ],
     }
 
 

@@ -61,8 +61,9 @@ class LandingPageConfigSerializer(serializers.ModelSerializer):
 
         report_categories = value.get("report_categories", [])
         document_types = value.get("document_types", [])
-        if not isinstance(report_categories, list) or not isinstance(document_types, list):
-            raise serializers.ValidationError("Report categories and document types must be lists.")
+        clinic_consultation_types = value.get("clinic_consultation_types", [])
+        if not isinstance(report_categories, list) or not isinstance(document_types, list) or not isinstance(clinic_consultation_types, list):
+            raise serializers.ValidationError("Report categories, document types, and clinic consultation types must be lists.")
 
         for item in report_categories:
             if not isinstance(item, dict) or not str(item.get("name", "")).strip():
@@ -84,5 +85,9 @@ class LandingPageConfigSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError("Each requirement group needs a name.")
                 if not isinstance(group.get("requirements", []), list):
                     raise serializers.ValidationError("Requirement group requirements must be a list.")
+
+        for item in clinic_consultation_types:
+            if not str(item or "").strip():
+                raise serializers.ValidationError("Clinic consultation types cannot be blank.")
 
         return value

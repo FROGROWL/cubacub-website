@@ -1123,14 +1123,17 @@ function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trac
 }
 // --- Clinic Booking (with patient health info) ---
  
-function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clinicOpen: boolean }) {
+function ClinicBookingModal({ onClose, clinicOpen, landingConfig = DEFAULT_LANDING_PAGE_CONFIG }: { onClose: () => void; clinicOpen: boolean; landingConfig?: LandingPageConfig }) {
   const { showToast } = useToast();
+  const consultationTypes = landingConfig.clinic_consultation_types.length
+    ? landingConfig.clinic_consultation_types
+    : DEFAULT_LANDING_PAGE_CONFIG.clinic_consultation_types;
   const [cStep, setCStep] = useState(1);
   const [isBooking, setIsBooking] = useState(false);
   const [confirmedAppointment, setConfirmedAppointment] = useState<{ id: string; dateBookedText: string } | null>(null);
   const [form, setForm] = useState({
     name: "", birthdate: "", sex: "Male", phone: "",
-    consultType: "General Checkup", chiefComplaint: "", otherConsultType: "",
+    consultType: consultationTypes[0] || "General Checkup", chiefComplaint: "",
     allergies: "", medications: "", conditions: "",
     preferredDate: "", slot: "",
   });
@@ -1156,7 +1159,7 @@ function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clin
     ["Phone", form.phone],
     ["Birthdate", form.birthdate],
     ["Sex", form.sex],
-    ["Consultation Type", form.consultType === "Other" ? form.otherConsultType : form.consultType],
+    ["Consultation Type", form.consultType],
     ["Chief Complaint", form.chiefComplaint],
     ["Known Allergies", form.allergies || "None"],
     ["Current Medications", form.medications || "None"],
@@ -1199,6 +1202,12 @@ function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clin
       cu("slot", "");
     }
   }, [clinicOpen, form.preferredDate, form.slot, selectedDateIsPast, taken]);
+
+  useEffect(() => {
+    if (!consultationTypes.includes(form.consultType)) {
+      cu("consultType", consultationTypes[0] || "General Checkup");
+    }
+  }, [consultationTypes, form.consultType]);
 
   return (
     <AnimatePresence>
@@ -1283,11 +1292,8 @@ function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clin
                   </Select>
                 </div>
                 <Select label="Consultation Type" required value={form.consultType} onChange={e => cu("consultType", e.target.value)}>
-                  {["General Checkup","Prenatal Checkup","Vaccination","Blood Pressure Monitoring","Dental Checkup","Flu / Fever Consultation","Child Immunization","Family Planning","TB-DOTS Follow-up","Wound Dressing / Minor Surgery","Other"].map(c => <option key={c}>{c}</option>)}
+                  {consultationTypes.map(c => <option key={c}>{c}</option>)}
                 </Select>
-                {form.consultType === "Other" && (
-                  <Input label="Please specify consultation type" required placeholder="Describe what kind of consultation you need..." value={form.otherConsultType || ""} onChange={e => cu("otherConsultType", e.target.value)} />
-                )}
                 <Textarea label="Chief Complaint / Reason for Visit" required rows={2} placeholder="Briefly describe your symptoms or reason for visit..." value={form.chiefComplaint} onChange={e => cu("chiefComplaint", e.target.value)} />
                 <button onClick={() => setCStep(2)} disabled={!form.name || !isValidPhilippineMobile(form.phone) || !form.birthdate || !form.chiefComplaint}
                   className="w-full bg-gradient-to-r from-[#008080] to-[#00a89d] text-white py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-lg transition-all">
@@ -1369,7 +1375,7 @@ function ClinicBookingModal({ onClose, clinicOpen }: { onClose: () => void; clin
                       await addPatient({
                         name: form.name,
                         time: form.slot,
-                        reason: form.consultType === "Other" ? form.otherConsultType : form.consultType,
+                        reason: form.consultType,
                         status: "waiting",
                         appointmentId: apptId,
                         dateBooked: dateBookedIso,
@@ -2857,7 +2863,7 @@ export default function LandingPage() {
         {showDocForm && <DocumentRequestForm onClose={() => setShowDocForm(false)} landingConfig={landingConfig} />}
         {showTracker && <TrackerModal onClose={() => setShowTracker(false)} trackingId={trackingId} />}
         {showReportTracker && <ReportTrackerModal onClose={() => setShowReportTracker(false)} trackingId={reportTrackingId} />}
-        {showClinic && <ClinicBookingModal onClose={() => setShowClinic(false)} clinicOpen={clinicOpen} />}
+        {showClinic && <ClinicBookingModal onClose={() => setShowClinic(false)} clinicOpen={clinicOpen} landingConfig={landingConfig} />}
         {showReport && <ReportModal onClose={() => { setShowReport(false); setIsDocumentRefund(false); }} isDocumentRefund={isDocumentRefund} landingConfig={landingConfig} />}
       </AnimatePresence>
     </div>

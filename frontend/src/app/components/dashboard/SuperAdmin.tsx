@@ -21,6 +21,7 @@ import {
   FileText,
   ListChecks,
   Save,
+  Stethoscope,
 } from "lucide-react";
 // Analytics use simple SVG charts - easy to connect to database later
 // Just replace the mock data arrays with your DB query results
@@ -168,7 +169,7 @@ export default function SuperAdmin() {
   const [landingConfig, setLandingConfig] = useState<LandingPageConfig>(DEFAULT_LANDING_PAGE_CONFIG);
   const [landingConfigSaving, setLandingConfigSaving] = useState(false);
   const [showLandingServices, setShowLandingServices] = useState(true);
-  const [landingServiceEditor, setLandingServiceEditor] = useState<"report" | "document">("report");
+  const [landingServiceEditor, setLandingServiceEditor] = useState<"report" | "document" | "clinic">("report");
   const [adminProfile, setAdminProfile] =
     useState<AdminProfile>({
       name: getCurrentUser()?.name || "Kap. Roberto",
@@ -424,10 +425,13 @@ export default function SuperAdmin() {
             .filter(group => group.name),
         }))
         .filter(doc => doc.name),
+      clinic_consultation_types: landingConfig.clinic_consultation_types
+        .map(type => type.trim())
+        .filter(Boolean),
     };
 
-    if (!cleaned.report_categories.length || !cleaned.document_types.length) {
-      showToast("Keep at least one report category and one document type.", "error");
+    if (!cleaned.report_categories.length || !cleaned.document_types.length || !cleaned.clinic_consultation_types.length) {
+      showToast("Keep at least one report category, one document type, and one clinic consultation type.", "error");
       return;
     }
 
@@ -438,7 +442,7 @@ export default function SuperAdmin() {
         createAuditLogEntry({
           time: new Date().toLocaleString("en-PH"),
           user: adminAuditUser,
-          action: `Updated landing page service configuration; report categories: ${response.config.report_categories.length}; document types: ${response.config.document_types.length}`,
+          action: `Updated landing page service configuration; report categories: ${response.config.report_categories.length}; document types: ${response.config.document_types.length}; clinic consultation types: ${response.config.clinic_consultation_types.length}`,
           type: "info",
         }).then(refreshAuditTrail).catch(() => {});
         showToast("Landing page settings saved.");
@@ -868,7 +872,7 @@ export default function SuperAdmin() {
           exit={{ height: 0, opacity: 0 }}
           className="overflow-hidden"
         >
-        <div className="grid sm:grid-cols-3 gap-3 py-2">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 py-2">
           <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4">
             <p className="text-xs text-violet-500 uppercase tracking-wider">Report Categories</p>
             <p className="text-2xl text-[#1B263B] mt-1" style={{ fontFamily: "Montserrat" }}>{landingConfig.report_categories.length}</p>
@@ -884,10 +888,15 @@ export default function SuperAdmin() {
             <p className="text-2xl text-[#1B263B] mt-1" style={{ fontFamily: "Montserrat" }}>{landingConfig.document_types.reduce((sum, doc) => sum + (doc.requirementGroups?.length || 0), 0)}</p>
             <p className="text-xs text-gray-500 mt-1">For variants like Cedula.</p>
           </div>
+          <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
+            <p className="text-xs text-emerald-600 uppercase tracking-wider">Clinic Consultations</p>
+            <p className="text-2xl text-[#1B263B] mt-1" style={{ fontFamily: "Montserrat" }}>{landingConfig.clinic_consultation_types.length}</p>
+            <p className="text-xs text-gray-500 mt-1">Shown in Clinic Booking.</p>
+          </div>
         </div>
 
         <div className="space-y-4 pt-2">
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid lg:grid-cols-3 gap-3">
             <button
               type="button"
               onClick={() => setLandingServiceEditor("report")}
@@ -918,6 +927,22 @@ export default function SuperAdmin() {
               </span>
               <span className="block text-xs text-gray-500 mt-1">
                 Edit document types, fees, and requirement groups.
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLandingServiceEditor("clinic")}
+              className={`text-left rounded-2xl border p-4 transition ${
+                landingServiceEditor === "clinic"
+                  ? "border-emerald-200 bg-emerald-50 shadow-sm"
+                  : "border-gray-100 bg-white hover:border-emerald-100 hover:bg-emerald-50/40"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm text-[#1B263B]" style={{ fontWeight: 600 }}>
+                <Stethoscope className="w-4 h-4 text-emerald-600" /> Clinic Booking
+              </span>
+              <span className="block text-xs text-gray-500 mt-1">
+                Edit consultation types offered on the clinic form.
               </span>
             </button>
           </div>
@@ -975,6 +1000,38 @@ export default function SuperAdmin() {
                 </div>
               ))}
             </div>
+          </div>
+          )}
+
+          {landingServiceEditor === "clinic" && (
+          <div className="rounded-2xl border border-gray-100 bg-[#FAFBFC] p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h4 className="text-[#1B263B] flex items-center gap-2"><Stethoscope className="w-4 h-4 text-emerald-600" /> Clinic Booking</h4>
+                <p className="text-xs text-gray-500 mt-1 max-w-xl">These choices appear in the public Clinic Booking consultation type dropdown. Put one consultation type per line.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLandingConfig(prev => ({
+                  ...prev,
+                  clinic_consultation_types: [...prev.clinic_consultation_types, "New Consultation"],
+                }))}
+                className="text-xs px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-600"
+              >
+                + Add Consultation
+              </button>
+            </div>
+            <textarea
+              rows={12}
+              className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none resize-y"
+              value={landingConfig.clinic_consultation_types.join("\n")}
+              onChange={(event) => setLandingConfig(prev => ({
+                ...prev,
+                clinic_consultation_types: event.target.value.split("\n").map(item => item.trim()).filter(Boolean),
+              }))}
+              placeholder="One consultation type per line"
+            />
+            <p className="text-xs text-gray-400">The public form no longer includes an Other option, so keep this list complete.</p>
           </div>
           )}
 

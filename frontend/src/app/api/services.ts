@@ -286,6 +286,7 @@ export interface DocumentTypeConfig {
 export interface LandingPageConfig {
   report_categories: ReportCategoryConfig[];
   document_types: DocumentTypeConfig[];
+  clinic_consultation_types: string[];
 }
 
 export interface LandingPageConfigResponse {
@@ -329,6 +330,18 @@ export const DEFAULT_LANDING_PAGE_CONFIG: LandingPageConfig = {
     { name: "Certificate of Late Registration", price: 100, info: "Requires supporting documents for the late registration. Must coordinate with the local civil registrar.", requirements: [] },
     { name: "Barangay Protection Order", price: 0, info: "Filed by a victim of domestic violence or abuse. Free of charge. Must provide a sworn statement of facts.", requirements: [] },
   ],
+  clinic_consultation_types: [
+    "General Checkup",
+    "Prenatal Checkup",
+    "Vaccination",
+    "Blood Pressure Monitoring",
+    "Dental Checkup",
+    "Flu / Fever Consultation",
+    "Child Immunization",
+    "Family Planning",
+    "TB-DOTS Follow-up",
+    "Wound Dressing / Minor Surgery",
+  ],
 };
 
 function normalizeLandingPageConfig(payload?: Partial<LandingPageConfig> | null): LandingPageConfig {
@@ -339,6 +352,9 @@ function normalizeLandingPageConfig(payload?: Partial<LandingPageConfig> | null)
   const documentTypes = Array.isArray(config.document_types) && config.document_types.length
     ? config.document_types
     : DEFAULT_LANDING_PAGE_CONFIG.document_types;
+  const clinicConsultationTypes = Array.isArray(config.clinic_consultation_types) && config.clinic_consultation_types.length
+    ? config.clinic_consultation_types
+    : DEFAULT_LANDING_PAGE_CONFIG.clinic_consultation_types;
 
   const normalizedDocuments = documentTypes.map((item) => {
     const fallback = DEFAULT_LANDING_PAGE_CONFIG.document_types.find((doc) => doc.name === item?.name);
@@ -377,6 +393,7 @@ function normalizeLandingPageConfig(payload?: Partial<LandingPageConfig> | null)
         : [],
     })).filter((item) => item.name),
     document_types: normalizedDocuments,
+    clinic_consultation_types: clinicConsultationTypes.map((item) => String(item || "").trim()).filter(Boolean),
   };
 }
 
