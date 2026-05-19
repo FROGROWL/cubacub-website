@@ -5,6 +5,8 @@ $backendDir = Join-Path $root "backend"
 $frontendDir = Join-Path $root "frontend"
 $pythonExe = Join-Path $root "venv\Scripts\python.exe"
 $frontendModules = Join-Path $frontendDir "node_modules"
+$pnpmCommand = Get-Command pnpm -ErrorAction SilentlyContinue
+$corepackCommand = Get-Command corepack -ErrorAction SilentlyContinue
 
 if (-not (Test-Path -LiteralPath $pythonExe)) {
     Write-Host "Backend virtual environment was not found at: $pythonExe" -ForegroundColor Red
@@ -28,6 +30,18 @@ if (-not (Test-Path -LiteralPath $frontendModules)) {
     exit 1
 }
 
+if (-not $pnpmCommand -and -not $corepackCommand) {
+    Write-Host "Neither pnpm nor corepack is available in this shell." -ForegroundColor Red
+    Write-Host "Install pnpm globally or enable corepack, then run this script again." -ForegroundColor Yellow
+    exit 1
+}
+
+$frontendStartCommand = if ($pnpmCommand) {
+    "cd `"$frontendDir`"; & `"$($pnpmCommand.Source)`" run dev"
+} else {
+    "cd `"$frontendDir`"; & `"$($corepackCommand.Source)`" pnpm run dev"
+}
+
 Write-Host "Starting Django backend on http://localhost:8000" -ForegroundColor Cyan
 Start-Process powershell -ArgumentList @(
     "-NoExit",
@@ -39,7 +53,7 @@ Write-Host "Starting Vite frontend on http://localhost:5173" -ForegroundColor Cy
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "cd `"$frontendDir`"; pnpm run dev"
+    $frontendStartCommand
 )
 
 Write-Host ""

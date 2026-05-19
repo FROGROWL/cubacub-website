@@ -1821,7 +1821,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                         reporter_id: lostFoundDraftId,
                         is_anonymous: anon,
                         item_name: form.itemName,
-                        item_description: (form as any).itemDescription || "",
+                        item_description: (form as any).itemDescription || form.suspectDescription || "",
                         description: form.details,
                         category: resolvedSubcategory || undefined,
                         location: form.location,
