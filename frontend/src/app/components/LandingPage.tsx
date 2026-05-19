@@ -2121,8 +2121,8 @@ function LostFoundSection() {
   };
 
   const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
-    pending: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400" },
-    post: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
+    pending: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
+    post: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400" },
     resolved: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
     solved: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
     canceled: { bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-400" },
@@ -2295,53 +2295,73 @@ function LostFoundSection() {
                   <button onClick={() => setViewItem(null)} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-                <div className="rounded-2xl p-4 space-y-4 text-sm bg-white">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Reporter</p>
-                      {[["Name", viewItem.is_anonymous ? "Anonymous" : viewItem.reporter_name || "—"], ["Phone", viewItem.is_anonymous ? "Hidden" : viewItem.reporter_phone || "—"], ["Relation", viewItem.reporter_relation || "—"]].map(([label, value]) => (
-                        <div key={label} className="flex justify-between text-xs"><span className="text-gray-400">{label}</span><span className="text-[#1B263B]">{value}</span></div>
-                      ))}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Item</p>
-                      <div className="text-[#1B263B] text-sm">{viewItem.item_name || "—"}</div>
-                      <div className="text-[#1B263B] text-sm capitalize">{viewItem.item_type}</div>
-                      <div className="text-xs text-gray-400 mt-1">{viewItem.category || "—"}</div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-3">
-                    <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Item / Incident</p>
-                    {[ ["Item Name", viewItem.item_name || "—"], ["Type", viewItem.item_type === "lost" ? "Lost Item" : "Found Item"], ["Location", viewItem.location || "—"], ["Landmark", viewItem.landmark || "—"], ["Person Involved", viewItem.person_involved || "—"], ["Victims", viewItem.victims_involved || "—"] ].map(([label, value]) => (
-                      <div key={label} className="flex justify-between text-xs"><span className="text-gray-400">{label}</span><span className="text-[#1B263B] max-w-[55%] text-right">{value}</span></div>
-                    ))}
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-3">
-                    <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Narrative</p>
-                    <div className="text-sm text-[#1B263B] whitespace-pre-wrap">{viewItem.description || "—"}</div>
-                  </div>
-
-                  {((viewItem.image_urls && viewItem.image_urls.length > 0) || viewItem.image_url) && (
-                    <div className="border-t border-gray-100 pt-3">
-                      <p className="text-xs text-[#008080] uppercase tracking-wider mb-2">Evidence ({viewItem.image_urls?.length || 1})</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(viewItem.image_urls?.length ? viewItem.image_urls : [viewItem.image_url]).filter(Boolean).map((photo, i) => (
-                          <button key={i} onClick={() => setViewPhoto(photo || null)} className="w-full rounded-xl overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity">
-                            <img src={photo || ""} alt={`${viewItem.item_name} ${i + 1}`} className="w-full h-32 object-cover" />
-                          </button>
-                        ))}
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+                {(() => {
+                  const itemStatus = viewItem.status === "solved" ? "resolved" : viewItem.status;
+                  const sc = statusConfig[itemStatus] || statusConfig.pending;
+                  const itemCategory = `${viewItem.item_type === "lost" ? "Lost Item" : "Found Item"}${viewItem.category ? ` - ${viewItem.category}` : ""}`;
+                  const reportedAt = viewItem.created_at || viewItem.date_reported;
+                  const photos = (viewItem.image_urls?.length ? viewItem.image_urls : [viewItem.image_url]).filter(Boolean);
+                  return (
+                    <>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-xs px-2.5 py-1 rounded-full ${sc.bg} ${sc.text}`}>{itemStatus}</span>
+                        {viewItem.category && (
+                          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{itemCategory}</span>
+                        )}
                       </div>
-                    </div>
-                  )}
-                </div>
 
-                <div className="bg-[#FFF8E7] border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
-                  <span>ℹ️</span>
-                  <span>This item is currently <strong>{viewItem.status === "solved" ? "resolved" : viewItem.status}</strong>.</span>
-                </div>
+                      <div className="space-y-2.5 text-sm">
+                        <p className="text-xs text-rose-500 uppercase tracking-wider">Reporter</p>
+                        {[
+                          ["Name", viewItem.is_anonymous ? "Anonymous" : viewItem.reporter_name || "-"],
+                          ["Phone", viewItem.is_anonymous ? "-" : viewItem.reporter_phone || "-"],
+                          ["Address", viewItem.is_anonymous ? "-" : viewItem.reporter_address || "-"],
+                          ["Relation", viewItem.reporter_relation || "-"],
+                        ].map(([label, value]) => (
+                          <div key={label} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{label}</span><span className="text-[#1B263B] text-right max-w-[55%]">{value}</span></div>
+                        ))}
+
+                        <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Item</p>
+                        {[
+                          ["Item Name", viewItem.item_name || "-"],
+                          ["Category", itemCategory],
+                          ["Date", formatDateOnly(reportedAt)],
+                          ["Time", formatTimeOnly(reportedAt)],
+                          ["Location", viewItem.location || "-"],
+                          ["Landmark", viewItem.landmark || "-"],
+                          ["Person Involved", viewItem.person_involved || "-"],
+                          ["Victims", viewItem.victims_involved || "-"],
+                        ].map(([label, value]) => (
+                          <div key={label} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{label}</span><span className="text-[#1B263B] text-right max-w-[55%]">{value}</span></div>
+                        ))}
+
+                        <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Description</p>
+                        <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{viewItem.item_description || "-"}</p>
+                        <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Narrative</p>
+                        <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{viewItem.description || "-"}</p>
+                      </div>
+
+                      {photos.length > 0 && (
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Evidence Photos ({photos.length})</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {photos.map((photo, i) => (
+                              <button key={i} onClick={() => setViewPhoto(photo || null)} className="w-full h-32 rounded-xl border border-gray-200 overflow-hidden hover:opacity-80 transition-opacity">
+                                <img src={photo || ""} alt={`${viewItem.item_name} ${i + 1}`} className="w-full h-full object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="bg-[#FFF8E7] border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
+                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>This item is currently <strong>{itemStatus}</strong>.</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </motion.div>
           </div>
