@@ -1913,6 +1913,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                     if (!isRefund && isLostFoundCategory) {
                       const lostFoundDraftId = reportDraftId.startsWith("LF-") ? reportDraftId : `LF-${Math.floor(100000 + Math.random() * 900000)}`;
                       createLostFoundItem({
+                        id: lostFoundDraftId,
                         item_type: form.category === "Lost Item" ? "lost" : "found",
                         reporter_name: form.reporterName,
                         reporter_phone: form.reporterPhone,

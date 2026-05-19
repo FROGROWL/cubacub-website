@@ -938,7 +938,7 @@ export default function ReportHandler() {
                       <p className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-2">{item.description || "No description provided."}</p>
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div className="flex items-center gap-4 text-xs text-gray-400">
-                          <span className="flex items-center gap-1.5">{item.is_anonymous ? <Shield className="w-3.5 h-3.5 text-[#008080]" /> : <User className="w-3.5 h-3.5" />}{item.is_anonymous ? "Anonymous" : item.reporter_name || "—"}</span>
+                          <span className="flex items-center gap-1.5">{item.is_anonymous ? <Shield className="w-3.5 h-3.5 text-[#008080]" /> : <User className="w-3.5 h-3.5" />}{item.reporter_name || "—"}{item.is_anonymous && <span className="text-[10px] uppercase tracking-wider text-[#008080]">Anonymous</span>}</span>
                           <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{item.location || "—"}</span>
                         </div>
                         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
@@ -966,7 +966,7 @@ export default function ReportHandler() {
       {/* Review Report Modal */}
       <AnimatePresence>
         {reviewReport && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setReviewReport(null)}>
+                  {[ ["Name", reviewReport.reporter_name], ["Phone", reviewReport.reporter_phone || "—"], ["Relation", reviewReport.reporter_relation || "—"], ["Urgency", reviewReport.urgency || reviewReport.priority || "—"], ["Filed On", formatExactTimestamp(reviewReport.created_at)] ].map(([l, v]) => (
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
               <div className="bg-gradient-to-r from-rose-600 to-orange-500 px-6 py-5 shrink-0">
@@ -1086,7 +1086,7 @@ export default function ReportHandler() {
               <div className="p-6 overflow-y-auto flex-1 space-y-4">
                 <div className="space-y-2.5 text-sm">
                   <p className="text-xs text-blue-500 uppercase tracking-wider">Reporter</p>
-                  {[ ["Name", reviewLF.is_anonymous ? "Anonymous" : reviewLF.reporter_name || "—"], ["Phone", reviewLF.is_anonymous ? "Hidden" : reviewLF.reporter_phone || "—"], ["Relation", reviewLF.reporter_relation || "—"] ].map(([l, v]) => (
+                  {[ ["Name", reviewLF.reporter_name || "—"], ["Phone", reviewLF.reporter_phone || "—"], ["Relation", reviewLF.reporter_relation || "—"], ["Filed On", formatExactTimestamp(reviewLF.created_at)] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
                   <p className="text-xs text-blue-500 uppercase tracking-wider mt-3">Item</p>
