@@ -93,6 +93,28 @@ export default function ReportHandler() {
     });
   };
 
+  const formatDateOnly = (timestamp?: string | null) => {
+    if (!timestamp) return "—";
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return timestamp;
+    return date.toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
+  };
+
+  const formatTimeOnly = (timestamp?: string | null) => {
+    if (!timestamp) return "—";
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return timestamp;
+    return date.toLocaleTimeString("en-PH", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
   const formatShortDate = (value?: string | null) => {
     if (!value) return "Pending";
     const date = new Date(value);
@@ -1106,11 +1128,9 @@ export default function ReportHandler() {
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
                   <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Item</p>
-                  {[ ["Item Name", reviewLF.item_name || "—"], ["Type", reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"], ["Category", reviewLF.category || "—"], ["Date", formatExactTimestamp(reviewLF.date_of_incident || reviewLF.date_reported)], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
+                  {[ ["Item Name", reviewLF.item_name || "—"], ["Category", `${reviewLF.item_type === "lost" ? "Lost Item" : "Found Item"}${reviewLF.category ? ` - ${reviewLF.category}` : ""}`], ["Description", reviewLF.description || "—"], ["Date", formatDateOnly(reviewLF.created_at || reviewLF.date_reported)], ["Time", formatTimeOnly(reviewLF.created_at || reviewLF.date_reported)], ["Location", reviewLF.location || "—"], ["Landmark", reviewLF.landmark || "—"], ["Person Involved", reviewLF.person_involved || "—"], ["Victims", reviewLF.victims_involved || "—"] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B] text-right max-w-[55%]">{v}</span></div>
                   ))}
-                  <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Narrative</p>
-                  <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{reviewLF.description || "—"}</p>
                 </div>
 
                 {((reviewLF.image_urls && reviewLF.image_urls.length > 0) || reviewLF.image_url) && (
