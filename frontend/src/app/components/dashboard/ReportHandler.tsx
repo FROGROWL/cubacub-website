@@ -46,18 +46,14 @@ export default function ReportHandler() {
   const [lfAnonymousOnly, setLfAnonymousOnly] = useState(false);
   const [nonAnonymousOnlyLF, setNonAnonymousOnlyLF] = useState(false);
   const [reviewLF, setReviewLF] = useState<LostFoundItem | null>(null);
-  const oneDayMs = 24 * 60 * 60 * 1000;
-  const isOlderThanOneDay = (timestamp?: string | null) => {
-    if (!timestamp) return false;
-    const time = new Date(timestamp).getTime();
-    if (Number.isNaN(time)) return false;
-    return Date.now() - time >= oneDayMs;
-  };
+  // No automatic promotion from new -> investigating. Keep backend status values,
+  // but display 'pending' instead of 'new' in the UI.
   const getEffectiveIncidentStatus = (incident: Incident) => {
-    if (incident.status === "new" && isOlderThanOneDay(incident.created_at)) {
-      return "investigating";
-    }
     return incident.status;
+  };
+
+  const displayStatusKey = (status: Incident["status"]) => {
+    return status === "new" ? "pending" : status;
   };
 
   /* Load data from services.ts on mount */
@@ -188,13 +184,13 @@ export default function ReportHandler() {
 
   const updateStatus = (id: string, status: "new" | "investigating" | "resolved" | "rejected", rejectionReason?: string) => {
     const target = incidents.find(r => r.id === id);
-    updateIncidentStatus(id, status, rejectionReason).then(() => {
+      updateIncidentStatus(id, status, rejectionReason).then(() => {
       setIncidents(prev => prev.map(r => r.id === id ? { ...r, status, rejectionReason: status === "rejected" ? rejectionReason : null } : r));
       logAudit(
         `Updated report ${id}${target ? ` (${target.category}${target.subcategory ? ` - ${target.subcategory}` : ""}) from ${target.reporter_name || "Unknown reporter"}` : ""} from ${target ? getEffectiveIncidentStatus(target) : "unknown"} to ${status}`,
         status === "resolved" ? "success" : status === "rejected" ? "error" : status === "investigating" ? "warning" : "info",
       );
-      showToast(`Case ${id} marked as ${status}!`);
+      showToast(`Case ${id} marked as ${displayStatusKey(status as Incident["status"]) }!`);
       window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
     });
   };
@@ -457,7 +453,7 @@ export default function ReportHandler() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm text-[#008080]">{r.id}</span>
                             <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${sc.bg} ${sc.text}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} /> {r.status}
+                              <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} /> {displayStatusKey(reportStatus)}
                             </span>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${priorityConfig[priorityKey] || priorityConfig.medium}`}>{priorityLabel}</span>
                             <span className="text-xs bg-gray-50 text-gray-500 px-2.5 py-1 rounded-full">{r.category}{r.subcategory ? ` — ${r.subcategory}` : ""}</span>
@@ -502,7 +498,7 @@ export default function ReportHandler() {
                               try {
                                 await deleteIncident(r.id);
                                 setIncidents(prev => prev.filter(x => x.id !== r.id));
-                                logAudit(`Deleted report ${r.id} (${r.category}${r.subcategory ? ` - ${r.subcategory}` : ""}) from ${r.reporter_name || "Unknown reporter"}; last status: ${reportStatus}`, "error");
+                                logAudit(`Deleted report ${r.id} (${r.category}${r.subcategory ? ` - ${r.subcategory}` : ""}) from ${r.reporter_name || "Unknown reporter"}; last status: ${displayStatusKey(reportStatus as Incident["status"])}`, "error");
                                 showToast(`Report ${r.id} deleted.`);
                                 window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
                               } catch (err) {
@@ -814,7 +810,7 @@ export default function ReportHandler() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm text-[#008080]">{r.id}</span>
                           <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${sc.bg} ${sc.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} /> {reportStatus}
+                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} /> {displayStatusKey(reportStatus)}
                           </span>
                           <span className="text-xs bg-gray-50 text-gray-500 px-2.5 py-1 rounded-full">{r.category}</span>
                         </div>
@@ -857,7 +853,7 @@ export default function ReportHandler() {
                             try {
                               await deleteIncident(r.id);
                               setIncidents(prev => prev.filter(x => x.id !== r.id));
-                              logAudit(`Deleted refund report ${r.id} (${r.category}${r.subcategory ? ` - ${r.subcategory}` : ""}) from ${r.reporter_name || "Unknown reporter"}; last status: ${reportStatus}`, "error");
+                              logAudit(`Deleted refund report ${r.id} (${r.category}${r.subcategory ? ` - ${r.subcategory}` : ""}) from ${r.reporter_name || "Unknown reporter"}; last status: ${displayStatusKey(reportStatus as Incident["status"])}`, "error");
                               showToast(`Report ${r.id} deleted.`);
                               window.dispatchEvent(new CustomEvent("reportHandlerUpdate"));
                             } catch (err) {
@@ -990,7 +986,7 @@ export default function ReportHandler() {
                   const reviewStatus = getEffectiveIncidentStatus(reviewReport);
                   return (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-xs px-2.5 py-1 rounded-full ${statusConfig[reviewStatus]?.bg} ${statusConfig[reviewStatus]?.text}`}>{reviewStatus}</span>
+                  <span className={`text-xs px-2.5 py-1 rounded-full ${statusConfig[reviewStatus]?.bg} ${statusConfig[reviewStatus]?.text}`}>{displayStatusKey(reviewStatus)}</span>
                   {!isRefundReport && <span className={`text-xs px-2 py-0.5 rounded-full ${priorityConfig[priorityKey] || priorityConfig.medium}`}>{priorityLabel} priority</span>}
                   {!isRefundReport && reviewReport.urgency && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Urgency: {reviewReport.urgency}</span>}
                 </div>
