@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   LogOut, FileText, AlertCircle, Heart, Shield, Menu, X, Home,
-  ChevronDown, Search, Sparkles, TrendingUp, Users, Clock,
+  ChevronDown, Sparkles, TrendingUp, Users, Clock,
   PanelLeftClose, PanelLeftOpen, DollarSign
 } from "lucide-react";
 import DocumentHandler from "./dashboard/DocumentHandler";
@@ -262,12 +262,6 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Search */}
-            <div className="hidden sm:flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 w-52">
-              <Search className="w-4 h-4 text-gray-300" />
-              <input placeholder="Search..." className="bg-transparent border-0 outline-none text-sm w-full text-gray-600 placeholder-gray-300" />
-            </div>
-
             {/* Profile */}
             <div className="relative">
               <button onClick={() => { setShowProfile(!showProfile); }} className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-gray-50 transition-colors">
