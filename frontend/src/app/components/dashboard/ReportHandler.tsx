@@ -263,6 +263,8 @@ export default function ReportHandler() {
     resolved: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
     rejected: { bg: "bg-rose-50", text: "text-rose-600", dot: "bg-rose-400" },
   };
+  const incidentStatusOptions: Array<Incident["status"]> = ["new", "investigating", "resolved", "rejected"];
+  const incidentStatusLabel = (status: Incident["status"]) => status === "new" ? "pending" : status;
   const statusFilterOptions = [
     { key: "all", label: "All", count: incidents.length },
     { key: "pending", label: "Pending", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "new").length },
@@ -473,17 +475,28 @@ export default function ReportHandler() {
                           </div>
                           <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setReviewReport(r)} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Review</button>
-                            {reportStatus === "new" && (
-                              <button onClick={() => updateStatus(r.id, "investigating")} className="text-xs bg-amber-50 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors">Investigate</button>
-                            )}
-                            {reportStatus === "new" && (
-                              <button onClick={() => openRejectReport(r)} className="text-xs bg-rose-50 text-rose-600 px-4 py-2 rounded-xl hover:bg-rose-100 transition-colors">Reject</button>
-                            )}
-                            {reportStatus !== "resolved" && reportStatus !== "rejected" && (
-                              <button onClick={() => updateStatus(r.id, "resolved")} className="text-xs bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5">
-                                Resolve <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                            {incidentStatusOptions
+                              .filter(status => status !== r.status)
+                              .map(status => {
+                                const cfg = statusConfig[status] || statusConfig.new;
+                                const actionLabel = status === "new"
+                                  ? "Set Pending"
+                                  : status === "investigating"
+                                    ? "Investigate"
+                                    : status === "resolved"
+                                      ? "Resolve"
+                                      : "Reject";
+                                return (
+                                  <button
+                                    key={`${r.id}-${status}`}
+                                    onClick={() => status === "rejected" ? openRejectReport(r) : updateStatus(r.id, status)}
+                                    className={`text-xs px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 ${cfg.bg} ${cfg.text} hover:opacity-90`}
+                                  >
+                                    {actionLabel}
+                                    {(status === "resolved" || status === "investigating") && <ArrowRight className="w-3.5 h-3.5" />}
+                                  </button>
+                                );
+                              })}
                             <button onClick={async () => {
                               if (!confirm(`Delete report ${r.id}? This action cannot be undone.`)) return;
                               try {
@@ -817,17 +830,28 @@ export default function ReportHandler() {
                         </div>
                         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setReviewReport(r)} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Review</button>
-                          {reportStatus === "new" && (
-                            <button onClick={() => updateStatus(r.id, "investigating")} className="text-xs bg-amber-50 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors">Investigate</button>
-                          )}
-                          {reportStatus === "new" && (
-                            <button onClick={() => openRejectReport(r)} className="text-xs bg-rose-50 text-rose-600 px-4 py-2 rounded-xl hover:bg-rose-100 transition-colors">Reject</button>
-                          )}
-                          {reportStatus !== "resolved" && reportStatus !== "rejected" && (
-                            <button onClick={() => updateStatus(r.id, "resolved")} className="text-xs bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5">
-                              Resolve <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                          {incidentStatusOptions
+                            .filter(status => status !== r.status)
+                            .map(status => {
+                              const cfg = statusConfig[status] || statusConfig.new;
+                              const actionLabel = status === "new"
+                                ? "Set Pending"
+                                : status === "investigating"
+                                  ? "Investigate"
+                                  : status === "resolved"
+                                    ? "Resolve"
+                                    : "Reject";
+                              return (
+                                <button
+                                  key={`${r.id}-${status}`}
+                                  onClick={() => status === "rejected" ? openRejectReport(r) : updateStatus(r.id, status)}
+                                  className={`text-xs px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 ${cfg.bg} ${cfg.text} hover:opacity-90`}
+                                >
+                                  {actionLabel}
+                                  {(status === "resolved" || status === "investigating") && <ArrowRight className="w-3.5 h-3.5" />}
+                                </button>
+                              );
+                            })}
                           <button onClick={async () => {
                             if (!confirm(`Delete report ${r.id}? This action cannot be undone.`)) return;
                             try {
@@ -1005,17 +1029,39 @@ export default function ReportHandler() {
                   </div>
                 )}
               </div>
-              {getEffectiveIncidentStatus(reviewReport) !== "resolved" && getEffectiveIncidentStatus(reviewReport) !== "rejected" && (
-                <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50" onClick={e => e.stopPropagation()}>
-                  {getEffectiveIncidentStatus(reviewReport) === "new" && (
-                    <>
-                      <button onClick={() => { updateStatus(reviewReport.id, "investigating"); setReviewReport(null); }} className="flex-1 bg-amber-50 text-amber-600 py-3 rounded-xl hover:bg-amber-100 transition-colors text-sm flex items-center justify-center gap-2"><Eye className="w-4 h-4" /> Investigate</button>
-                      <button onClick={() => openRejectReport(reviewReport)} className="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><X className="w-4 h-4" /> Reject</button>
-                    </>
-                  )}
-                  <button onClick={() => { updateStatus(reviewReport.id, "resolved"); setReviewReport(null); }} className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Resolve</button>
-                </div>
-              )}
+              <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50 flex-wrap" onClick={e => e.stopPropagation()}>
+                {incidentStatusOptions
+                  .filter(status => status !== reviewReport.status)
+                  .map(status => {
+                    const cfg = statusConfig[status] || statusConfig.new;
+                    const label = status === "investigating"
+                      ? "Investigate"
+                      : status === "resolved"
+                        ? "Resolve"
+                        : status === "rejected"
+                          ? "Reject"
+                          : "Set Pending";
+                    return (
+                      <button
+                        key={`${reviewReport.id}-${status}`}
+                        onClick={() => {
+                          if (status === "rejected") {
+                            openRejectReport(reviewReport);
+                            return;
+                          }
+                          updateStatus(reviewReport.id, status);
+                          setReviewReport(null);
+                        }}
+                        className={`flex-1 min-w-[10rem] py-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 ${cfg.bg} ${cfg.text} hover:opacity-90`}
+                      >
+                        {status === "investigating" && <Eye className="w-4 h-4" />}
+                        {status === "resolved" && <Check className="w-4 h-4" />}
+                        {status === "rejected" && <X className="w-4 h-4" />}
+                        {label}
+                      </button>
+                    );
+                  })}
+              </div>
             </motion.div>
           </div>
         )}
