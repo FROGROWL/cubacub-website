@@ -511,6 +511,7 @@ export async function getDocCases(): Promise<DocCaseRecord[]> {
 export interface Incident {
   id: string;
   reporter_name: string;
+  reporter_address?: string;
   is_anonymous: boolean;
   category: string;
   subcategory?: string;

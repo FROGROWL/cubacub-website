@@ -46,8 +46,7 @@ export default function ReportHandler() {
   const [lfAnonymousOnly, setLfAnonymousOnly] = useState(false);
   const [nonAnonymousOnlyLF, setNonAnonymousOnlyLF] = useState(false);
   const [reviewLF, setReviewLF] = useState<LostFoundItem | null>(null);
-  // No automatic promotion from new -> investigating. Keep backend status values,
-  // but display 'pending' instead of 'new' in the UI.
+  // Keep backend status values, but display 'pending' instead of 'new' in the UI.
   const getEffectiveIncidentStatus = (incident: Incident) => {
     return incident.status;
   };
@@ -260,7 +259,7 @@ export default function ReportHandler() {
     rejected: { bg: "bg-rose-50", text: "text-rose-600", dot: "bg-rose-400" },
   };
   const incidentStatusOptions: Array<Incident["status"]> = ["new", "investigating", "resolved", "rejected"];
-  const isTerminalIncidentStatus = (status: Incident["status"]) => status === "resolved" || status === "rejected";
+  const isTerminalIncidentStatus = (status: Incident["status"]) => status === "rejected";
   const statusFilterOptions = [
     { key: "all", label: "All", count: incidents.length },
     { key: "pending", label: "Pending", count: incidents.filter(r => getEffectiveIncidentStatus(r) === "new").length },
@@ -281,8 +280,8 @@ export default function ReportHandler() {
     closed: { bg: "bg-gray-100", text: "text-gray-500" },
   };
   const lfStatusConfig: Record<string, { bg: string; text: string; dot: string }> = {
-    pending: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400" },
-    post: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
+    pending: { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400" },
+    post: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400" },
     resolved: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
   };
   const documentStatusConfig: Record<string, { bg: string; text: string; dot: string }> = {
@@ -943,6 +942,9 @@ export default function ReportHandler() {
                         </div>
                         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setReviewLF(item)} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Review</button>
+                          {itemStatus !== "pending" && (
+                            <button onClick={() => updateLostFound(item.id, "pending")} className="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5">Set Pending</button>
+                          )}
                           {itemStatus !== "resolved" && (
                             <button onClick={() => updateLostFound(item.id, "resolved")} className="text-xs bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5">Resolve <ArrowRight className="w-3.5 h-3.5" /></button>
                           )}
@@ -994,7 +996,7 @@ export default function ReportHandler() {
 
                 <div className="space-y-2.5 text-sm">
                   <p className="text-xs text-rose-500 uppercase tracking-wider">Reporter</p>
-                  {[["Name", reviewReport.reporter_name], ["Phone", reviewReport.reporter_phone || (reviewReport.reporter_name === "Anonymous" ? "Hidden" : "—")], ["Relation", reviewReport.reporter_relation || "—"]].map(([l, v]) => (
+                  {[ ["Name", reviewReport.reporter_name], ["Phone", reviewReport.reporter_phone || (reviewReport.reporter_name === "Anonymous" ? "Hidden" : "—")], ["Address", reviewReport.reporter_address || "—"], ["Relation", reviewReport.reporter_relation || "—"]].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
                   <p className="text-xs text-rose-500 uppercase tracking-wider mt-3">Incident</p>
@@ -1085,7 +1087,7 @@ export default function ReportHandler() {
               <div className="p-6 overflow-y-auto flex-1 space-y-4">
                 <div className="space-y-2.5 text-sm">
                   <p className="text-xs text-blue-500 uppercase tracking-wider">Reporter</p>
-                  {[ ["Name", reviewLF.reporter_name || "—"], ["Phone", reviewLF.reporter_phone || "—"], ["Relation", reviewLF.reporter_relation || "—"], ["Filed On", formatExactTimestamp(reviewLF.created_at)] ].map(([l, v]) => (
+                  {[ ["Name", reviewLF.reporter_name || "—"], ["Phone", reviewLF.reporter_phone || "—"], ["Address", reviewLF.reporter_address || "—"], ["Relation", reviewLF.reporter_relation || "—"], ["Filed On", formatExactTimestamp(reviewLF.created_at)] ].map(([l, v]) => (
                     <div key={l} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                   ))}
                   <p className="text-xs text-blue-500 uppercase tracking-wider mt-3">Item</p>
@@ -1121,6 +1123,9 @@ export default function ReportHandler() {
                 )}
                 {reviewLF.status !== "post" && (
                   <button onClick={() => { updateLostFound(reviewLF.id, "post"); setReviewLF(null); }} className="flex-1 bg-amber-50 text-amber-600 py-3 rounded-xl hover:bg-amber-100 transition-colors text-sm flex items-center justify-center gap-2">Post</button>
+                )}
+                {reviewLF.status !== "pending" && (
+                  <button onClick={() => { updateLostFound(reviewLF.id, "pending"); setReviewLF(null); }} className="flex-1 bg-blue-50 text-blue-600 py-3 rounded-xl hover:bg-blue-100 transition-colors text-sm flex items-center justify-center gap-2">Set Pending</button>
                 )}
               </div>
             </motion.div>
