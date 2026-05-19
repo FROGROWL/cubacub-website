@@ -32,6 +32,7 @@ def public_report_view(request):
     key_map = {
         'reporter': 'reporter_name',
         'reporterPhone': 'reporter_phone',
+        'reporterAddress': 'reporter_address',
         'reporterRelation': 'reporter_relation',
         'incidentTime': 'incident_time',
         'suspectName': 'suspect_name',

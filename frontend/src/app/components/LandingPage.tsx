@@ -1465,9 +1465,10 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
   const incidentDateIsFuture = Boolean(form.incidentDate && form.incidentDate > reportToday);
   const refundPhoneValid = isValidPhilippineMobile(refundForm.gcashNumber);
   const reporterPhoneValid = isValidPhilippineMobile(form.reporterPhone);
+  const reporterAddressValid = form.reporterAddress.trim().length > 0;
   const canR1 = isRefund
     ? (refundPhoneValid && refundForm.gcashName && refundForm.trackingId)
-    : (form.reporterName && reporterPhoneValid);
+    : (form.reporterName && reporterPhoneValid && reporterAddressValid);
   const canR2 = isRefund
     ? (form.subcategory && form.subcategory !== "" && (form.subcategory !== "Other" || form.otherSubcategory.trim().length > 0))
     : (form.category && form.incidentDate && !incidentDateIsFuture && form.location && (!isLostFoundCategory || form.itemName.trim().length > 0) && (!needsOtherSpecification || form.otherSubcategory.trim().length > 0));
@@ -1542,7 +1543,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                             {form.reporterPhone && !reporterPhoneValid && <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>}
                           </div>
                         </div>
-                        <Input label="Address (optional)" placeholder="Your address in Cubacub" value={form.reporterAddress} onChange={e => ru("reporterAddress", e.target.value)} />
+                        <Input label="Address" required placeholder="Your address in Cubacub" value={form.reporterAddress} onChange={e => ru("reporterAddress", e.target.value)} />
                         <Select label="Your Relation to the Incident" value={form.reporterRelation} onChange={e => ru("reporterRelation", e.target.value)}>
                           {["Witness", "Victim", "Concerned Neighbor", "Barangay Official"].map(r => <option key={r}>{r}</option>)}
                         </Select>
@@ -1742,7 +1743,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                   ) : (
                     <>
                       <p className="text-xs text-rose-500 uppercase tracking-wider mb-1">Reporter</p>
-                      {[ ["Name", form.reporterName],["Phone", form.reporterPhone],["Relation", form.reporterRelation]].map(([l, v]) => (
+                      {[ ["Name", form.reporterName],["Phone", form.reporterPhone],["Address", form.reporterAddress],["Relation", form.reporterRelation]].map(([l, v]) => (
                         <div key={l} className="flex justify-between"><span className="text-gray-400">{l}</span><span className="text-[#1B263B]">{v}</span></div>
                       ))}
                       {anon && <p className="text-xs text-[#0F6D6D] uppercase tracking-wider mt-2">Anonymous to the public, credentials retained for barangay processing</p>}
@@ -1805,6 +1806,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                         item_type: form.category === "Lost Item" ? "lost" : "found",
                         reporter_name: form.reporterName,
                         reporter_phone: form.reporterPhone,
+                        reporter_address: form.reporterAddress,
                         reporter_id: lostFoundDraftId,
                         is_anonymous: anon,
                         item_name: form.itemName,
@@ -1844,7 +1846,8 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                         incidentTime: form.incidentTime,
                         urgency: form.urgency,
                         reporter: isRefund ? refundForm.gcashName || "Anonymous" : form.reporterName,
-                      reporterPhone: isRefund ? refundForm.gcashNumber : form.reporterPhone,
+                        reporterPhone: isRefund ? refundForm.gcashNumber : form.reporterPhone,
+                        reporterAddress: isRefund ? "" : form.reporterAddress,
                         reporterRelation: isRefund ? "" : form.reporterRelation,
                         isAnonymous: isRefund ? false : anon,
                         landmark: form.landmark,
@@ -1870,6 +1873,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                           ["Report Type", reportType],
                           ["Reporter", anon ? "Anonymous" : form.reporterName],
                           ["Phone", anon ? "Hidden" : form.reporterPhone],
+                          ["Address", form.reporterAddress],
                           ["Relation", anon ? "Hidden" : form.reporterRelation],
                           ["Category", `${form.category}${resolvedSubcategory ? " - " + resolvedSubcategory : ""}`],
                           ["Urgency", form.urgency],

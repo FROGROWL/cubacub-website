@@ -938,6 +938,7 @@ export interface LostFoundItem {
   item_type: "lost" | "found";
   reporter_name?: string;
   reporter_phone?: string;
+  reporter_address?: string;
   reporter_id: string;
   is_anonymous: boolean;
   item_name: string;
@@ -1196,6 +1197,7 @@ export async function submitPublicReport(data: {
   urgency?: string;
   reporter: string;
   reporterPhone?: string;
+  reporterAddress?: string;
   reporterRelation?: string;
   isAnonymous: boolean;
   landmark?: string;

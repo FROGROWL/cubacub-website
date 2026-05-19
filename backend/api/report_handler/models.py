@@ -87,6 +87,7 @@ class Incident(models.Model):
     # Main fields
     id = models.CharField(max_length=20, primary_key=True)  # e.g., 'RPT-001' or 'RDF-001'
     reporter_name = models.CharField(max_length=200)
+    reporter_address = models.CharField(max_length=255, blank=True, null=True)
     is_anonymous = models.BooleanField(default=False)
     
     # Category fields
@@ -258,6 +259,7 @@ class LostFoundItem(models.Model):
     item_type = models.CharField(max_length=10, choices=ITEM_TYPE_CHOICES)
     reporter_name = models.CharField(max_length=200, blank=True, null=True)
     reporter_phone = models.CharField(max_length=20, blank=True, null=True)
+    reporter_address = models.CharField(max_length=255, blank=True, null=True)
     reporter_id = models.CharField(max_length=20)  # 'ANON-XXXX' or 'RPT-XXXX'
     is_anonymous = models.BooleanField(default=False)
     
