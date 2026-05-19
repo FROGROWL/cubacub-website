@@ -1,0 +1,477 @@
+DETAILED RESEARCH PURPOSE OF THE WEBSITE
+Cubacub Portal - Civic Flow Website and Management Portal
+
+
+INTRODUCTION
+
+The Cubacub Portal - Civic Flow Website and Management Portal is designed as a
+digital governance and public service platform for barangay-level operations. It
+serves both residents and authorized barangay staff by providing online access to
+services, public information, report submission, document processing, clinic
+queue support, finance transparency, project monitoring, and administrative
+management.
+
+The research purpose of this website is to study, design, and demonstrate how a
+centralized web-based system can improve barangay service delivery, reduce manual
+processing, organize public records, increase transparency, and make government
+services more accessible to residents.
+
+
+WHY THIS WEBSITE IS NEEDED
+
+Barangays are the closest government unit to the public. Residents often go to
+the barangay for document requests, reports, complaints, health-related concerns,
+lost-and-found assistance, announcements, and information about local projects.
+In many communities, these processes are still handled through manual forms,
+paper records, face-to-face follow-ups, and separate logbooks.
+
+Manual barangay processes can create several problems:
+
+- Residents may need to visit the barangay hall just to ask about requirements,
+  submit requests, or follow up on document status.
+- Staff may spend more time searching through paper records or separate files.
+- Requests, reports, clinic queues, and project records may become scattered
+  across different notebooks, spreadsheets, or offices.
+- Public updates about projects, schedules, closures, or services may not reach
+  residents quickly.
+- Report handling can become difficult when evidence, status updates, and staff
+  assignments are not stored in one place.
+- Financial and project transparency may be limited if information is not easily
+  visible to the public.
+- Administrative supervision becomes harder when there is no centralized view of
+  staff actions, records, and system activity.
+
+This website is needed because it responds to those problems through a structured
+online platform. It allows residents to access selected services without always
+going physically to the barangay hall, while also giving staff a role-based
+system for managing records and operations.
+
+The website supports digital transformation at the barangay level. Instead of
+only relying on manual transactions, the barangay can use a database-driven
+system where information is stored, updated, tracked, and retrieved more
+efficiently.
+
+
+RESEARCH PROBLEM
+
+The general problem addressed by this website is the lack of a centralized,
+accessible, and organized digital platform for barangay public services and
+internal management.
+
+More specifically, the website responds to these research concerns:
+
+1. How can residents submit requests, reports, and service-related information
+   without depending only on face-to-face transactions?
+
+2. How can barangay staff manage document requests, incident reports, case
+   records, clinic queues, projects, and public information in one system?
+
+3. How can the barangay improve transparency by making projects, budgets,
+   announcements, and service information easier to access?
+
+4. How can role-based access help separate responsibilities between super admin,
+   document handler, report handler, clinic handler, and treasurer users?
+
+5. How can a web-based platform reduce delays, improve record organization, and
+   support better monitoring of barangay operations?
+
+
+WHY THE RESEARCH IS IMPORTANT
+
+This research is important because barangay services directly affect residents'
+daily lives. A more organized system can help residents save time, help staff
+work more efficiently, and help administrators monitor services more clearly.
+
+The website has practical importance because it provides:
+
+- Better accessibility for residents who need public information or services.
+- Faster submission of document requests and incident reports.
+- Easier tracking of document request status.
+- A centralized record system for staff.
+- Clear role-based dashboards for different barangay departments.
+- More visible project and finance information for public transparency.
+- Better monitoring of clinic appointments and unavailable clinic slots.
+- Organized lost-and-found posting and handling.
+- Audit logs that support accountability and administrative review.
+
+The research is also important because it demonstrates how a local government
+unit can adopt modern web technologies without needing a very complex national
+system. A barangay-level platform can be focused, practical, and directly
+connected to local service needs.
+
+
+WHAT THE WEBSITE IS
+
+The website is a full-stack barangay information system. It has a public-facing
+website for residents and a private staff dashboard for authorized barangay
+personnel.
+
+The public side allows residents to:
+
+- View barangay information and public service details.
+- Submit document requests.
+- Track document request status.
+- Submit incident reports and complaints.
+- Submit lost-and-found reports.
+- View posted lost-and-found items.
+- View public project and finance transparency information.
+- View calendar events and closures.
+- Access clinic-related appointment or slot information.
+- View public announcements and other service information.
+
+The staff side allows authorized users to:
+
+- Log in securely.
+- Access a dashboard based on their assigned role.
+- Manage document requests.
+- Review document-related case records.
+- Manage incidents, complaints, formal cases, and lost-and-found reports.
+- Manage clinic patients, queues, appointments, and unavailable slots.
+- Manage barangay projects, budgets, spending, and milestones.
+- Update landing page service settings and public configuration.
+- Monitor system activity through audit logs.
+- Manage staff accounts, depending on permissions.
+
+
+WHAT THE WEBSITE AIMS TO ACHIEVE
+
+The main goal of the website is to provide a centralized digital platform that
+improves barangay service delivery, internal coordination, and public access to
+information.
+
+The specific objectives are:
+
+1. To provide residents with an online channel for public services such as
+   document requests, incident reports, and lost-and-found submissions.
+
+2. To help barangay staff manage records through role-based dashboards.
+
+3. To reduce manual paperwork and scattered recordkeeping.
+
+4. To improve the speed and organization of document request processing.
+
+5. To support report handling by storing complaint details, evidence references,
+   status updates, and handler assignments.
+
+6. To support clinic management through patient records, appointment details,
+   queue status, and unavailable clinic slots.
+
+7. To improve financial transparency by displaying public project data, budgets,
+   spending, progress, contractors, sources, and milestones.
+
+8. To provide administrative oversight through staff accounts, role permissions,
+   audit logs, and configurable landing page content.
+
+9. To make public information easier to access through calendar events, public
+   announcements, service categories, and document requirement details.
+
+10. To demonstrate the feasibility of using React, Django REST Framework, and
+    PostgreSQL for a barangay management system.
+
+
+SCOPE OF THE WEBSITE
+
+The website covers the following functional areas:
+
+1. Public Information
+Provides public-facing content, document requirements, service categories,
+events, closures, announcements, weather-related information, and general
+barangay service access.
+
+2. Document Request Management
+Allows residents to request barangay documents and allows document handlers to
+review, approve, process, reject, mark ready for pickup, or mark documents as
+claimed or unclaimed.
+
+3. Incident and Complaint Reporting
+Allows residents or staff to submit reports and complaints. Report handlers can
+review details, manage statuses, assign handling, reject invalid reports, and
+maintain formal case records.
+
+4. Lost and Found Management
+Allows reporting of lost or found items, including descriptions, locations,
+images, reporter details, and status handling.
+
+5. Clinic Queue and Appointment Support
+Allows clinic handlers to manage patient queue entries, appointment details,
+consultation reasons, unavailable slots, and patient status.
+
+6. Treasurer and Project Transparency
+Allows the treasurer to manage projects, budgets, spending, progress, funding
+sources, contractors, images, and milestones. The public can view transparency
+information.
+
+7. Super Admin and System Management
+Allows administrative users to manage staff-related functions, audit logs, and
+landing page configuration.
+
+
+HOW THE WEBSITE WORKS
+
+The website uses a client-server architecture.
+
+The frontend is built with React and Vite. It is responsible for the user
+interface, public pages, forms, dashboard screens, navigation, and interaction.
+Residents and staff use the frontend through a web browser.
+
+The backend is built with Django and Django REST Framework. It is responsible
+for authentication, authorization, business rules, database operations, API
+responses, and data validation.
+
+The database is PostgreSQL. It stores permanent records such as staff accounts,
+document requests, incidents, case records, lost-and-found items, patients,
+clinic unavailable slots, projects, treasurer settings, calendar events,
+landing page configuration, password reset codes, and audit logs.
+
+The system works through these steps:
+
+1. A resident or staff user opens the website in a browser.
+
+2. Public users can access public services without logging in.
+
+3. When a public user submits a form, the frontend sends the data to the Django
+   API.
+
+4. The backend validates the request and stores the information in PostgreSQL.
+
+5. Staff users log in through the staff login page.
+
+6. After login, the backend provides authentication tokens.
+
+7. The frontend uses those tokens when requesting protected staff data.
+
+8. The backend checks the user's role before allowing dashboard actions.
+
+9. Staff users update records, change statuses, add notes, review submissions,
+   and manage their assigned barangay function.
+
+10. The frontend refreshes public and dashboard data through API calls so users
+    can see updated information.
+
+
+HOW ROLE-BASED ACCESS SUPPORTS THE SYSTEM
+
+The system separates staff responsibilities by role. This is important because
+not every staff member should access or edit every part of the system.
+
+The main roles are:
+
+- Super Admin: Manages high-level administration, staff accounts, audit logs,
+  and website configuration.
+- Document Handler: Manages document requests and document-related case records.
+- Report Handler: Manages incidents, complaints, cases, and lost-and-found
+  reports.
+- Clinic Handler: Manages patients, clinic queues, appointments, and unavailable
+  clinic slots.
+- Treasurer: Manages barangay projects, budgets, spending, milestones, and
+  finance transparency data.
+
+Role-based access improves security, accountability, and workflow organization.
+It helps ensure that users only work with the records related to their assigned
+responsibilities.
+
+
+HOW DATA IS ORGANIZED
+
+The system stores data in structured database tables. Each table represents a
+major part of barangay operations.
+
+Examples:
+
+- StaffAccount stores staff login and role information.
+- DocumentRequest stores resident document requests.
+- DocumentCaseRecord stores verification or case-checking records.
+- Incident stores reports and complaints.
+- CaseRecord stores formal case management records.
+- LostFoundItem stores lost-and-found reports.
+- Patient stores clinic queue and appointment records.
+- ClinicUnavailableSlot stores clinic slots that cannot be booked.
+- Project stores barangay project and finance transparency information.
+- TreasurerSettings stores finance and service-related settings.
+- CalendarEvent stores public events and closures.
+- AuditLog stores system activity records.
+- LandingPageConfig stores editable public website settings.
+
+This organization helps the system retrieve, filter, update, and display records
+more efficiently than manual paper-based tracking.
+
+
+HOW THE WEBSITE HELPS RESIDENTS
+
+The website helps residents by making barangay services easier to access.
+Residents can submit requests and reports online, check information from home,
+and view public service updates without needing to visit the barangay hall for
+every concern.
+
+Resident benefits include:
+
+- Easier access to document request forms.
+- Reduced need for repeated personal follow-ups.
+- Clearer document requirements and service information.
+- More convenient incident and lost-and-found reporting.
+- Access to public project and finance information.
+- Better awareness of events, closures, and clinic availability.
+
+
+HOW THE WEBSITE HELPS BARANGAY STAFF
+
+The website helps barangay staff by giving them organized dashboards and
+centralized records. Instead of searching through separate paper files or
+unconnected spreadsheets, staff can view and manage records in one system.
+
+Staff benefits include:
+
+- Faster record searching and updating.
+- Better status tracking for requests and reports.
+- Clear separation of responsibilities by role.
+- More organized evidence, notes, and uploaded file references.
+- Easier monitoring of queue and appointment status.
+- Better project and financial record organization.
+- More complete administrative oversight through logs and staff accounts.
+
+
+HOW THE WEBSITE SUPPORTS TRANSPARENCY
+
+Transparency is one of the major purposes of the website. The treasurer and
+project sections allow public viewing of project information such as budget,
+amount spent, progress, contractor, funding source, category, location, images,
+and milestones.
+
+This helps residents understand how barangay projects are progressing and how
+funds are being used. Public calendar events and announcements also help keep
+residents informed about schedules, closures, and community activities.
+
+
+HOW THE WEBSITE SUPPORTS ACCOUNTABILITY
+
+The website supports accountability through staff accounts, role-based access,
+record status updates, handler assignments, timestamps, and audit logs.
+
+These features help show:
+
+- Who handled or updated certain records.
+- When records were created or updated.
+- What status a request, report, case, or project currently has.
+- Whether a document request was approved, rejected, processed, claimed, or
+  unclaimed.
+- Whether an incident report is pending, investigating, resolved, or rejected.
+
+This makes barangay operations easier to review and manage.
+
+
+METHODOLOGY OF THE WEBSITE DEVELOPMENT
+
+The website follows a practical system development approach:
+
+1. Identify barangay service problems.
+The development starts by identifying common barangay needs such as document
+requests, public reports, clinic queues, lost-and-found reports, project
+transparency, staff management, and public information access.
+
+2. Define users and roles.
+The system separates users into public residents and authorized staff. Staff
+users are further divided into roles so each dashboard matches actual barangay
+responsibilities.
+
+3. Design the database.
+Database tables are created for the main records needed by the barangay. These
+include staff accounts, requests, reports, patients, projects, settings, calendar
+events, and audit logs.
+
+4. Build the backend API.
+The Django REST Framework backend provides endpoints for public submission,
+staff dashboard actions, authentication, validation, and database operations.
+
+5. Build the frontend interface.
+The React frontend provides the public website, forms, role-based dashboards,
+tables, modals, status controls, and public transparency views.
+
+6. Connect frontend and backend.
+The frontend communicates with the backend through API requests. Public actions
+use public endpoints, while staff actions use authenticated endpoints.
+
+7. Test core workflows.
+Important workflows include staff login, document submission, document status
+updates, incident submission, lost-and-found posting, clinic queue handling,
+project updates, calendar display, and public finance viewing.
+
+8. Deploy the system.
+The frontend can be deployed as a static website, while the Django backend and
+PostgreSQL database are deployed on server/database hosting platforms.
+
+
+EXPECTED OUTPUT OF THE RESEARCH
+
+The expected output is a working web-based barangay portal that demonstrates:
+
+- Online public access to barangay services.
+- Role-based staff dashboards.
+- Centralized database records.
+- Secure staff login.
+- Public document request and tracking features.
+- Incident, case, and lost-and-found management.
+- Clinic queue and appointment support.
+- Treasurer project and finance transparency features.
+- Editable public website configuration.
+- Audit logging and administrative oversight.
+
+
+EXPECTED BENEFITS
+
+For residents:
+- More convenient access to services.
+- Less time spent on basic inquiries and follow-ups.
+- Better access to public records and announcements.
+- Easier reporting of incidents and lost/found items.
+
+For barangay staff:
+- More organized records.
+- Faster processing and updating.
+- Clearer responsibility by role.
+- Reduced dependence on manual recordkeeping.
+- Easier monitoring of pending and completed tasks.
+
+For barangay administrators:
+- Better supervision of staff activity.
+- More transparent project and budget monitoring.
+- Easier review of public service performance.
+- Improved decision-making through centralized records.
+
+
+LIMITATIONS
+
+The website is focused on barangay-level services and may need further
+improvements for larger-scale government integration.
+
+Possible limitations include:
+
+- Internet access is required for residents and staff to use the online system.
+- Staff must be trained to keep records accurate and updated.
+- Uploaded file storage may need a dedicated cloud storage service in production.
+- Real-time updates currently depend on repeated API refreshes rather than
+  WebSockets.
+- Security, backups, and hosting reliability must be maintained after deployment.
+- The system depends on accurate data entry by staff and residents.
+
+
+CONCLUSION
+
+The purpose of the Cubacub Portal - Civic Flow Website and Management Portal is
+to provide a practical digital solution for barangay service delivery and
+management. It addresses the need for a centralized, accessible, transparent, and
+organized system that supports both residents and staff.
+
+The "why" of the website is the need to reduce manual processes, improve public
+access, organize records, and strengthen transparency.
+
+The "what" of the website is a full-stack barangay portal with public services,
+staff dashboards, database records, authentication, reporting, document
+processing, clinic support, and project monitoring.
+
+The "how" of the website is through a React frontend, Django REST Framework
+backend, PostgreSQL database, role-based access, public and protected API
+endpoints, structured records, and deployment-ready web architecture.
+
+Overall, the website demonstrates how technology can help a barangay deliver
+services more efficiently, communicate more clearly with residents, and manage
+operations with better accountability.

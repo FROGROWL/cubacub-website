@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Copyright (c) 2026 Martin James Anog. All Rights Reserved.
- * Project:  Barangay Cubacub Civic-Flow
+ * Project:  Cubacub Portal - Civic Flow
  * Author:   Martin James Anog (@Develofer1)
  * Contact:  martin.anog187@gmail.com
  *
@@ -10,7 +10,7 @@
  * via any medium, is strictly prohibited.
  * See the LICENSE file in the project root for full terms.
  * ============================================================================
- * CIVIC-FLOW API SERVICE LAYER — SINGLE SOURCE OF TRUTH
+ * CUBACUB PORTAL - CIVIC FLOW API SERVICE LAYER — SINGLE SOURCE OF TRUTH
  * ============================================================================
  *
  * PURPOSE:

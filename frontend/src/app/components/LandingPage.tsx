@@ -453,7 +453,7 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
       ["Date Filed", new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })],
     ].filter(([, value]) => value);
     w?.document.write(`<html><head><title>Claim Slip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}</style></head><body>`);
-    w?.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Document Claim Slip</p><span class="badge">CIVIC-FLOW</span></div>`);
+    w?.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Document Claim Slip</p><span class="badge">Cubacub Portal - Civic Flow</span></div>`);
     flds.forEach(([l, v]) => w?.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
     w?.document.write(`<div class="ft">Present this slip when claiming your document. Processing takes 3–5 business days.<br/>For inquiries call (032) 345-6789.<br/><strong>We encourage you to screenshot this claim slip for your records.</strong></div></body></html>`);
     w?.document.close(); w?.print();
@@ -811,7 +811,7 @@ function DocumentRequestForm({ onClose, landingConfig = DEFAULT_LANDING_PAGE_CON
                           <div>
                             <p className="text-sm text-blue-700">Send payment to:</p>
                             <p className="text-lg text-blue-900" style={{ fontFamily: "Montserrat" }}>0962 673 3929</p>
-                            <p className="text-xs text-blue-500">Barangay Cubacub - Civic Flow</p>
+                            <p className="text-xs text-blue-500">Cubacub Portal - Civic Flow</p>
                           </div>
                         </div>
                         {/* Mock QR Code */}
@@ -1239,7 +1239,7 @@ function ClinicBookingModal({ onClose, clinicOpen, landingConfig = DEFAULT_LANDI
       return;
     }
     w?.document.write(`<html><head><title>Appointment Confirmation</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:650px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #008080}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#008080;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:55%}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}.warn{margin-top:16px;background:#FFF3CD;padding:12px;border-radius:8px;font-size:11px;color:#856404;text-align:center}</style></head><body>`);
-    w?.document.write(`<div class="hdr"><h1>CUBACUB HEALTH CENTER</h1><p>Official Appointment Confirmation</p><span class="badge">CIVIC-FLOW</span></div>`);
+    w?.document.write(`<div class="hdr"><h1>CUBACUB HEALTH CENTER</h1><p>Official Appointment Confirmation</p><span class="badge">Cubacub Portal - Civic Flow</span></div>`);
     appointmentFields.forEach(([l, v]) => w?.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
     w?.document.write(`<div class="warn">Please bring this confirmation and a valid ID on your appointment date. Arrive 15 minutes early.</div>`);
     w?.document.write(`<div class="ft">Cubacub Health Center - Mon-Fri 8AM-5PM | (032) 345-6789<br/>This serves as your official proof of appointment.</div></body></html>`);
@@ -2040,7 +2040,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                           ["Date Filed", new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })],
                         ];
                         reportPrintWindow?.document.write(`<html><head><title>Report Summary</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:48px;color:#1B263B;max-width:680px;margin:0 auto}.hdr{text-align:center;padding-bottom:20px;margin-bottom:20px;border-bottom:3px solid #e11d48}.hdr h1{font-size:20px}.hdr p{color:#666;font-size:12px;margin-top:4px}.badge{display:inline-block;background:#e11d48;color:white;padding:3px 14px;border-radius:20px;font-size:11px;margin-top:6px}.fld{display:flex;justify-content:space-between;gap:18px;padding:8px 0;border-bottom:1px dashed #e5e7eb}.fld .l{color:#666;font-size:12px}.fld .v{font-weight:600;font-size:12px;text-align:right;max-width:58%}.block{margin-top:18px}.block h2{font-size:13px;color:#e11d48;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}.block p{font-size:12px;line-height:1.55;white-space:pre-wrap}.ft{margin-top:28px;text-align:center;color:#888;font-size:10px;padding-top:16px;border-top:2px dashed #e5e7eb}</style></head><body>`);
-                        reportPrintWindow?.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Report Summary</p><span class="badge">CIVIC-FLOW</span></div>`);
+                        reportPrintWindow?.document.write(`<div class="hdr"><h1>BARANGAY CUBACUB</h1><p>Official Report Summary</p><span class="badge">Cubacub Portal - Civic Flow</span></div>`);
                         fields.filter(([, value]) => value).forEach(([l, v]) => reportPrintWindow?.document.write(`<div class="fld"><span class="l">${l}</span><span class="v">${v}</span></div>`));
                         reportPrintWindow?.document.write(`<div class="block"><h2>${isRefund ? "Refund Details" : "Narrative"}</h2><p>${isRefund ? `Document refund request for tracking ID ${refundForm.trackingId}. Reason: ${refundReason || "Not specified"}.` : form.details}</p></div>`);
                         if (!isRefund && form.evidenceDesc) {
@@ -2598,7 +2598,7 @@ export default function LandingPage() {
             </motion.div>
             <div>
               <h4 className="text-white leading-none tracking-tight" style={{ fontFamily: "Montserrat" }}>Cubacub</h4>
-              <p className="text-[10px] text-white/40 tracking-widest uppercase">Civic-Flow</p>
+              <p className="text-[10px] text-white/40 tracking-widest uppercase">Portal - Civic Flow</p>
             </div>
           </div>
 
@@ -2883,7 +2883,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-white" style={{ fontFamily: "Montserrat" }}>Barangay Cubacub</h3>
-                  <p className="text-xs text-white/30">Civic-Flow Digital Platform</p>
+                  <p className="text-xs text-white/30">Cubacub Portal - Civic Flow</p>
                 </div>
               </div>
               <p className="text-sm text-white/40 leading-relaxed max-w-sm">
@@ -2913,7 +2913,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-16 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-xs text-white/20">&copy; 2026 Barangay Cubacub Civic-Flow. All rights reserved.</p>
+            <p className="text-xs text-white/20">&copy; 2026 Cubacub Portal - Civic Flow. All rights reserved.</p>
             <div className="flex items-center gap-2 text-xs text-white/20">
               <Sparkles className="w-3 h-3 text-[#008080]" /> Built with love for the community
             </div>

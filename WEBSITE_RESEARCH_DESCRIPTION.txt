@@ -1,7 +1,7 @@
-BARANGAY CUBACUB CIVIC-FLOW WEBSITE RESEARCH DESCRIPTION
+Cubacub Portal - Civic Flow Website Research Description
 =========================================================
 
-Barangay Cubacub Civic-Flow Website and Management Portal is a public-facing and staff-operated web-based information system designed to support barangay service delivery, transparency, reporting, clinic queue management, document processing, project monitoring, and administrative supervision. The system serves two main user groups: residents/public users and authorized barangay staff. Public users can access information, submit requests, track documents, view finance transparency data, report incidents, and interact with public services. Staff users access role-based dashboards for managing barangay operations.
+Cubacub Portal - Civic Flow Website and Management Portal is a public-facing and staff-operated web-based information system designed to support barangay service delivery, transparency, reporting, clinic queue management, document processing, project monitoring, and administrative supervision. The system serves two main user groups: residents/public users and authorized barangay staff. Public users can access information, submit requests, track documents, view finance transparency data, report incidents, and interact with public services. Staff users access role-based dashboards for managing barangay operations.
 
 The website is built as a full-stack system using a React + Vite frontend, a Django REST Framework backend, and a PostgreSQL database. The frontend is deployed as a static web application through Cloudflare Pages, while the backend is deployed as a Django API service on Render. PostgreSQL stores persistent records such as staff accounts, document requests, incidents, cases, clinic patients, calendar events, projects, and audit logs.
 
@@ -147,5 +147,4 @@ DJANGO_SUPERUSER_PASSWORD=your-strong-password
 7. SUMMARY
 ----------
 
-Overall, the Barangay Cubacub Civic-Flow system is a digital governance platform that combines public service access with internal barangay management. Its frontend provides an accessible interface for residents and role-based dashboards for staff. Its backend provides secure REST APIs, authentication, permissions, and business logic. Its PostgreSQL database stores persistent operational records. The system supports transparency, faster request handling, organized reporting, clinic management, project monitoring, and centralized staff administration.
-
+Overall, the Cubacub Portal - Civic Flow system is a digital governance platform that combines public service access with internal barangay management. Its frontend provides an accessible interface for residents and role-based dashboards for staff. Its backend provides secure REST APIs, authentication, permissions, and business logic. Its PostgreSQL database stores persistent operational records. The system supports transparency, faster request handling, organized reporting, clinic management, project monitoring, and centralized staff administration.

@@ -208,7 +208,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm text-white tracking-tight" style={{ fontFamily: "Montserrat" }}>Cubacub</p>
-              <p className="text-[10px] text-white/30 tracking-widest uppercase">Civic-Flow</p>
+              <p className="text-[10px] text-white/30 tracking-widest uppercase">Portal - Civic Flow</p>
             </div>
           </div>
 
