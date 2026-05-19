@@ -253,6 +253,69 @@ function RequirementFileUploader({
   );
 }
 
+function ImageUploader({
+  label, required, value, onChange, hint, acceptPdf = false,
+}: {
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  hint?: string;
+  acceptPdf?: boolean;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const handleFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onChange(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+  const isPdfValue = Boolean(value && value.startsWith("data:application/pdf"));
+
+  return (
+    <div>
+      <label className="text-xs tracking-wide text-gray-500 uppercase mb-1.5 block">
+        {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+      </label>
+      <input
+        ref={fileRef}
+        type="file"
+        accept={acceptPdf ? "image/*,application/pdf" : "image/*"}
+        className="hidden"
+        onChange={handleFile}
+      />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        className="w-full min-h-32 rounded-xl border border-dashed border-gray-200 bg-[#F5F7FA] hover:bg-white hover:border-[#008080]/40 transition-colors flex flex-col items-center justify-center gap-2 p-4 text-center"
+      >
+        {value ? (
+          isPdfValue ? (
+            <>
+              <FileText className="w-8 h-8 text-[#008080]" />
+              <span className="text-sm text-[#1B263B]">PDF uploaded</span>
+            </>
+          ) : (
+            <img src={value} alt={label} className="max-h-28 max-w-full rounded-lg object-contain" />
+          )
+        ) : (
+          <>
+            <Upload className="w-8 h-8 text-gray-300" />
+            <span className="text-sm text-gray-500">Upload file</span>
+          </>
+        )}
+        {hint && <span className="text-xs text-gray-400">{hint}</span>}
+      </button>
+      {value && (
+        <button type="button" onClick={() => onChange("")} className="text-xs text-rose-500 mt-2">
+          Remove file
+        </button>
+      )}
+    </div>
+  );
+}
+
 const DOC_REQUIREMENTS: Record<string, { label: string; note: string }[]> = {
     "Barangay Clearance": [
       { label: "1×1 or 2×2 Photo", note: "Recent, white background" },
