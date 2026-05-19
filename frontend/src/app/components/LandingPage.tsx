@@ -203,65 +203,52 @@ function RequirementFileUploader({
     reader.readAsDataURL(f);
   };
   const isPdf = value.startsWith("data:application/pdf");
-  const isImage = value.startsWith("data:image");
-  const hasValue = Boolean(value);
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 shrink-0">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-white" style={{ fontFamily: "Montserrat" }}>Lost &amp; Found Review</h3>
+                    <p className="text-white/50 text-xs mt-0.5">{viewItem.id} — {formatExactTimestamp(viewItem.created_at || viewItem.date_reported)}</p>
+                  </div>
+                  <button onClick={() => setViewItem(null)} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button>
+                </div>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1 space-y-4">
+                <div className="space-y-2.5 text-sm">
+                  <p className="text-xs text-blue-500 uppercase tracking-wider">Reporter</p>
+                  {[['Name', viewItem.is_anonymous ? 'Anonymous' : viewItem.reporter_name || '—'], ['Phone', viewItem.is_anonymous ? 'Hidden' : viewItem.reporter_phone || '—'], ['Relation', viewItem.reporter_relation || '—'], ['Filed On', formatExactTimestamp(viewItem.created_at || viewItem.date_reported)]].map(([label, value]) => (
+                    <div key={label} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{label}</span><span className="text-[#1B263B] text-right max-w-[55%]">{value}</span></div>
+                  ))}
+                  <p className="text-xs text-blue-500 uppercase tracking-wider mt-3">Item</p>
+                  {[['Item Name', viewItem.item_name || '—'], ['Category', `${viewItem.item_type === 'lost' ? 'Lost Item' : 'Found Item'}${viewItem.category ? ' - ' + viewItem.category : ''}`], ['Date', viewItem.date_of_incident || viewItem.date_reported || '—'], ['Time', formatExactTimestamp(viewItem.created_at || viewItem.date_reported)], ['Location', viewItem.location || '—'], ['Landmark', viewItem.landmark || '—'], ['Suspect', viewItem.person_involved || '—'], ['Description', viewItem.description || '—'], ['Victims', viewItem.victims_involved || '—']].map(([label, value]) => (
+                    <div key={label} className="flex justify-between py-1 border-b border-gray-50"><span className="text-gray-400">{label}</span><span className="text-[#1B263B] text-right max-w-[55%]">{value}</span></div>
+                  ))}
+                  <p className="text-xs text-blue-500 uppercase tracking-wider mt-3">Narrative</p>
+                  <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap bg-[#FAFBFC] rounded-xl p-3">{viewItem.description || '—'}</p>
+                </div>
 
-  return (
-    <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-      <div className={`px-4 py-3 flex items-center gap-3 border-b ${hasValue ? "bg-emerald-50 border-emerald-100" : "bg-[#F5F7FA] border-gray-100"}`}>
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs shadow-sm ${hasValue ? "bg-emerald-500 text-white" : "bg-[#008080] text-white"}`} style={{ fontFamily: "Montserrat", fontWeight: 700 }}>
-          {hasValue ? <Check className="w-3 h-3" /> : index + 1}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-[#1B263B]" style={{ fontWeight: 600 }}>{reqLabel}</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">{reqNote}</p>
-        </div>
-        {hasValue && <span className="text-[10px] text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0" style={{ fontWeight: 600 }}>Uploaded ✓</span>}
-      </div>
-      <div className="p-3 bg-white">
-        {hasValue ? (
-          isImage ? (
-            <div className="relative rounded-xl overflow-hidden">
-              <img src={value} alt={reqLabel} className="w-full h-32 object-cover" />
-              <button onClick={() => { onChange(""); if (fileRef.current) fileRef.current.value = ""; }}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors">
-                <X className="w-3.5 h-3.5" />
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 bg-black/30 text-white text-[10px] py-1.5 px-3 flex items-center gap-1.5">
-                <Check className="w-3 h-3 text-emerald-300" /> Document looks clear
+                {((viewItem.image_urls && viewItem.image_urls.length > 0) || viewItem.image_url) && (
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Photo ({viewItem.image_urls?.length || 1})</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(viewItem.image_urls?.length ? viewItem.image_urls : [viewItem.image_url]).filter(Boolean).map((photo, i) => (
+                        <button key={i} onClick={() => setViewPhoto(photo || null)} className="w-full h-32 rounded-xl border border-gray-200 overflow-hidden hover:opacity-80 transition-opacity">
+                          <img src={photo || ''} alt={`${viewItem.item_name} ${i + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-[#FFF8E7] border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
+                  <span>ℹ️</span>
+                  <span>This item is currently <strong>{viewItem.status === "solved" ? "resolved" : viewItem.status}</strong>.</span>
+                </div>
               </div>
-            </div>
-          ) : isPdf ? (
-            <div className="flex items-center gap-3 bg-rose-50 border border-rose-100 rounded-xl p-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-rose-500" />
+              <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50">
+                <button onClick={() => setViewItem(null)} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2">Close</button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-700" style={{ fontWeight: 600 }}>PDF Uploaded</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">Ensure the document is complete and readable</p>
-              </div>
-              <a href={value} target="_blank" rel="noreferrer" className="text-[10px] text-rose-500 hover:underline">Open PDF</a>
-              <button onClick={() => { onChange(""); if (fileRef.current) fileRef.current.value = ""; }}
-                className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors shrink-0">
-                <X className="w-3.5 h-3.5 text-gray-500" />
-              </button>
-            </div>
-          ) : null
-        ) : (
-          <button type="button" onClick={() => fileRef.current?.click()}
-            className="w-full border-2 border-dashed border-gray-200 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-[#008080]/50 hover:bg-[#008080]/5 transition-all group">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gray-100 group-hover:bg-[#008080]/10 flex items-center justify-center transition-colors">
-                <Camera className="w-4 h-4 text-gray-400 group-hover:text-[#008080] transition-colors" />
-              </div>
-              <div className="w-9 h-9 rounded-xl bg-gray-100 group-hover:bg-[#008080]/10 flex items-center justify-center transition-colors">
-                <FileText className="w-4 h-4 text-gray-400 group-hover:text-[#008080] transition-colors" />
-              </div>
-            </div>
-            <span className="text-xs text-gray-500 group-hover:text-[#008080] transition-colors">Tap to upload photo or PDF</span>
-            <span className="text-[10px] text-gray-300">JPG · PNG · PDF accepted</span>
-          </button>
-        )}
+            </motion.div>
         <input ref={fileRef} type="file" accept="image/*,application/pdf" className="sr-only" onChange={handleFile} />
       </div>
     </div>
