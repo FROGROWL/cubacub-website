@@ -60,7 +60,7 @@ class Incident(models.Model):
     """
     
     INCIDENT_STATUS = [
-        ('new', 'New'),
+        ('pending', 'Pending'),
         ('investigating', 'Investigating'),
         ('resolved', 'Resolved'),
         ('rejected', 'Rejected'),
@@ -96,7 +96,7 @@ class Incident(models.Model):
     # Details
     details = models.TextField()
     incident_date = models.DateField(auto_now_add=True)
-    status = models.CharField(max_length=30, choices=INCIDENT_STATUS, default='new')
+    status = models.CharField(max_length=30, choices=INCIDENT_STATUS, default='pending')
     rejectionReason = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=200, blank=True, null=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')

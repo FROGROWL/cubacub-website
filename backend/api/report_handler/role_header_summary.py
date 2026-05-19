@@ -9,11 +9,10 @@ from .cleanup import cleanup_expired_reports
 def report_summary(request):
     cleanup_expired_reports()
     today = now().date()
-    cutoff = now() - timedelta(days=1)
 
     incident_total = Incident.objects.count()
-    incident_pending = Incident.objects.filter(status="new", created_at__gte=cutoff).count()
-    incident_investigation = Incident.objects.filter(status="investigating").count() + Incident.objects.filter(status="new", created_at__lt=cutoff).count()
+    incident_pending = Incident.objects.filter(status="pending").count()
+    incident_investigation = Incident.objects.filter(status="investigating").count()
     incident_resolved = Incident.objects.filter(status="resolved").count()
 
     lost_found_total = LostFoundItem.objects.count()

@@ -95,7 +95,7 @@ def public_report_view(request):
 
     # Ensure sensible defaults for missing required fields
     data.setdefault('source', 'public')
-    data.setdefault('status', 'new')
+    data.setdefault('status', 'pending')
     data.setdefault('priority', 'medium')
 
     if data.get('id') and Incident.objects.filter(id=data['id']).exists():
@@ -133,7 +133,7 @@ def report_track(request):
         return Response({"found": False}, status=status.HTTP_200_OK)
 
     status_map = {
-        "new": 0,
+        "pending": 0,
         "investigating": 1,
         "resolved": 2,
         "rejected": -1,
