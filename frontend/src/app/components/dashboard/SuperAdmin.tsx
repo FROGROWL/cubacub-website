@@ -37,9 +37,7 @@ import {
   getAuditLog,
   getAnalyticsSummary,
   getCurrentUser,
-  getAdminProfile,
   getAuthToken,
-  updateAdminProfile,
   getIncidents,
   getProjects,
   getCalendarEvents,
@@ -52,7 +50,6 @@ import {
   type StaffAccount,
   type AuditLogEntry,
   type AnalyticsSummary,
-  type AdminProfile,
   type StaffAccountForm,
   type Incident,
   type Project,
@@ -159,7 +156,6 @@ export default function SuperAdmin() {
   const [auditActionFilter, setAuditActionFilter] = useState<"all" | AuditActionCategory>("all");
   const [auditSortBy, setAuditSortBy] = useState<"time" | "user" | "action">("time");
   const [auditSortDirection, setAuditSortDirection] = useState<"asc" | "desc">("desc");
-  const [showMyProfile, setShowMyProfile] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -170,13 +166,6 @@ export default function SuperAdmin() {
   const [landingConfigSaving, setLandingConfigSaving] = useState(false);
   const [showLandingServices, setShowLandingServices] = useState(true);
   const [landingServiceEditor, setLandingServiceEditor] = useState<"report" | "document" | "clinic">("report");
-  const [adminProfile, setAdminProfile] =
-    useState<AdminProfile>({
-      name: getCurrentUser()?.name || "Kap. Roberto",
-      email: "admin@cubacub.gov.ph",
-      phone: "09621234567",
-      address: "Barangay Hall, Cubacub",
-    });
   const todayDate = toInputDate();
 
   /* Load data from services.ts on mount */
@@ -187,7 +176,6 @@ export default function SuperAdmin() {
     getAnalyticsSummary().then(setAnalytics);
     getIncidents().then(setIncidents);
     getProjects().then(setProjects);
-    getAdminProfile().then(setAdminProfile);
     getLandingPageConfig().then(response => setLandingConfig(response.config)).catch(() => setLandingConfig(DEFAULT_LANDING_PAGE_CONFIG));
   }, []);
 
@@ -302,7 +290,7 @@ export default function SuperAdmin() {
     const date = new Date(event.date);
     return date.getMonth() === calendarMonth && date.getFullYear() === calendarYear;
   });
-  const adminAuditUser = `${getCurrentUser()?.name || adminProfile.name || "Super Admin"} (super_admin, Super Admin)`;
+  const adminAuditUser = `${getCurrentUser()?.name || "Super Admin"} (super_admin, Super Admin)`;
 
   const refreshAuditTrail = () => {
     getAuditLog().then(setAuditLog).catch(() => {});
@@ -603,25 +591,6 @@ export default function SuperAdmin() {
     setShowForm(true);
   };
 
-  const saveAdminProfile = () => {
-    if (!isValidPhilippineMobile(adminProfile.phone)) {
-      showToast("Phone number must be 11 digits and start with 09.", "error");
-      return;
-    }
-
-    updateAdminProfile(adminProfile).then(() => {
-      createAuditLogEntry({
-        time: new Date().toLocaleString("en-PH"),
-        user: adminProfile.name || "Super Admin",
-        action: `Updated own admin profile: ${adminProfile.name}, ${adminProfile.email}, ${adminProfile.phone}`,
-        type: "info",
-      }).catch(() => {});
-      refreshAuditTrail();
-    });
-    setShowMyProfile(false);
-    showToast("Profile updated! Refresh to see name change.");
-  };
-
   useEffect(() => {
     const interval = setInterval(() => {
         const token = getAuthToken();
@@ -679,12 +648,6 @@ export default function SuperAdmin() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button
-            onClick={() => setShowMyProfile(true)}
-            className="bg-white border border-gray-100 text-gray-600 px-3 py-2.5 rounded-xl text-sm flex items-center gap-1.5 hover:bg-gray-50 transition-all"
-          >
-            <Settings className="w-4 h-4" /> My Profile
-          </button>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -1417,121 +1380,6 @@ export default function SuperAdmin() {
                 >
                   {editId ? "Update" : "Create"} Account
                 </motion.button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* My Profile Modal */}
-      <AnimatePresence>
-        {showMyProfile && (
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowMyProfile(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-5">
-                <div className="flex justify-between items-center">
-                  <h3
-                    className="text-white"
-                    style={{ fontFamily: "Montserrat" }}
-                  >
-                    My Profile
-                  </h3>
-                  <button
-                    onClick={() => setShowMyProfile(false)}
-                    className="text-white/50 hover:text-white"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="flex justify-center">
-                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg">
-                    {adminProfile.name[0]}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase mb-1 block">
-                    Display Name
-                  </label>
-                  <input
-                    className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none"
-                    value={adminProfile.name}
-                    onChange={(e) =>
-                      setAdminProfile({
-                        ...adminProfile,
-                        name: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase mb-1 block">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none"
-                    value={adminProfile.email}
-                    onChange={(e) =>
-                      setAdminProfile({
-                        ...adminProfile,
-                        email: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase mb-1 block">
-                    Phone
-                  </label>
-                  <input
-                    className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none"
-                    value={adminProfile.phone}
-                    onChange={(e) =>
-                      setAdminProfile({
-                        ...adminProfile,
-                        phone: normalizePhoneInput(e.target.value),
-                      })
-                    }
-                    inputMode="numeric"
-                    maxLength={11}
-                  />
-                  {adminProfile.phone && !isValidPhilippineMobile(adminProfile.phone) && (
-                    <p className="text-xs text-rose-400 mt-1">Must be 11 digits starting with 09</p>
-                  )}
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase mb-1 block">
-                    Address
-                  </label>
-                  <input
-                    className="w-full bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none"
-                    value={adminProfile.address}
-                    onChange={(e) =>
-                      setAdminProfile({
-                        ...adminProfile,
-                        address: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <button
-                  onClick={saveAdminProfile}
-                  disabled={!isValidPhilippineMobile(adminProfile.phone)}
-                  className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-40"
-                >
-                  Save Changes
-                </button>
               </div>
             </motion.div>
           </div>
