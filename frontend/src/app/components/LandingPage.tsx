@@ -233,7 +233,7 @@ function RequirementFileUploader({
                     <div className="grid grid-cols-2 gap-2">
                       {(viewItem.image_urls?.length ? viewItem.image_urls : [viewItem.image_url]).filter(Boolean).map((photo, i) => (
                         <button key={i} onClick={() => setViewPhoto(photo || null)} className="w-full h-32 rounded-xl border border-gray-200 overflow-hidden hover:opacity-80 transition-opacity">
-                          <img src={photo || ''} alt={`${viewItem.item_name} ${i + 1}`} className="w-full h-full object-cover" />
+                          <img src={photo || ""} alt={`${viewItem.item_name} ${i + 1}`} className="w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>
@@ -248,19 +248,6 @@ function RequirementFileUploader({
               <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50">
                 <button onClick={() => setViewItem(null)} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2">Close</button>
               </div>
-            </motion.div>
-        <input ref={fileRef} type="file" accept="image/*,application/pdf" className="sr-only" onChange={handleFile} />
-      </div>
-    </div>
-  );
-}
-
-// --- Image Upload component ---
-function ImageUploader({ label, required, value, onChange, hint, acceptPdf }: { label: string; required?: boolean; value: string; onChange: (v: string) => void; hint?: string; acceptPdf?: boolean }) {
-  const ref = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState("");
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
     if (!f) return;
     const isImage = f.type.startsWith("image/");
     const isPdf = acceptPdf && f.type === "application/pdf";
