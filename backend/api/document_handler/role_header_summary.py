@@ -6,14 +6,20 @@ from .models import DocumentRequest
 @api_view(["GET"])
 def document_summary(request):
     today = now().date()
+    year = today.year
     month = today.month
 
     pending = DocumentRequest.objects.filter(status="pending").count()
-    approved_today = DocumentRequest.objects.filter(status="approved", date=today).count()
-    total_this_month = DocumentRequest.objects.filter(date__month=month).count()
+    approved_this_month = DocumentRequest.objects.filter(status="approved", date__year=year, date__month=month).count()
+    total_this_month = DocumentRequest.objects.filter(
+        status__in=["rejected", "unclaimed", "claimed"],
+        date__year=year,
+        date__month=month,
+    ).count()
 
     return Response({
         "pending": pending,
-        "approved_today": approved_today,
+        "approved_today": approved_this_month,
+        "approved_this_month": approved_this_month,
         "total_this_month": total_this_month,
     })

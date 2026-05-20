@@ -101,7 +101,7 @@ export default function Dashboard() {
         getDocumentSummary().then(summary => {
           setRoleStats([
             { label: "Pending Requests", value: summary.pending.toString(), change: "", icon: <FileText /> },
-            { label: "Approved Today", value: summary.approved_today.toString(), change: "", icon: <TrendingUp /> },
+            { label: "Approved This Month", value: String(summary.approved_this_month ?? summary.approved_today ?? 0), change: "", icon: <TrendingUp /> },
             { label: "Total This Month", value: summary.total_this_month.toString(), change: "", icon: <Users /> },
           ]);
         });
