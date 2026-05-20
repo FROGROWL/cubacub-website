@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, TreasurerSettings
+from .models import Project, SystemSettings
 
 class ProjectSerializer(serializers.ModelSerializer):
     budget = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False)
@@ -72,9 +72,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         return obj.statusUpdatedBy.name or obj.statusUpdatedBy.username
 
 
-class TreasurerSettingsSerializer(serializers.ModelSerializer):
+class SystemSettingsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TreasurerSettings
+        model = SystemSettings
         fields = [
             "annual_budget",
             "clinic_status",

@@ -9,7 +9,7 @@ from ..document_handler.models import DocumentRequest
 from ..report_handler.models import Incident, LostFoundItem
 from ..clinic_handler.models import Patient
 from ..treasurer_handler.models import Project
-from ..treasurer_handler.models import TreasurerSettings
+from ..treasurer_handler.models import SystemSettings
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -83,7 +83,7 @@ def superadmin_summary(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def public_landing_stats(request):
-    settings_obj = TreasurerSettings.get_solo()
+    settings_obj = SystemSettings.get_solo()
     documents_count = DocumentRequest.objects.count()
     document_refund_count = Incident.objects.filter(
         Q(category="Document Refund") | Q(subcategory__icontains="refund")

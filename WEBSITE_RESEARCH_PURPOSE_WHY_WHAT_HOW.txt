@@ -220,7 +220,7 @@ responses, and data validation.
 
 The database is PostgreSQL. It stores permanent records such as staff accounts,
 document requests, incidents, case records, lost-and-found items, patients,
-clinic unavailable slots, projects, treasurer settings, calendar events,
+clinic unavailable slots, projects, system settings, calendar events,
 landing page configuration, password reset codes, and audit logs.
 
 The system works through these steps:
@@ -287,7 +287,7 @@ Examples:
 - Patient stores clinic queue and appointment records.
 - ClinicUnavailableSlot stores clinic slots that cannot be booked.
 - Project stores barangay project and finance transparency information.
-- TreasurerSettings stores finance and service-related settings.
+- SystemSettings stores finance and service-related settings.
 - CalendarEvent stores public events and closures.
 - AuditLog stores system activity records.
 - LandingPageConfig stores editable public website settings.

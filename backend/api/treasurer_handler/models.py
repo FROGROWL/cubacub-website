@@ -58,7 +58,7 @@ class Project(models.Model):
         return f"{self.name} ({self.status})"
 
 
-class TreasurerSettings(models.Model):
+class SystemSettings(models.Model):
     annual_budget = models.DecimalField(max_digits=12, decimal_places=2, default=8500000)
     clinic_status = models.CharField(max_length=20, default="open")
     pickup_deadline_days = models.IntegerField(default=5)
@@ -75,4 +75,4 @@ class TreasurerSettings(models.Model):
         return obj
 
     def __str__(self):
-        return "Treasurer Settings"
+        return "System Settings"

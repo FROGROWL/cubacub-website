@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import Project, TreasurerSettings
+from .models import Project, SystemSettings
 
 
 @api_view(["GET"])
@@ -18,7 +18,7 @@ def budget_summary(request):
     total_budget = Project.objects.aggregate(total=Sum("budget"))["total"] or Decimal("0")
     total_spent = Project.objects.aggregate(total=Sum("spent"))["total"] or Decimal("0")
 
-    settings_obj = TreasurerSettings.get_solo()
+    settings_obj = SystemSettings.get_solo()
     annual_budget = settings_obj.annual_budget
     available_budget = annual_budget - total_budget
     utilization_rate = float((total_budget / annual_budget * 100) if annual_budget > 0 else 0)

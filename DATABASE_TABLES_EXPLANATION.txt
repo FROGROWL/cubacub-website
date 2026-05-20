@@ -1,0 +1,419 @@
+DATABASE TABLES EXPLANATION
+Barangay Portal
+
+This file explains the database tables used by the Django backend. The project uses
+the "api" Django app, so tables without a custom db_table usually use the
+"api_" prefix.
+
+
+APPLICATION TABLES
+
+1. api_staffaccount
+
+Purpose:
+Stores staff user accounts for the barangay portal. This is the custom Django
+user model used for login, authentication, staff roles, and activity tracking.
+
+Important fields:
+- id: UUID primary key for each staff account.
+- username, password, email, first_name, last_name: Standard Django user fields.
+- name: Display name of the staff member.
+- role: Staff role. Possible values are super_admin, document_handler,
+  report_handler, clinic_handler, and treasurer.
+- is_online: Shows whether the staff user is currently online.
+- phone, address, birthdate, sex: Staff profile information.
+- last_activity: Last recorded user activity timestamp.
+- is_active, is_staff, is_superuser, date_joined, last_login: Standard Django
+  account and permission fields.
+
+Related tables:
+- api_passwordresetcode links to this table.
+- api_auditlog can link actions to staff accounts.
+- reports, cases, lost/found items, projects, and landing page updates can also
+  reference staff accounts.
+
+
+2. api_passwordresetcode
+
+Purpose:
+Stores temporary 6-digit password reset codes for staff accounts.
+
+Important fields:
+- id: Primary key.
+- user_id: Staff account that requested the reset code.
+- code: The 6-digit reset code.
+- created_at: Time when the code was created.
+
+Rules:
+- A code is considered valid for 10 minutes after created_at.
+- If the related staff account is deleted, its reset codes are deleted too.
+
+
+3. api_auditlog
+
+Purpose:
+Records administrative or system actions for accountability and activity history.
+
+Important fields:
+- id: Primary key.
+- user_id: Staff account that performed the action. This can be empty if the user
+  was deleted.
+- action: Text description of what happened.
+- status: Log status, such as info or other status labels used by the app.
+- timestamp: Time when the action was recorded.
+- is_trashed: Marks whether the log was moved to trash.
+- trashed_at: Time when the log was trashed.
+
+
+4. api_landingpageconfig
+
+Purpose:
+Stores editable public landing page configuration. This includes report
+categories, document types, document requirements, document prices, and clinic
+consultation types.
+
+Important fields:
+- id: Primary key. The model forces this to always be 1, so it works as a
+  single settings record.
+- config: JSON configuration for landing page options.
+- updated_at: Last update timestamp.
+- updated_by_id: Staff account that last updated the configuration.
+
+Rules:
+- Only one active configuration row is intended to exist.
+
+
+5. api_documentrequest
+
+Purpose:
+Stores public requests for barangay documents, including applicant details,
+uploaded proof, payment details, and processing status.
+
+Important fields:
+- id: Text primary key, such as a barangay request number.
+- name: Applicant name.
+- type: Requested document type.
+- date: Date the request was created.
+- status: Current request status.
+- history: Applicant record status, usually clear or flagged.
+- address, phone, email: Applicant contact information.
+- yearsResiding, purpose, civilStatus, sex, birthdate: Applicant details used for
+  document processing.
+- validId, validIdNo: Submitted valid ID information.
+- payment: Payment method or payment status information.
+- copies: Number of requested copies.
+- pickupDeadline: Deadline for picking up the document.
+- statusUpdatedAt: Time when the status was last changed.
+- notes: Internal processing notes.
+- rejectionReason: Reason if the request was rejected.
+- idPhoto, selfiePhoto, gcashProof: Uploaded file/image references.
+- requirements: JSON object containing uploaded requirement references.
+- requirementType: Selected requirement group/type when the document supports
+  multiple requirement sets.
+
+Status values:
+- pending
+- approved
+- processing
+- ready_to_pickup
+- claimed
+- unclaimed
+- rejected
+
+
+6. api_documentcaserecord
+
+Purpose:
+Stores case/background records connected to document request validation. It helps
+document handlers mark whether a requester is cleared, flagged, or under review.
+
+Important fields:
+- id: Text primary key.
+- name: Person connected to the case record.
+- type: Case or document-related record type.
+- date: Date the record was created.
+- status: Current case record status.
+- details: Explanation of the record.
+- requestId: ID of the related document request.
+
+Status values:
+- cleared
+- flagged
+- under_review
+
+
+7. incidents
+
+Purpose:
+Stores incident reports and public complaints. It supports both normal incident
+reports and document refund reports.
+
+Important fields:
+- id: Text primary key. Normal reports use IDs like RPT-001. Document refund
+  reports use IDs like RDF-001.
+- reporter_name: Name of the reporter.
+- reporter_address: Reporter address.
+- is_anonymous: Shows whether the report was submitted anonymously.
+- category, subcategory: Report classification.
+- details: Full report details.
+- incident_date: Date the incident report was created.
+- status: Current incident handling status.
+- rejectionReason: Reason if the report was rejected.
+- location, incident_time, landmark: Incident location/time details.
+- priority: Internal priority value.
+- suspect_name, suspect_description: Suspect details if provided.
+- urgency: Reporter or handler urgency label.
+- evidence_photo_count: Number of evidence photos.
+- evidence_photos: JSON list of evidence photo references.
+- victims_involved: Victim information.
+- reporter_phone: Reporter contact number.
+- reporter_relation: Reporter relationship to the incident.
+- source: Whether the report came from staff or the public.
+- handled_by_id: Staff account assigned to the report.
+- created_at, updated_at: Timestamps.
+
+Status values:
+- pending
+- investigating
+- resolved
+- rejected
+
+Priority values:
+- low
+- medium
+- high
+
+Source values:
+- staff
+- public
+
+
+8. case_records
+
+Purpose:
+Stores formal barangay case records for the report handler module.
+
+Important fields:
+- id: Text primary key, generated like CASE-123456.
+- subject_name: Main person or subject of the case.
+- crime_description: Main case description.
+- case_date: Date the case was created.
+- status: Current case status.
+- details: Extra case details.
+- location: Case location.
+- charges: Filed charges or complaint basis.
+- penalty: Penalty or settlement information.
+- complainant: Complainant name.
+- respondent: Respondent name.
+- mediator: Mediator name.
+- remarks: Handler remarks.
+- date_resolved: Date the case was resolved.
+- handled_by_id: Staff account assigned to the case.
+- created_at, updated_at: Timestamps.
+
+Status values:
+- open
+- investigating
+- resolved
+- closed
+
+
+9. lost_found_items
+
+Purpose:
+Stores lost and found item reports submitted by the public or staff.
+
+Important fields:
+- id: Text primary key, generated like LF-123456.
+- item_type: Whether the item is lost or found.
+- reporter_name, reporter_phone, reporter_address: Reporter details.
+- reporter_id: Reporter reference, such as ANON-XXXX or RPT-XXXX.
+- is_anonymous: Shows whether the reporter is anonymous.
+- item_name: Name of the item.
+- item_description: Description focused on the item.
+- description: Additional report description.
+- category: Item category.
+- location: Location where the item was lost or found.
+- date_reported: Date the report was created.
+- date_of_incident: Date the item was lost/found.
+- landmark: Nearby landmark.
+- person_involved, victims_involved, reporter_relation: Extra report context.
+- image_url: Single uploaded image reference.
+- image_urls: JSON list of uploaded image references.
+- status: Current item report status.
+- handler_notes: Internal notes from the handler.
+- handled_by_id: Staff account assigned to the report.
+- created_at, updated_at: Timestamps.
+
+Item type values:
+- lost
+- found
+
+Status values:
+- pending
+- post
+- resolved
+- canceled
+
+
+10. api_patient
+
+Purpose:
+Stores clinic patient queue entries and clinic appointment details.
+
+Important fields:
+- id: Auto-incrementing primary key.
+- name: Patient name.
+- time: Appointment or queue time, such as 10:30 AM.
+- reason: Visit reason or consultation type.
+- status: Current clinic queue/appointment status.
+- phone, birthdate, sex: Patient personal information.
+- chiefComplaint: Main complaint or symptoms.
+- allergies, medications, conditions: Medical background notes.
+- queueDate: Date for the clinic queue.
+- appointmentId: Appointment reference number.
+- dateBooked: Date/time when the appointment was booked.
+- created_at: Date/time when the patient record was created.
+
+Status values:
+- waiting
+- in-progress
+- completed
+- canceled
+
+
+11. clinic_unavailable_slots
+
+Purpose:
+Stores clinic date/time slots that cannot be booked.
+
+Important fields:
+- id: Primary key.
+- date: Unavailable clinic date.
+- time: Unavailable time slot.
+- reason: Reason the slot is unavailable.
+- created_at: Date/time when the unavailable slot was created.
+
+Rules:
+- The same date and time combination must be unique.
+- Records are ordered by date, then time.
+
+
+12. api_project
+
+Purpose:
+Stores barangay financial/project records for the treasurer module and public
+project display.
+
+Important fields:
+- id: Text primary key, generated like PRJ-XXXXXXXX.
+- name: Project name.
+- status: Project status.
+- budget: Total project budget.
+- spent: Amount already spent.
+- progress: Project completion percentage.
+- description: Project details.
+- location: Project location.
+- startDate, endDate: Project timeline.
+- contractor: Contractor or responsible provider.
+- source: Funding source.
+- category: Project category.
+- images: JSON list of image references.
+- coverImage: Main project image reference.
+- otherImages: JSON list of additional image references.
+- milestones: JSON list of project milestones.
+- createdAt, updatedAt: Timestamps.
+- lastUpdatedBy_id: Staff account that last updated the project.
+- statusUpdatedAt: Time when the project status was last updated.
+- statusUpdatedBy_id: Staff account that last changed the status.
+
+Status values:
+- completed
+- ongoing
+- upcoming
+
+Rules:
+- If status is completed, progress is forced to 100.
+- If status is upcoming, progress is forced to 0.
+
+
+13. api_systemsettings
+
+Purpose:
+Stores shared system settings used by finance, clinic, document pickup, and
+refund logic.
+
+Important fields:
+- id: Primary key. The model forces this to always be 1, so it works as a
+  single settings record.
+- annual_budget: Default annual barangay budget.
+- clinic_status: Current clinic availability status.
+- pickup_deadline_days: Number of days allowed for document pickup.
+- refund_percentage: Percentage used for refund calculations.
+- updatedAt: Last update timestamp.
+
+Rules:
+- Only one active settings row is intended to exist.
+
+
+14. api_calendarevent
+
+Purpose:
+Stores calendar events and closures shown in the portal.
+
+Important fields:
+- id: Primary key.
+- date: Event date.
+- title: Event title.
+- color: Display color used by the frontend calendar.
+- source: Source module or origin of the event.
+- icon: Icon name or identifier used by the frontend.
+- type: Event type.
+
+Type values:
+- event
+- closure
+
+
+DJANGO AUTHENTICATION AND SYSTEM TABLES
+
+These tables are created by Django and Django REST/framework-related apps. They
+support authentication, permissions, sessions, admin logging, and migrations.
+
+1. api_staffaccount_groups
+Links staff accounts to Django auth groups. Created because StaffAccount extends
+Django's AbstractUser.
+
+2. api_staffaccount_user_permissions
+Links staff accounts directly to Django permissions. Created because StaffAccount
+extends Django's AbstractUser.
+
+3. auth_group
+Stores Django permission groups.
+
+4. auth_group_permissions
+Links auth groups to permissions.
+
+5. auth_permission
+Stores individual Django permissions for installed models.
+
+6. django_admin_log
+Stores actions performed through the Django admin site.
+
+7. django_content_type
+Stores Django model/content type metadata used by permissions and admin.
+
+8. django_migrations
+Tracks which database migrations have already been applied.
+
+9. django_session
+Stores Django session data.
+
+
+REMOVED/OLD TABLES
+
+The migration history shows that some older report/case tables were removed:
+- case_linked_reports
+- case_prior_offenses
+
+They are no longer part of the current active model structure.

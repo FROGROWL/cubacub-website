@@ -6,9 +6,9 @@ from .models import Patient, ClinicUnavailableSlot
 class PatientSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if self.instance is None:
-            from ..treasurer_handler.models import TreasurerSettings
+            from ..treasurer_handler.models import SystemSettings
 
-            if TreasurerSettings.get_solo().clinic_status != "open":
+            if SystemSettings.get_solo().clinic_status != "open":
                 raise serializers.ValidationError({"clinic_status": "Clinic booking is currently closed."})
 
         appointment_fields_changed = self.instance is None or "queueDate" in attrs or "time" in attrs

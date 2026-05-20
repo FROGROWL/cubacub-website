@@ -3,8 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import TreasurerSettings
-from .serializers import TreasurerSettingsSerializer
+from .models import SystemSettings
+from .serializers import SystemSettingsSerializer
 
 
 def _can_update(user, data):
@@ -20,15 +20,15 @@ def _can_update(user, data):
 @api_view(["GET", "PATCH"])
 @permission_classes([AllowAny])
 def system_settings(request):
-    settings_obj = TreasurerSettings.get_solo()
+    settings_obj = SystemSettings.get_solo()
 
     if request.method == "GET":
-        return Response(TreasurerSettingsSerializer(settings_obj).data)
+        return Response(SystemSettingsSerializer(settings_obj).data)
 
     if not _can_update(request.user, request.data):
         return Response({"detail": "You do not have permission to update settings."}, status=status.HTTP_403_FORBIDDEN)
 
-    serializer = TreasurerSettingsSerializer(settings_obj, data=request.data, partial=True)
+    serializer = SystemSettingsSerializer(settings_obj, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(serializer.data)

@@ -124,7 +124,7 @@ Application tables:
 - api_patient
 - clinic_unavailable_slots
 - api_project
-- api_treasurersettings
+- api_systemsettings
 - api_calendarevent
 
 Django auth/system tables:

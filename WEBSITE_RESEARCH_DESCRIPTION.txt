@@ -79,7 +79,7 @@ The database uses PostgreSQL and stores the system's operational records. The ma
 - LostFoundItem
 - Patient
 - Project
-- TreasurerSettings
+- SystemSettings
 - CalendarEvent
 
 StaffAccount extends Django's AbstractUser and represents barangay staff users. It includes fields such as name, role, online status, contact information, and profile details. Staff roles determine which dashboard and backend functions a user may access.
