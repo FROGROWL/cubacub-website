@@ -967,6 +967,9 @@ function TrackerModal({ onClose, trackingId }: { onClose: () => void; trackingId
     getDocumentStatus(trackingId).then(result => {
       setDocStatus(result);
       setLoading(false);
+    }).catch(() => {
+      setDocStatus(null);
+      setLoading(false);
     });
   }, [trackingId]);
 
@@ -1006,7 +1009,7 @@ function TrackerModal({ onClose, trackingId }: { onClose: () => void; trackingId
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-8 h-8 border-2 border-gray-200 border-t-[#008080] rounded-full" />
                 <p className="text-sm">Looking up your request...</p>
               </div>
-            ) : !docStatus ? (
+            ) : !docStatus?.found ? (
               <div className="py-8 text-center space-y-2">
                 <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mx-auto"><X className="w-6 h-6 text-rose-400" /></div>
                 <p className="text-sm text-[#1B263B]">Tracking ID not found</p>
