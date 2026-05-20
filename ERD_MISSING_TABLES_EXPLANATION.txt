@@ -1,0 +1,47 @@
+ERD MISSING TABLES EXPLANATION
+Barangay Portal
+
+Why some tables do not appear in an ERD:
+1. They are framework/system tables, not core business-domain entities.
+2. Some are auto-generated join tables from Django authentication internals.
+3. Some are operational metadata tables (sessions, migrations, admin logs) that are often excluded from a simplified ERD to keep the diagram readable.
+
+Do those tables actually function?
+Yes, they function and are required for the application runtime.
+
+How they function even if not shown in ERD:
+1. Migration-driven creation
+- Django creates these tables through migrations and app initialization.
+- If migrations are applied, the tables exist and are fully queryable.
+
+2. ORM abstraction
+- Application code interacts with Django models and relationships.
+- Django ORM translates model operations into SQL on these tables automatically.
+
+3. Runtime framework usage
+- Authentication uses user/group/permission related tables.
+- Session management uses django_session.
+- Admin actions can write to django_admin_log.
+- Permission checks rely on auth and linking tables.
+
+4. Data integrity and constraints
+- Foreign keys and many-to-many links are enforced by database schema and Django model definitions.
+- Even if omitted from a visual ERD, relationships remain active in runtime behavior.
+
+Tables commonly omitted from business ERDs in this project:
+- api_staffaccount_groups
+- api_staffaccount_user_permissions
+- auth_group
+- auth_group_permissions
+- auth_permission
+- django_admin_log
+- django_content_type
+- django_migrations
+- django_session
+
+Removed/legacy tables (not active in current model structure):
+- case_linked_reports
+- case_prior_offenses
+
+Conclusion:
+Not appearing in an ERD is usually a documentation choice, not an indication that a table is unused or non-functional.

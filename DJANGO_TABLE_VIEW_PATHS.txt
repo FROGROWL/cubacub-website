@@ -1,0 +1,139 @@
+DJANGO TABLE VIEW PATHS
+Barangay Portal
+
+Base local backend URL:
+- http://127.0.0.1:8000
+- http://localhost:8000
+
+========================================
+A) DJANGO ADMIN PATHS (TABLE-LIKE BROWSING)
+========================================
+1) Admin home:
+- /admin/
+
+2) Registered model admin in this project:
+- /admin/api/staffaccount/
+
+3) Common Django auth/system admin pages (usually available when django.contrib.auth/admin are enabled):
+- /admin/auth/group/
+- /admin/auth/permission/
+- /admin/contenttypes/contenttype/
+- /admin/sessions/session/
+
+Notes:
+- The app currently registers StaffAccount admin explicitly.
+- Other app models are mainly exposed through API endpoints below.
+
+========================================
+B) API PATHS TO VIEW TABLE DATA (DRF ENDPOINTS)
+========================================
+All below are prefixed with:
+- /api/
+
+SUPER ADMIN MODULE
+- /api/staff/
+- /api/me/
+- /api/profile/
+- /api/audit-log/
+- /api/landing-config/
+- /api/superadmin/summary/
+- /api/public/landing-stats/
+- /api/public/landing-config/
+- /api/api/auth/request-reset/
+- /api/api/auth/confirm-reset/
+
+DOCUMENT HANDLER MODULE
+- /api/documents/
+- /api/doc-cases/
+- /api/documents/public-request/
+- /api/documents/track/
+- /api/documents/summary/
+
+REPORT HANDLER MODULE
+- /api/incidents/
+- /api/incidents/public-report/
+- /api/incidents/track/
+- /api/cases/
+- /api/lost-found/
+- /api/reports/summary/
+
+CLINIC HANDLER MODULE
+- /api/patients/
+- /api/patients/booked-slots/
+- /api/clinic/unavailable-slots/
+- /api/clinic/unavailable-slots/<pk>/
+- /api/clinic/summary/
+
+TREASURER HANDLER MODULE
+- /api/projects/
+- /api/projects/public/
+- /api/settings/
+- /api/analytics/budget-summary/
+- /api/analytics/monthly-spending/
+- /api/treasurer/summary/
+
+OTHER MODULE
+- /api/events/
+- /api/ping/
+- /api/public/weather/
+
+AUTH/JWT PATHS (ROOT-LEVEL, NOT UNDER /api/)
+- /auth/login/
+- /auth/refresh/
+- /auth/verify/
+
+========================================
+C) DJANGO MANAGEMENT COMMAND PATHS (TABLE INSPECTION)
+========================================
+Run from backend folder:
+- backend/manage.py
+
+Useful commands:
+1) Show applied migrations (table evolution):
+- python manage.py showmigrations
+
+2) Open DB shell (direct SQL table viewing):
+- python manage.py dbshell
+
+3) Show SQL for a migration:
+- python manage.py sqlmigrate api <migration_number>
+
+4) Reverse-engineer models from current DB tables:
+- python manage.py inspectdb
+
+5) Start Django shell for ORM table queries:
+- python manage.py shell
+
+Example shell snippet to list tables:
+from django.db import connection
+print(sorted(connection.introspection.table_names()))
+
+========================================
+D) COMMON TABLE NAMES YOU CAN VERIFY
+========================================
+Application tables:
+- api_staffaccount
+- api_passwordresetcode
+- api_auditlog
+- api_landingpageconfig
+- api_documentrequest
+- api_documentcaserecord
+- incidents
+- case_records
+- lost_found_items
+- api_patient
+- clinic_unavailable_slots
+- api_project
+- api_treasurersettings
+- api_calendarevent
+
+Django auth/system tables:
+- api_staffaccount_groups
+- api_staffaccount_user_permissions
+- auth_group
+- auth_group_permissions
+- auth_permission
+- django_admin_log
+- django_content_type
+- django_migrations
+- django_session
