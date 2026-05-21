@@ -6,6 +6,7 @@ class Patient(models.Model):
         ("in-progress", "In Progress"),
         ("completed", "Completed"),
         ("canceled", "Canceled"),
+        ("rejected", "Rejected"),
     ]
 
     id = models.AutoField(primary_key=True)
@@ -20,6 +21,7 @@ class Patient(models.Model):
     allergies = models.TextField(blank=True, null=True)
     medications = models.TextField(blank=True, null=True)
     conditions = models.TextField(blank=True, null=True)
+    rejectionReason = models.TextField(blank=True, default="")
     queueDate = models.DateField(blank=True, null=True)
     appointmentId = models.CharField(max_length=20, blank=True, null=True)
     dateBooked = models.DateTimeField(blank=True, null=True)

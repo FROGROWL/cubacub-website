@@ -660,7 +660,8 @@ export interface Patient {
   name: string;
   time: string;
   reason: string;
-  status: "waiting" | "in-progress" | "completed" | "canceled";
+  status: "waiting" | "in-progress" | "completed" | "canceled" | "rejected";
+  rejectionReason?: string;
   appointmentId?: string;
   appointment_id?: string;
   dateBooked?: string;
@@ -695,11 +696,16 @@ export async function addPatient(
 /** DJANGO: PATCH /api/patients/<id>/ */
 export async function updatePatientStatus(
   id: number,
-  status: Patient["status"]
+  status: Patient["status"],
+  rejectionReason?: string
 ): Promise<void> {
+  const payload: Record<string, string> = { status };
+  if (status === "rejected" && rejectionReason?.trim()) {
+    payload.rejectionReason = rejectionReason.trim();
+  }
   await apiFetch(`/api/patients/${id}/`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -1474,7 +1480,8 @@ export interface ClinicTrackingStatus {
   id: string;
   patientName: string;
   reason: string;
-  status: "waiting" | "in-progress" | "completed" | "canceled";
+  status: "waiting" | "in-progress" | "completed" | "canceled" | "rejected";
+  rejectionReason?: string | null;
   queueDate?: string | null;
   time?: string | null;
   dateBooked?: string | null;

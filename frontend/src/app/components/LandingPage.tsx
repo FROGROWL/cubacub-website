@@ -1203,6 +1203,7 @@ function ClinicTrackerModal({ onClose, appointmentId }: { onClose: () => void; a
   }, [appointmentId]);
 
   const currentStep = clinicStatus?.step ?? 0;
+  const rejectionReason = (clinicStatus?.rejectionReason || "").trim();
   const statuses = [
     { label: "Booked", desc: "Your appointment is in the clinic queue" },
     { label: "In Progress", desc: "Clinic staff is attending to the patient" },
@@ -1249,8 +1250,13 @@ function ClinicTrackerModal({ onClose, appointmentId }: { onClose: () => void; a
                   {clinicStatus.dateBooked && (
                     <div className="flex justify-between"><span className="text-gray-400">Date Booked</span><span className="text-[#1B263B] text-right max-w-[60%]">{new Date(clinicStatus.dateBooked).toLocaleString("en-PH", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div>
                   )}
-                  <div className="flex justify-between"><span className="text-gray-400">Status</span><span className={`capitalize ${clinicStatus.status === "canceled" ? "text-rose-600" : clinicStatus.status === "completed" ? "text-emerald-600" : "text-[#008080]"}`}>{clinicStatus.status.replace("-", " ")}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Status</span><span className={`capitalize ${clinicStatus.status === "rejected" || clinicStatus.status === "canceled" ? "text-rose-600" : clinicStatus.status === "completed" ? "text-emerald-600" : "text-[#008080]"}`}>{clinicStatus.status.replace("-", " ")}</span></div>
                 </div>
+                {clinicStatus.status === "rejected" && (
+                  <div className="mb-4 bg-rose-50 border border-rose-100 rounded-xl p-3 text-xs text-rose-700">
+                    <strong>Appointment Rejected.</strong> {rejectionReason || "Your clinic appointment was not accepted by the barangay staff."}
+                  </div>
+                )}
                 {clinicStatus.status === "canceled" && (
                   <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-700">
                     <strong>Appointment Canceled.</strong> Please contact the Cubacub Health Center for assistance.
@@ -1264,20 +1270,20 @@ function ClinicTrackerModal({ onClose, appointmentId }: { onClose: () => void; a
                         animate={{ scale: 1 }}
                         transition={{ delay: i * 0.15 }}
                         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                          clinicStatus.status === "canceled" && i === 0 ? "bg-rose-600 border-rose-600" :
+                          (clinicStatus.status === "canceled" || clinicStatus.status === "rejected") && i === 0 ? "bg-rose-600 border-rose-600" :
                           i < currentStep ? "bg-[#008080] border-[#008080]" :
                           i === currentStep ? "border-[#008080] bg-white" :
                           "border-gray-200 bg-white"
                         }`}
                       >
-                        {(i < currentStep || (clinicStatus.status === "canceled" && i === 0)) && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-2 h-2 rounded-full bg-white" />}
-                        {i === currentStep && clinicStatus.status !== "canceled" && <div className="w-2 h-2 rounded-full bg-[#008080] animate-pulse" />}
+                        {(i < currentStep || ((clinicStatus.status === "canceled" || clinicStatus.status === "rejected") && i === 0)) && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-2 h-2 rounded-full bg-white" />}
+                        {i === currentStep && clinicStatus.status !== "canceled" && clinicStatus.status !== "rejected" && <div className="w-2 h-2 rounded-full bg-[#008080] animate-pulse" />}
                       </motion.div>
-                      {i < 2 && <div className={`w-0.5 h-10 ${clinicStatus.status !== "canceled" && i < currentStep ? "bg-[#008080]" : "bg-gray-200"}`} />}
+                      {i < 2 && <div className={`w-0.5 h-10 ${(clinicStatus.status !== "canceled" && clinicStatus.status !== "rejected") && i < currentStep ? "bg-[#008080]" : "bg-gray-200"}`} />}
                     </div>
                     <div className="pb-6">
-                      <p className={`text-sm ${clinicStatus.status === "canceled" && i === 0 ? "text-rose-600" : i <= currentStep ? "text-[#1B263B]" : "text-gray-300"}`}>{s.label}</p>
-                      <p className={`text-xs mt-0.5 ${clinicStatus.status === "canceled" && i === 0 ? "text-rose-400" : i <= currentStep ? "text-gray-400" : "text-gray-200"}`}>{s.desc}</p>
+                      <p className={`text-sm ${(clinicStatus.status === "canceled" || clinicStatus.status === "rejected") && i === 0 ? "text-rose-600" : i <= currentStep ? "text-[#1B263B]" : "text-gray-300"}`}>{s.label}</p>
+                      <p className={`text-xs mt-0.5 ${(clinicStatus.status === "canceled" || clinicStatus.status === "rejected") && i === 0 ? "text-rose-400" : i <= currentStep ? "text-gray-400" : "text-gray-200"}`}>{s.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -2078,7 +2084,7 @@ function ReportModal({ onClose, isDocumentRefund, landingConfig = DEFAULT_LANDIN
                         landmark: form.landmark,
                         person_involved: form.suspectName,
                         victims_involved: form.victimsInvolved,
-                        reporter_relation: anon ? undefined : form.reporterRelation,
+                        reporter_relation: anon ? undefined : (form.reporterRelation as "Victim" | "Witness" | "Concerned Neighbor" | "Barangay Official" | "Other"),
                         status: "pending",
                       }).then(result => {
                         const trackingId = result.id || lostFoundDraftId;
@@ -2813,7 +2819,7 @@ export default function LandingPage() {
           <p className="text-gray-400 mt-2 max-w-md mx-auto text-sm">Access government services without the hassle. Everything you need, right at your fingertips.</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {/* Document Request */}
           <motion.button
             whileHover={{ y: -6 }}
@@ -2871,7 +2877,7 @@ export default function LandingPage() {
             <h3 className="text-[#1B263B] mb-2">Track Clinic</h3>
             <p className="text-sm text-gray-400 mb-4">Check your appointment queue status.</p>
             <div className="flex gap-2">
-              <input placeholder="e.g. CLN-123456" className="flex-1 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/30 border-0" value={clinicTrackerInput} onChange={e => setClinicTrackerInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && clinicTrackerInput) { setClinicTrackingId(clinicTrackerInput); setShowClinicTracker(true); }}} />
+              <input placeholder="e.g. CLN-001" className="flex-1 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/30 border-0" value={clinicTrackerInput} onChange={e => setClinicTrackerInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && clinicTrackerInput) { setClinicTrackingId(clinicTrackerInput); setShowClinicTracker(true); }}} />
               <button onClick={() => { if (clinicTrackerInput) { setClinicTrackingId(clinicTrackerInput); setShowClinicTracker(true); } }} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 rounded-xl text-sm hover:shadow-md transition-all">
                 <Search className="w-4 h-4" />
               </button>

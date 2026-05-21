@@ -21,7 +21,7 @@ const toInputDate = (date = new Date()) => {
 export default function ClinicHandler() {
   const [queue, setQueue] = useState<Patient[]>([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<Patient["status"] | "all">("all");
   const [dateBookedSort, setDateBookedSort] = useState<"newest" | "oldest">("newest");
   const [clinicOpen, setClinicOpen] = useState<boolean | null>(null); // null = loading
   const [month, setMonth] = useState(new Date().getMonth());
@@ -31,6 +31,8 @@ export default function ClinicHandler() {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({ date: "", title: "", icon: "\u{1F3E5}", type: "event" as "event" | "closure" });
   const [reviewPatient, setReviewPatient] = useState<Patient | null>(null);
+  const [rejectPatient, setRejectPatient] = useState<Patient | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const { showToast } = useToast();
 
   const year = 2026;
@@ -107,27 +109,49 @@ export default function ClinicHandler() {
     return dateBookedSort === "newest" ? bTime - aTime : aTime - bTime;
   });
 
-  const updateStatus = async (id: number, status: Patient["status"]) => {
+  const updateStatus = async (id: number, status: Patient["status"], rejectionReason?: string) => {
     const previousQueue = queue;
-    setQueue(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+    setQueue(prev => prev.map(p => p.id === id ? { ...p, status, ...(status === "rejected" ? { rejectionReason: rejectionReason?.trim() || "" } : {}) } : p));
     const user = getCurrentUser();
     const patient = queue.find(p => p.id === id);
     try {
-      await updatePatientStatus(id, status);
+      await updatePatientStatus(id, status, rejectionReason);
       if (patient) {
         createAuditLogEntry({
           time: new Date().toLocaleString("en-PH"),
           user: user?.name || "Clinic Handler",
-          action: status === "completed" ? `Completed patient ${patient.name}` : `Started serving ${patient.name}`,
-          type: status === "completed" ? "success" : "info",
+          action: status === "completed"
+            ? `Completed patient ${patient.name}`
+            : status === "rejected"
+              ? `Rejected appointment ${formatApptId(patient)} for ${patient.name}${rejectionReason?.trim() ? `; reason: ${rejectionReason.trim()}` : ""}`
+              : `Started serving ${patient.name}`,
+          type: status === "completed" ? "success" : status === "rejected" ? "warning" : "info",
         });
       }
-      showToast(status === "completed" ? "Patient completed!" : "Now serving patient");
+      showToast(status === "completed" ? "Patient completed!" : status === "rejected" ? "Patient rejected." : "Now serving patient", status === "rejected" ? "warning" : "success");
       window.dispatchEvent(new CustomEvent("clinicUpdate"));
     } catch {
       setQueue(previousQueue);
       showToast("Failed to update patient status. Please check your account permission.", "error");
     }
+  };
+
+  const openRejectPatient = (patient: Patient) => {
+    setRejectPatient(patient);
+    setRejectReason(patient.rejectionReason || "");
+  };
+
+  const submitRejectPatient = async () => {
+    if (!rejectPatient) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      showToast("Rejection reason is required.", "error");
+      return;
+    }
+    await updateStatus(rejectPatient.id, "rejected", reason);
+    setRejectPatient(null);
+    setRejectReason("");
+    setReviewPatient(prev => prev && prev.id === rejectPatient.id ? null : prev);
   };
 
   const handleDeletePatient = async (p: Patient) => {
@@ -201,7 +225,7 @@ export default function ClinicHandler() {
   };
 
   const bookingCountsForScheduleDate = queue
-    .filter(p => (p.queueDate || p.queue_date) === scheduleDate && p.status !== "canceled")
+    .filter(p => (p.queueDate || p.queue_date) === scheduleDate && p.status !== "canceled" && p.status !== "rejected")
     .reduce<Record<string, number>>((counts, patient) => {
       counts[patient.time] = (counts[patient.time] || 0) + 1;
       return counts;
@@ -228,6 +252,7 @@ export default function ClinicHandler() {
     waiting: { bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400", label: "Waiting" },
     "in-progress": { bg: "bg-blue-50", text: "text-blue-600", dot: "bg-blue-400", label: "In Progress" },
     completed: { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400", label: "Done" },
+    rejected: { bg: "bg-rose-50", text: "text-rose-600", dot: "bg-rose-400", label: "Rejected" },
   };
 
   const monthEvents = events.filter(e => {
@@ -325,7 +350,7 @@ export default function ClinicHandler() {
         <div className="p-4 border-b border-gray-100 bg-white">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-2 flex-wrap">
-              {["all", "waiting", "in-progress", "completed"].map(f => (
+              {["all", "waiting", "in-progress", "completed", "rejected"].map(f => (
                 <button key={f} onClick={() => setStatusFilter(f)}
                   className={`px-3 py-1.5 rounded-xl text-xs transition-all capitalize ${statusFilter === f ? "bg-[#008080] text-white shadow-md" : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"}`}>
                   {f === "all" ? "All" : f === "in-progress" ? "In Progress" : f}
@@ -390,6 +415,12 @@ export default function ClinicHandler() {
                         className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 hover:bg-emerald-100 transition-colors" title="Mark complete">
                         <CheckCircle2 className="w-4 h-4" />
                       </motion.button>
+                      {p.status !== "rejected" && (
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => openRejectPatient(p)}
+                          className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 hover:bg-rose-100 transition-colors" title="Reject appointment">
+                          <X className="w-4 h-4" />
+                        </motion.button>
+                      )}
                     </div>
                   )}
                   <button onClick={() => handleDeletePatient(p)} className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 hover:bg-rose-100 transition-colors" title="Delete appointment"><Trash2 className="w-4 h-4" /></button>
@@ -551,15 +582,55 @@ export default function ClinicHandler() {
                 </div>
               </div>
               <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-gray-50" onClick={e => e.stopPropagation()}>
-                {reviewPatient.status !== "completed" && (
+                {reviewPatient.status !== "completed" && reviewPatient.status !== "rejected" && (
                   <>
                     {reviewPatient.status === "waiting" && (
                       <button onClick={() => { updateStatus(reviewPatient.id, "in-progress"); setReviewPatient(null); }} className="flex-1 bg-blue-50 text-blue-600 py-3 rounded-xl hover:bg-blue-100 transition-colors text-sm flex items-center justify-center gap-2"><Play className="w-4 h-4" /> Start Serving</button>
                     )}
                     <button onClick={() => { updateStatus(reviewPatient.id, "completed"); setReviewPatient(null); }} className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4" /> Mark Complete</button>
+                    <button onClick={() => openRejectPatient(reviewPatient)} className="flex-1 bg-rose-50 text-rose-600 py-3 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><X className="w-4 h-4" /> Reject</button>
                   </>
                 )}
                 <button onClick={() => handleDeletePatient(reviewPatient)} className="bg-rose-50 text-rose-600 py-3 px-4 rounded-xl hover:bg-rose-100 transition-colors text-sm flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /> Delete</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Reject Patient Modal */}
+      <AnimatePresence>
+        {rejectPatient && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setRejectPatient(null); setRejectReason(""); }}>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="bg-gradient-to-r from-rose-600 to-orange-500 px-6 py-5">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-white" style={{ fontFamily: "Montserrat" }}>Reject Clinic Appointment</h3>
+                    <p className="text-white/60 text-xs mt-0.5">{formatApptId(rejectPatient)} - {rejectPatient.name}</p>
+                  </div>
+                  <button onClick={() => { setRejectPatient(null); setRejectReason(""); }} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-3 text-xs text-rose-700">
+                  This will mark the appointment as rejected and show the reason in the public clinic tracker.
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1.5 block">Reason for rejection</label>
+                  <textarea
+                    rows={5}
+                    value={rejectReason}
+                    onChange={e => setRejectReason(e.target.value)}
+                    placeholder="Explain why this clinic appointment cannot be accepted."
+                    className="w-full bg-[#F5F7FA] rounded-xl px-4 py-3 text-sm outline-none resize-none border border-gray-100"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => { setRejectPatient(null); setRejectReason(""); }} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm">Cancel</button>
+                  <button onClick={submitRejectPatient} className="flex-1 bg-gradient-to-r from-rose-600 to-orange-500 text-white py-3 rounded-xl hover:shadow-lg transition-all text-sm">Reject Appointment</button>
+                </div>
               </div>
             </motion.div>
           </div>

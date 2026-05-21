@@ -66,6 +66,7 @@ def clinic_track(request):
         "in-progress": 1,
         "completed": 2,
         "canceled": -1,
+        "rejected": -1,
     }
 
     return Response({
@@ -74,6 +75,7 @@ def clinic_track(request):
         "patientName": patient.name,
         "reason": patient.reason,
         "status": patient.status,
+        "rejectionReason": patient.rejectionReason,
         "queueDate": patient.queueDate,
         "time": patient.time,
         "dateBooked": patient.dateBooked,
