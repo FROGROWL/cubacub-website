@@ -1469,6 +1469,25 @@ export async function getReportStatus(
   return apiFetch(`/api/incidents/track/?id=${encodeURIComponent(trackingId)}`);
 }
 
+export interface ClinicTrackingStatus {
+  found: boolean;
+  id: string;
+  patientName: string;
+  reason: string;
+  status: "waiting" | "in-progress" | "completed" | "canceled";
+  queueDate?: string | null;
+  time?: string | null;
+  dateBooked?: string | null;
+  step: number;
+}
+
+/** DJANGO: GET /api/patients/track/?id=CLN-123456 (public, no auth) */
+export async function getClinicStatus(
+  appointmentId: string
+): Promise<ClinicTrackingStatus | null> {
+  return apiFetch(`/api/patients/track/?id=${encodeURIComponent(appointmentId)}`);
+}
+
 export async function getBookedSlots(date: string): Promise<string[]> {
   if (!date) return [];
   return apiFetch(`/api/patients/booked-slots/?date=${encodeURIComponent(date)}&_=${Date.now()}`);

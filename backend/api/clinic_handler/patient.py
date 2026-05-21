@@ -47,6 +47,40 @@ def booked_slots(request):
     return Response(sorted(manually_unavailable | past, key=lambda slot: CLINIC_SLOTS.index(slot) if slot in CLINIC_SLOTS else 999))
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def clinic_track(request):
+    appointment_id = (request.query_params.get("id") or "").strip()
+    if not appointment_id:
+        return Response({"found": False}, status=status.HTTP_400_BAD_REQUEST)
+
+    patient = Patient.objects.filter(appointmentId__iexact=appointment_id).first()
+    if not patient and appointment_id.isdigit():
+        patient = Patient.objects.filter(pk=int(appointment_id)).first()
+
+    if not patient:
+        return Response({"found": False}, status=status.HTTP_200_OK)
+
+    status_map = {
+        "waiting": 0,
+        "in-progress": 1,
+        "completed": 2,
+        "canceled": -1,
+    }
+
+    return Response({
+        "found": True,
+        "id": patient.appointmentId or str(patient.id),
+        "patientName": patient.name,
+        "reason": patient.reason,
+        "status": patient.status,
+        "queueDate": patient.queueDate,
+        "time": patient.time,
+        "dateBooked": patient.dateBooked,
+        "step": status_map.get(patient.status, 0),
+    })
+
+
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def unavailable_slots(request):

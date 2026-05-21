@@ -12,9 +12,9 @@ import { FileText, Search, Calendar, DollarSign, AlertCircle, Clock, ChevronRigh
 import { useToast } from "./Toast";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import {
-  getCalendarEvents, getPublicProjects, getLostFoundItems, createLostFoundItem, submitPublicDocumentRequest, submitPublicReport, addPatient, getDocumentStatus, getReportStatus, getBookedSlots,
+  getCalendarEvents, getPublicProjects, getLostFoundItems, createLostFoundItem, submitPublicDocumentRequest, submitPublicReport, addPatient, getDocumentStatus, getReportStatus, getClinicStatus, getBookedSlots,
   getPublicLandingStats, getPublicWeather, getPublicLandingPageConfig, DEFAULT_LANDING_PAGE_CONFIG,
-  type CalendarEvent, type DocumentTrackingStatus, type ReportTrackingStatus, type PublicProject, type LostFoundItem, type PublicLandingStats, type PublicWeather, type LandingPageConfig
+  type CalendarEvent, type DocumentTrackingStatus, type ReportTrackingStatus, type ClinicTrackingStatus, type PublicProject, type LostFoundItem, type PublicLandingStats, type PublicWeather, type LandingPageConfig
 } from "../api/services";
 
 // Small helpers / placeholders
@@ -1176,6 +1176,108 @@ function ReportTrackerModal({ onClose, trackingId }: { onClose: () => void; trac
                     <div className="pb-6">
                       <p className={`text-sm ${reportStatus.status === "rejected" && i === 0 ? "text-rose-600" : i <= currentStep ? "text-[#1B263B]" : "text-gray-300"}`}>{s.label}</p>
                       <p className={`text-xs mt-0.5 ${reportStatus.status === "rejected" && i === 0 ? "text-rose-400" : i <= currentStep ? "text-gray-400" : "text-gray-200"}`}>{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
+
+function ClinicTrackerModal({ onClose, appointmentId }: { onClose: () => void; appointmentId: string }) {
+  const [clinicStatus, setClinicStatus] = useState<ClinicTrackingStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getClinicStatus(appointmentId).then(result => {
+      setClinicStatus(result);
+      setLoading(false);
+    }).catch(() => {
+      setClinicStatus(null);
+      setLoading(false);
+    });
+  }, [appointmentId]);
+
+  const currentStep = clinicStatus?.step ?? 0;
+  const statuses = [
+    { label: "Booked", desc: "Your appointment is in the clinic queue" },
+    { label: "In Progress", desc: "Clinic staff is attending to the patient" },
+    { label: "Completed", desc: "The appointment has been completed" },
+  ];
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="backdrop-blur-2xl bg-white/90 border border-white/50 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-5">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-white" style={{ fontFamily: "Montserrat" }}>Clinic Status</h3>
+                <p className="text-white/60 text-xs mt-0.5">Appointment #: <strong className="text-white/90">{appointmentId}</strong></p>
+              </div>
+              <button onClick={onClose} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+          </div>
+          <div className="p-6 space-y-1">
+            {loading ? (
+              <div className="py-8 flex flex-col items-center gap-3 text-gray-400">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full" />
+                <p className="text-sm">Looking up your appointment...</p>
+              </div>
+            ) : !clinicStatus?.found ? (
+              <div className="py-8 text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mx-auto"><X className="w-6 h-6 text-rose-400" /></div>
+                <p className="text-sm text-[#1B263B]">Appointment ID not found</p>
+                <p className="text-xs text-gray-400">No clinic appointment matches <strong>{appointmentId}</strong>.</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 bg-[#F5F7FA] rounded-xl p-3 text-xs space-y-1">
+                  <div className="flex justify-between"><span className="text-gray-400">Appointment ID</span><span className="text-[#1B263B]">{clinicStatus.id}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Patient</span><span className="text-[#1B263B] text-right max-w-[60%]">{clinicStatus.patientName}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Consultation</span><span className="text-[#1B263B] text-right max-w-[60%]">{clinicStatus.reason}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Schedule</span><span className="text-[#1B263B] text-right max-w-[60%]">{clinicStatus.queueDate || "-"} {clinicStatus.time || ""}</span></div>
+                  {clinicStatus.dateBooked && (
+                    <div className="flex justify-between"><span className="text-gray-400">Date Booked</span><span className="text-[#1B263B] text-right max-w-[60%]">{new Date(clinicStatus.dateBooked).toLocaleString("en-PH", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div>
+                  )}
+                  <div className="flex justify-between"><span className="text-gray-400">Status</span><span className={`capitalize ${clinicStatus.status === "canceled" ? "text-rose-600" : clinicStatus.status === "completed" ? "text-emerald-600" : "text-[#008080]"}`}>{clinicStatus.status.replace("-", " ")}</span></div>
+                </div>
+                {clinicStatus.status === "canceled" && (
+                  <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-700">
+                    <strong>Appointment Canceled.</strong> Please contact the Cubacub Health Center for assistance.
+                  </div>
+                )}
+                {statuses.map((s, i) => (
+                  <div key={s.label} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: i * 0.15 }}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          clinicStatus.status === "canceled" && i === 0 ? "bg-rose-600 border-rose-600" :
+                          i < currentStep ? "bg-[#008080] border-[#008080]" :
+                          i === currentStep ? "border-[#008080] bg-white" :
+                          "border-gray-200 bg-white"
+                        }`}
+                      >
+                        {(i < currentStep || (clinicStatus.status === "canceled" && i === 0)) && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-2 h-2 rounded-full bg-white" />}
+                        {i === currentStep && clinicStatus.status !== "canceled" && <div className="w-2 h-2 rounded-full bg-[#008080] animate-pulse" />}
+                      </motion.div>
+                      {i < 2 && <div className={`w-0.5 h-10 ${clinicStatus.status !== "canceled" && i < currentStep ? "bg-[#008080]" : "bg-gray-200"}`} />}
+                    </div>
+                    <div className="pb-6">
+                      <p className={`text-sm ${clinicStatus.status === "canceled" && i === 0 ? "text-rose-600" : i <= currentStep ? "text-[#1B263B]" : "text-gray-300"}`}>{s.label}</p>
+                      <p className={`text-xs mt-0.5 ${clinicStatus.status === "canceled" && i === 0 ? "text-rose-400" : i <= currentStep ? "text-gray-400" : "text-gray-200"}`}>{s.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -2490,12 +2592,15 @@ export default function LandingPage() {
   const [showTracker, setShowTracker] = useState(false);
   const [showReportTracker, setShowReportTracker] = useState(false);
   const [showClinic, setShowClinic] = useState(false);
+  const [showClinicTracker, setShowClinicTracker] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [isDocumentRefund, setIsDocumentRefund] = useState(false);
   const [trackingId, setTrackingId] = useState("");
   const [trackerInput, setTrackerInput] = useState("");
   const [reportTrackingId, setReportTrackingId] = useState("");
   const [reportTrackerInput, setReportTrackerInput] = useState("");
+  const [clinicTrackingId, setClinicTrackingId] = useState("");
+  const [clinicTrackerInput, setClinicTrackerInput] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [financeProjects, setFinanceProjects] = useState<PublicProject[]>([]);
@@ -2708,7 +2813,7 @@ export default function LandingPage() {
           <p className="text-gray-400 mt-2 max-w-md mx-auto text-sm">Access government services without the hassle. Everything you need, right at your fingertips.</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Document Request */}
           <motion.button
             whileHover={{ y: -6 }}
@@ -2740,6 +2845,26 @@ export default function LandingPage() {
             </div>
             <p className="text-[10px] text-gray-400 mt-2">Document requests are deleted 4 months after the request date.</p>
           </motion.div>
+
+          {/* File a Report */}
+          <motion.button whileHover={{ y: -6 }} onClick={() => setShowReport(true)} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 text-left group hover:shadow-xl transition-shadow">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center mb-5 shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform">
+              <MessageCircle className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-[#1B263B] mb-2">File a Report</h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-4">Submit a report or complaint. Anonymous option available for your protection.</p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
+                <Shield className="w-3 h-3" /> Anonymous
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
+                <Zap className="w-3 h-3" /> Fast Response
+              </div>
+            </div>
+            <div className="mt-5 flex items-center gap-2 text-sm text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
+              File Report <ArrowRight className="w-4 h-4" />
+            </div>
+          </motion.button>
 
           {/* Report Tracker */}
           <motion.div whileHover={{ y: -6 }} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 hover:shadow-xl hover:shadow-rose-500/10 transition-shadow">
@@ -2773,6 +2898,22 @@ export default function LandingPage() {
               {clinicOpen ? "Book Now" : "Closed"} <ArrowRight className="w-4 h-4" />
             </div>
           </motion.button>
+
+          {/* Clinic Tracker */}
+          <motion.div whileHover={{ y: -6 }} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 hover:shadow-xl hover:shadow-[#008080]/10 transition-shadow">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-5 shadow-lg shadow-emerald-500/20">
+              <Search className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-[#1B263B] mb-2">Track Clinic</h3>
+            <p className="text-sm text-gray-400 mb-4">Check your appointment queue status.</p>
+            <div className="flex gap-2">
+              <input placeholder="e.g. CLN-123456" className="flex-1 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#008080]/30 border-0" value={clinicTrackerInput} onChange={e => setClinicTrackerInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && clinicTrackerInput) { setClinicTrackingId(clinicTrackerInput); setShowClinicTracker(true); }}} />
+              <button onClick={() => { if (clinicTrackerInput) { setClinicTrackingId(clinicTrackerInput); setShowClinicTracker(true); } }} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 rounded-xl text-sm hover:shadow-md transition-all">
+                <Search className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2">Use the appointment ID from your clinic confirmation.</p>
+          </motion.div>
         </div>
       </section>
 
@@ -2839,26 +2980,6 @@ export default function LandingPage() {
                 </div>
               </div>
             </motion.div>
-
-            {/* Reports & Complaints */}
-            <motion.button whileHover={{ y: -6 }} onClick={() => setShowReport(true)} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 text-left group hover:shadow-xl transition-shadow">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center mb-5 shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform">
-                <MessageCircle className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-[#1B263B] mb-2">Reports & Complaints</h3>
-              <p className="text-sm text-gray-400 leading-relaxed mb-4">Submit a report or complaint. Anonymous option available for your protection.</p>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
-                  <Shield className="w-3 h-3" /> Anonymous
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
-                  <Zap className="w-3 h-3" /> Fast Response
-                </div>
-              </div>
-              <div className="mt-5 flex items-center gap-2 text-sm text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                File Report <ArrowRight className="w-4 h-4" />
-              </div>
-            </motion.button>
           </div>
           <div className="mt-6">
             <CommunityCalendar />
@@ -2929,6 +3050,7 @@ export default function LandingPage() {
         {showDocForm && <DocumentRequestForm onClose={() => setShowDocForm(false)} landingConfig={landingConfig} />}
         {showTracker && <TrackerModal onClose={() => setShowTracker(false)} trackingId={trackingId} />}
         {showReportTracker && <ReportTrackerModal onClose={() => setShowReportTracker(false)} trackingId={reportTrackingId} />}
+        {showClinicTracker && <ClinicTrackerModal onClose={() => setShowClinicTracker(false)} appointmentId={clinicTrackingId} />}
         {showClinic && <ClinicBookingModal onClose={() => setShowClinic(false)} clinicOpen={clinicOpen} landingConfig={landingConfig} />}
         {showReport && <ReportModal onClose={() => { setShowReport(false); setIsDocumentRefund(false); }} isDocumentRefund={isDocumentRefund} landingConfig={landingConfig} />}
       </AnimatePresence>
