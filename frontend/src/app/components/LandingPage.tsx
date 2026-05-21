@@ -2846,42 +2846,6 @@ export default function LandingPage() {
             <p className="text-[10px] text-gray-400 mt-2">Document requests are deleted 4 months after the request date.</p>
           </motion.div>
 
-          {/* File a Report */}
-          <motion.button whileHover={{ y: -6 }} onClick={() => setShowReport(true)} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 text-left group hover:shadow-xl transition-shadow">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center mb-5 shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform">
-              <MessageCircle className="w-6 h-6 text-white" />
-            </div>
-            <h3 className="text-[#1B263B] mb-2">File a Report</h3>
-            <p className="text-sm text-gray-400 leading-relaxed mb-4">Submit a report or complaint. Anonymous option available for your protection.</p>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
-                <Shield className="w-3 h-3" /> Anonymous
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
-                <Zap className="w-3 h-3" /> Fast Response
-              </div>
-            </div>
-            <div className="mt-5 flex items-center gap-2 text-sm text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
-              File Report <ArrowRight className="w-4 h-4" />
-            </div>
-          </motion.button>
-
-          {/* Report Tracker */}
-          <motion.div whileHover={{ y: -6 }} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 hover:shadow-xl hover:shadow-rose-500/10 transition-shadow">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center mb-5 shadow-lg shadow-rose-500/20">
-              <Search className="w-6 h-6 text-white" />
-            </div>
-            <h3 className="text-[#1B263B] mb-2">Track Report</h3>
-            <p className="text-sm text-gray-400 mb-4">Check incident and refund request status.</p>
-            <div className="flex gap-2">
-              <input placeholder="e.g. RPT-001 or RDF-001" className="flex-1 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-300 border-0" value={reportTrackerInput} onChange={e => setReportTrackerInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && reportTrackerInput) { setReportTrackingId(reportTrackerInput); setShowReportTracker(true); }}} />
-              <button onClick={() => { if (reportTrackerInput) { setReportTrackingId(reportTrackerInput); setShowReportTracker(true); } }} className="bg-gradient-to-r from-rose-500 to-orange-500 text-white px-4 py-2.5 rounded-xl text-sm hover:shadow-md transition-all">
-                <Search className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-[10px] text-gray-400 mt-2">For incident reports and request refunds only.</p>
-          </motion.div>
-
           {/* Clinic Booking */}
           <motion.button
             whileHover={{ y: -6 }}
@@ -2925,7 +2889,7 @@ export default function LandingPage() {
             <h2 className="text-[#1B263B] text-3xl mt-4" style={{ fontFamily: "Montserrat" }}>Community Engagement</h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Finance Transparency */}
             <motion.div whileHover={{ y: -6 }} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 overflow-hidden group cursor-pointer" onClick={() => navigate("/finance")}>
               <div className="relative h-36 overflow-hidden">
@@ -2979,6 +2943,42 @@ export default function LandingPage() {
                   View All Projects & Budget <ExternalLink className="w-3.5 h-3.5" />
                 </div>
               </div>
+            </motion.div>
+
+            {/* File a Report */}
+            <motion.button whileHover={{ y: -6 }} onClick={() => setShowReport(true)} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 text-left group hover:shadow-xl transition-shadow">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center mb-5 shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-[#1B263B] mb-2">File a Report</h3>
+              <p className="text-sm text-gray-400 leading-relaxed mb-4">Submit a report or complaint. Anonymous option available for your protection.</p>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
+                  <Shield className="w-3 h-3" /> Anonymous
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
+                  <Zap className="w-3 h-3" /> Fast Response
+                </div>
+              </div>
+              <div className="mt-5 flex items-center gap-2 text-sm text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                File Report <ArrowRight className="w-4 h-4" />
+              </div>
+            </motion.button>
+
+            {/* Report Tracker */}
+            <motion.div whileHover={{ y: -6 }} className="bg-white rounded-3xl shadow-lg shadow-black/5 border border-gray-100 p-7 hover:shadow-xl hover:shadow-rose-500/10 transition-shadow">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center mb-5 shadow-lg shadow-rose-500/20">
+                <Search className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-[#1B263B] mb-2">Track Report</h3>
+              <p className="text-sm text-gray-400 mb-4">Check incident and refund request status.</p>
+              <div className="flex gap-2">
+                <input placeholder="e.g. RPT-001 or RDF-001" className="flex-1 bg-[#F5F7FA] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-300 border-0" value={reportTrackerInput} onChange={e => setReportTrackerInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && reportTrackerInput) { setReportTrackingId(reportTrackerInput); setShowReportTracker(true); }}} />
+                <button onClick={() => { if (reportTrackerInput) { setReportTrackingId(reportTrackerInput); setShowReportTracker(true); } }} className="bg-gradient-to-r from-rose-500 to-orange-500 text-white px-4 py-2.5 rounded-xl text-sm hover:shadow-md transition-all">
+                  <Search className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-2">For incident reports and request refunds only.</p>
             </motion.div>
           </div>
           <div className="mt-6">
