@@ -2701,10 +2701,21 @@ export default function LandingPage() {
   const displayedFinanceTitle = displayedFinanceProject?.name || "No project data yet";
   const clinicOpen = landingStats.clinic_status === "open";
 
+  const mobileNavItems = [
+    { label: "Services", target: "services" },
+    { label: "Engagement", target: "engagement" },
+    { label: "About", target: "about" },
+  ];
+
+  const handleMobileNavClick = (target: string) => {
+    setMobileNav(false);
+    document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFBFC]">
       {/* --- Header --- */}
-      <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? "bg-[#1B263B]/95 backdrop-blur-xl shadow-xl shadow-black/10 py-2" : "bg-transparent py-4"}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#1B263B]/95 backdrop-blur-xl shadow-xl shadow-black/10 py-2" : "bg-transparent py-4"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <motion.div whileHover={{ rotate: 3 }} className="w-10 h-10 rounded-md overflow-hidden shadow-lg shadow-[#008080]/30">
@@ -2727,20 +2738,23 @@ export default function LandingPage() {
                 <a key={l} href={`#${l.toLowerCase()}`} className="text-white/60 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all">{l}</a>
               ))}
             </nav>
-            <button onClick={() => setMobileNav(!mobileNav)} className="md:hidden text-white"><Menu className="w-5 h-5" /></button>
+            <button type="button" onClick={() => setMobileNav(!mobileNav)} className="relative z-50 md:hidden text-white"><Menu className="w-5 h-5" /></button>
           </div>
         </div>
 
         {/* Mobile nav */}
         <AnimatePresence>
           {mobileNav && (
-            <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="md:hidden overflow-hidden bg-[#1B263B]/95 backdrop-blur-xl">
+            <>
+            <button type="button" aria-label="Close navigation menu" onClick={() => setMobileNav(false)} className="fixed inset-0 z-40 md:hidden bg-black/20 backdrop-blur-[1px]" />
+            <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="relative z-50 md:hidden overflow-hidden bg-[#1B263B]/95 backdrop-blur-xl">
               <div className="px-6 py-4 space-y-2">
                 {["Services", "Engagement", "About"].map(l => (
                   <a key={l} href={`#${l.toLowerCase()}`} onClick={() => setMobileNav(false)} className="block text-white/70 hover:text-white py-2 text-sm">{l}</a>
                 ))}
               </div>
             </motion.div>
+            </>
           )}
         </AnimatePresence>
       </header>
